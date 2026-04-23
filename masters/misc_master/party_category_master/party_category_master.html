@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Party Category Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot=(function(){const path=String(location.pathname||'').replace(/\\\\/g,'/');const lower=path.toLowerCase();const marker='/brokerapp/';const idx=lower.indexOf(marker);if(idx!==-1){return location.origin+path.slice(0,idx+marker.length);}return location.origin+'/';})();
+(async function(){
+    const res=await fetch(appRoot + "api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Party Category Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search category...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="categoryList"></div></div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="partyCategoryForm" autocomplete="off">
+<input type="hidden" id="party_category_id" name="party_category_id">
+<div class="form-grid">
+<div class="form-group full">
+<label for="party_category_name" class="label-with-error">
+<span>Description</span>
+<span id="categoryNameError" class="error-text" style="display:none;"></span>
+</label>
+<input id="party_category_name" name="party_category_name" required data-add-first data-duplicate-check="checkDuplicateCategoryName">
+</div>
+</div>
+</form>
+
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+
+<script>
+let allCategories=[];
+let activeCategoryId=null;
+let currentMode="display";
+let preEditCategoryId=null;
+
+const filterInput=document.getElementById("filterInput");
+const categoryList=document.getElementById("categoryList");
+const partyCategoryForm=document.getElementById("partyCategoryForm");
+const modeTag=document.getElementById("modeTag");
+const displayButtons=document.getElementById("displayButtons");
+const addModeButtons=document.getElementById("addModeButtons");
+const categoryNameInput=document.getElementById("party_category_name");
+const categoryNameError=document.getElementById("categoryNameError");
+
+function esc(v){return (v??"").toString().replace(/[&<>\"']/g,function(m){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m];});}
+function categoryNameOf(row){return (row?.party_category_name??row?.description??"").toString();}
+
+function showCategoryNameError(message){categoryNameInput.classList.add("field-error");categoryNameError.textContent=message;categoryNameError.style.display="inline";}
+function clearCategoryNameError(){categoryNameInput.classList.remove("field-error");categoryNameError.textContent="";categoryNameError.style.display="none";}
+
+function checkDuplicateCategoryName(){
+    const name=categoryNameInput.value.trim().toLowerCase();
+    if(!name){clearCategoryNameError();return false;}
+    const currentId=Number(document.getElementById("party_category_id").value||0);
+    const duplicate=allCategories.some(function(row){
+        const sameName=categoryNameOf(row).trim().toLowerCase()===name;
+        const sameId=Number(row.party_category_id)===currentId;
+        return sameName&&!sameId;
+    });
+    if(duplicate){showCategoryNameError("Already exists");return true;}
+    clearCategoryNameError();
+    return false;
+}
+
+function setFormEditable(editable){
+    const fields=partyCategoryForm.querySelectorAll("input");
+    fields.forEach(function(field){
+        if(field.id==="party_category_id")return;
+        if(!editable)field.setAttribute("tabindex","-1");
+        else field.removeAttribute("tabindex");
+        field.readOnly=!editable;
+    });
+}
+
+function syncActionMode(){
+    const isDisplay=currentMode==="display";
+    displayButtons.classList.toggle("hidden",!isDisplay);
+    addModeButtons.classList.toggle("hidden",isDisplay);
+    displayButtons.style.display=isDisplay?"flex":"none";
+    addModeButtons.style.display=isDisplay?"none":"flex";
+}
+
+function setMode(mode){
+    currentMode=mode;
+    const rightPanel=document.querySelector(".right-panel");
+    rightPanel.classList.remove("add-mode","modify-mode","display-mode");
+
+    if(mode==="add"){
+        modeTag.textContent="Add Mode";
+        rightPanel.classList.add("add-mode");
+        setTimeout(function(){categoryNameInput.focus();},0);
+    }
+    if(mode==="modify"){
+        modeTag.textContent="Edit Mode";
+        rightPanel.classList.add("modify-mode");
+        setTimeout(function(){categoryNameInput.focus();},0);
+    }
+    if(mode==="display"){
+        modeTag.textContent="Display Mode";
+        rightPanel.classList.add("display-mode");
+        preEditCategoryId=null;
+        clearCategoryNameError();
+        syncSelectionHighlight();
+    }
+    syncActionMode();
+}
+
+function ensureActiveSelection(){
+    if(!allCategories.length){activeCategoryId=null;return null;}
+    let active=allCategories.find(function(row){return Number(row.party_category_id)===Number(activeCategoryId);});
+    if(!active){active=allCategories[0];activeCategoryId=Number(active.party_category_id);}
+    return active;
+}
+
+function fillFormWithoutRender(row){
+    document.getElementById("party_category_id").value=row.party_category_id||"";
+    document.getElementById("party_category_name").value=categoryNameOf(row);
+    activeCategoryId=Number(row.party_category_id);
+    clearCategoryNameError();
+}
+
+function fillForm(row){
+    fillFormWithoutRender(row);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    renderCategories();
+}
+
+function resetForm(){
+    partyCategoryForm.reset();
+    document.getElementById("party_category_id").value="";
+    clearCategoryNameError();
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+    renderCategories();
+}
+
+function renderCategories(){
+    ensureActiveSelection();
+    const keyword = "";
+    const rows=allCategories.filter(function(row){
+        return !keyword || categoryNameOf(row).toLowerCase().includes(keyword);
+    });
+
+    if(!rows.length){categoryList.innerHTML="<div class='category-row'>No records found</div>";return;}
+
+    categoryList.innerHTML=rows.map(function(row){
+        const active=Number(row.party_category_id)===activeCategoryId?"active":"";
+        return "<div class='category-row "+active+"' data-id='"+esc(row.party_category_id)+"'>"+esc(categoryNameOf(row))+"</div>";
+    }).join("");
+
+    categoryList.querySelectorAll(".category-row").forEach(function(item){item.addEventListener("click",function(){selectRow(this);});});
+    syncSelectionHighlight();
+}
+
+function syncSelectionHighlight(){
+    const rows=Array.from(categoryList.querySelectorAll(".category-row")).filter(function(r){return r.dataset.id;});
+    rows.forEach(function(r){r.classList.remove("active");});
+    const activeRow=rows.find(function(r){return Number(r.dataset.id)===Number(activeCategoryId);});
+    if(activeRow){activeRow.classList.add("active");activeRow.scrollIntoView({block:"nearest"});}
+}
+
+function selectRow(row){
+    categoryList.querySelectorAll(".category-row").forEach(function(r){r.classList.remove("active");});
+    row.classList.add("active");
+    const id=Number(row.dataset.id);
+    activeCategoryId=id;
+    const selected=allCategories.find(function(x){return Number(x.party_category_id)===id;});
+    if(!selected)return;
+    fillFormWithoutRender(selected);
+    row.scrollIntoView({block:"center"});
+}
+
+async function loadCategories(preferredId){
+    const res=await fetch("../../../api/party_category/get_party_category.php");
+    allCategories=await res.json();
+    if(!Array.isArray(allCategories))allCategories=[];
+
+    if(allCategories.length){
+        if(preferredId&&allCategories.some(function(row){return Number(row.party_category_id)===Number(preferredId);})){activeCategoryId=Number(preferredId);}        
+        const selected=ensureActiveSelection();
+        renderCategories();
+        if(selected)fillFormWithoutRender(selected);
+        setMode("display");
+        setFormEditable(false);
+        syncActionMode();
+        document.querySelector(".list-wrap").scrollTop=0;
+    }else{
+        categoryList.innerHTML="<div class='category-row'>No records found</div>";
+        resetForm();
+    }
+}
+
+function startAddMode(){
+    partyCategoryForm.reset();
+    document.getElementById("party_category_id").value="";
+    clearCategoryNameError();
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+}
+
+function startModifyMode(){
+    const selected=ensureActiveSelection();
+    if(!selected){alert("No party category selected");return;}
+    preEditCategoryId=Number(selected.party_category_id);
+    fillFormWithoutRender(selected);
+    setMode("modify");
+    setFormEditable(true);
+    syncActionMode();
+}
+
+function cancelEditMode(){
+    if(currentMode==="add"){
+        const selected=ensureActiveSelection();
+        if(selected){fillForm(selected);}else{resetForm();}
+        return;
+    }
+    if(currentMode==="modify"){
+        const selected=allCategories.find(function(row){return Number(row.party_category_id)===Number(preEditCategoryId);})||ensureActiveSelection();
+        if(selected){fillForm(selected);}else{resetForm();}
+        return;
+    }
+}
+
+function keepCategoryNameActive(){
+    if(currentMode==="add"||currentMode==="modify"){
+        setTimeout(function(){if(!partyCategoryForm.contains(document.activeElement))categoryNameInput.focus();},0);
+    }
+}
+
+function nextByName(name){
+    const n=(name||"").trim().toLowerCase();
+    if(!n)return null;
+    return allCategories.find(function(row){return categoryNameOf(row).trim().toLowerCase()===n;})||null;
+}
+
+async function saveRecord(){
+    const formData=new FormData(partyCategoryForm);
+    const categoryName=(formData.get("party_category_name")||"").trim();
+
+    if(!categoryName){showCategoryNameError("Required");categoryNameInput.focus();return;}
+    if(checkDuplicateCategoryName()){categoryNameInput.focus();categoryNameInput.select();return;}
+
+    formData.set("party_category_name",categoryName);
+
+    if(currentMode!=="modify"){
+        const confirmAdd=await window.confirmAdd("Are you sure you want to add this party category?\n\n"+categoryName);
+        if(!confirmAdd)return;
+    }
+
+    let apiUrl="../../../api/party_category/add_party_category.php";
+    if(currentMode==="modify")apiUrl="../../../api/party_category/update_party_category.php";
+
+    const preserveId=currentMode==="modify"?Number(formData.get("party_category_id")||0):null;
+    const preserveName=categoryName;
+
+    const response=await fetch(apiUrl,{method:"POST",body:formData});
+    const data=await response.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status!=="success")return;
+
+    await loadCategories(preserveId);
+    if(!preserveId){
+        const created=nextByName(preserveName);
+        if(created){activeCategoryId=Number(created.party_category_id);fillForm(created);}
+    }
+    if(preserveId){
+        const updated=allCategories.find(function(row){return Number(row.party_category_id)===Number(preserveId);});
+        if(updated){fillForm(updated);}
+    }
+}
+
+async function deleteRecord(){
+    const selected=ensureActiveSelection();
+    if(!selected){alert("No party category selected");return;}
+    if(!(await confirmDelete("Delete this party category?")))return;
+
+    const body=new URLSearchParams();
+    body.set("party_category_id",selected.party_category_id);
+
+    const response=await fetch("../../../api/party_category/delete_party_category.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:body.toString()
+    });
+    const data=await response.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status!=="success")return;
+
+    const currentIdx=allCategories.findIndex(function(row){return Number(row.party_category_id)===Number(selected.party_category_id);});
+    await loadCategories();
+    if(!allCategories.length)return;
+
+    const fallback=allCategories[Math.min(Math.max(currentIdx,0),allCategories.length-1)] || allCategories[0];
+    activeCategoryId=Number(fallback.party_category_id);
+    fillForm(fallback);
+}
+
+document.getElementById("addBtn").addEventListener("click",startAddMode);
+document.getElementById("modifyBtn").addEventListener("click",startModifyMode);
+document.getElementById("deleteBtn").addEventListener("click",deleteRecord);
+document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+document.getElementById("exitBtn").addEventListener("click",function(){window.location.href = appRoot + "index.html";});
+document.getElementById("cancelBtn").addEventListener("click",cancelEditMode);
+document.getElementById("saveBtn").addEventListener("click",saveRecord);
+
+categoryNameInput.addEventListener("input",function(){if(currentMode!=="display")checkDuplicateCategoryName();});
+partyCategoryForm.addEventListener("focusin",function(e){
+    if(currentMode!=="modify")return;
+    const field=e.target;
+    if(field.tagName==="INPUT"&&field.type!=="hidden"&&!field.readOnly){setTimeout(function(){field.select();},0);}
+});let typeBuffer="",typeTimer=null,lastMatchedIndex=-1;
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    if(e.ctrlKey||e.altKey||e.metaKey)return;
+    const rows=Array.from(categoryList.querySelectorAll(".category-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    const isSearchBox=document.activeElement.id==="filterInput";
+
+    if(e.key.length===1&&/^[a-zA-Z]$/.test(e.key)){
+        if(isSearchBox)return;
+        e.preventDefault();
+        const letter=e.key.toLowerCase();
+        if(typeTimer)clearTimeout(typeTimer);
+        typeBuffer+=letter;
+        typeTimer=setTimeout(function(){typeBuffer="";lastMatchedIndex=-1;},700);
+
+        let matchIndex=-1;
+        if(typeBuffer.length===1){
+            const startIndex=lastMatchedIndex+1;
+            matchIndex=rows.findIndex(function(row,index){return index>=startIndex&&row.textContent.trim().toLowerCase().startsWith(letter);});
+            if(matchIndex===-1)matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(letter);});
+        }else{
+            matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(typeBuffer);});
+        }
+
+        if(matchIndex!==-1){
+            lastMatchedIndex=matchIndex;
+            selectRow(rows[matchIndex]);
+        }
+    }
+});
+
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    const rows=Array.from(categoryList.querySelectorAll(".category-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    let currentIndex=rows.findIndex(function(row){return Number(row.dataset.id)===Number(activeCategoryId);});
+    if(currentIndex===-1)currentIndex=0;
+
+    if(e.key==="ArrowDown"){e.preventDefault();if(currentIndex<rows.length-1)currentIndex++;selectRow(rows[currentIndex]);}
+    if(e.key==="ArrowUp"){e.preventDefault();if(currentIndex>0)currentIndex--;selectRow(rows[currentIndex]);}
+});
+
+document.addEventListener("mousedown",function(e){if(currentMode==="add"||currentMode==="modify"){if(!partyCategoryForm.contains(e.target))keepCategoryNameActive();}});setMode("display");
+setFormEditable(false);
+syncActionMode();
+
+(async function init(){
+    await loadCategories();
+    if(allCategories.length){
+        const first=ensureActiveSelection();
+        if(first)fillFormWithoutRender(first);
+        renderCategories();
+    }
+})();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add / Less Parameter | SoftBrokerage</title>
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="./style.css?v=1">
+<script>
+    const appRoot = (function(){
+        const path = String(location.pathname || "").replace(/\\/g, "/");
+        const lower = path.toLowerCase();
+        const marker = "/brokerapp/";
+        const idx = lower.indexOf(marker);
+        if (idx !== -1) {
+            return location.origin + path.slice(0, idx + marker.length);
+        }
+        return location.origin + "/";
+    })();
+    (async function () {
+        const res = await fetch(appRoot + "api/check_auth.php");
+        const data = await res.json();
+        if (!data.logged_in) window.location.replace(appRoot + "login.html");
+    })();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+    <div class="feature-box">
+        <h2 class="page-title">Add / Less Parameter Master</h2>
+        <div class="master-layout">
+            <div class="left-panel">
+                <div class="label">Selection Mode</div>
+                <input id="filterInput" type="text" autocomplete="off" placeholder="Search module...">
+                <div class="list-wrap">
+                    <div class="list-head">Name</div>
+                    <div id="moduleList"></div>
+                </div>
+            </div>
+
+            <div class="right-panel display-mode">
+                <div class="mode-header"><span id="modeTag" class="mode-tag">Display Mode</span></div>
+                <form id="paramForm" class="param-form" autocomplete="off">
+                    <input type="hidden" id="module_id" name="module_id">
+                    <input type="hidden" id="row_id" name="row_id">
+
+                    <div class="entry-row">
+                        <label for="entryModule">Entry Module</label>
+                        <input id="entryModule" name="entryModule" readonly>
+                    </div>
+
+                    <div class="grid-scroll">
+                        <div class="param-grid" id="paramGrid">
+                            <div class="grid-head">
+                                <div>Sno</div>
+                                <div>Description</div>
+                                <div>Parameter Type</div>
+                                <div>Order</div>
+                                <div>(%)</div>
+                                <div>Calculation</div>
+                                <div>Active</div>
+                                <div>Applicable On</div>
+                                <div>Posting A/c</div>
+                                <div>Outer Column</div>
+                                <div>CST / VAT / OTHER</div>
+                                <div>S/I</div>
+                                <div>FROM</div>
+                                <div>END</div>
+                                <div>RATE EDT ?</div>
+                                <div>AMT EDT ?</div>
+                                <div>AMT ROUND ?</div>
+                                <div>Division Name</div>
+                            </div>
+                            <div id="gridBody" class="grid-body"></div>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="displayButtons" class="action-row">
+                    <button class="btn primary" type="button" id="addBtn">&#128194; F2-Add</button>
+                    <button class="btn" type="button" id="modifyBtn">&#128221; F3-Modify</button>
+                    <button class="btn danger" type="button" id="deleteBtn">&#10060; F5-Delete</button>
+                    <button class="btn" type="button" id="printBtn">&#128202; F7-Print</button>
+                    <button class="btn" type="button" id="exitBtn">&#10060; Esc-Exit</button>
+                </div>
+
+                <div id="editButtons" class="action-row hidden">
+                    <button class="btn danger" type="button" id="cancelBtn">&#10060; Esc-Cancel</button>
+                    <button class="btn primary" type="button" id="saveBtn">&#128190; F6-Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let modules = [];
+    let activeModuleId = null;
+    let activeRowId = null;
+    let preEditRowId = null;
+    let currentMode = "display";
+
+    const moduleList = document.getElementById("moduleList");
+    const entryModuleInput = document.getElementById("entryModule");
+    const modeTag = document.getElementById("modeTag");
+    const rightPanel = document.querySelector(".right-panel");
+    const displayButtons = document.getElementById("displayButtons");
+    const editButtons = document.getElementById("editButtons");
+    const moduleIdInput = document.getElementById("module_id");
+    const rowIdInput = document.getElementById("row_id");
+    const gridBody = document.getElementById("gridBody");
+
+    let descInput = null;
+    let paramTypeInput = null;
+    let paramTypeDropdown = null;
+    let paramTypeHidden = null;
+    let orderInput = null;
+    let percentInput = null;
+    let calcInput = null;
+    let calcDropdown = null;
+    let calcHidden = null;
+    let activeInput = null;
+    let activeDropdown = null;
+    let activeHidden = null;
+    let applicableInput = null;
+    let postingInput = null;
+    let outerInput = null;
+    let cstInput = null;
+    let siInput = null;
+    let fromInput = null;
+    let endInput = null;
+    let rateEditInput = null;
+    let rateEditDropdown = null;
+    let rateEditHidden = null;
+    let amtEditInput = null;
+    let amtEditDropdown = null;
+    let amtEditHidden = null;
+    let amtRoundInput = null;
+    let amtRoundDropdown = null;
+    let amtRoundHidden = null;
+    let divisionInput = null;
+
+    const paramTypeOptions = ["Add", "Less"];
+    const calcOptions = ["Percent", "Amount"];
+    const yesNoOptions = ["Y", "N"];
+
+    function syncEditRefs() {
+        descInput = document.getElementById("descInput");
+        paramTypeInput = document.getElementById("paramTypeInput");
+        paramTypeDropdown = document.getElementById("paramTypeDropdown");
+        paramTypeHidden = document.getElementById("paramTypeValue");
+        orderInput = document.getElementById("orderInput");
+        percentInput = document.getElementById("percentInput");
+        calcInput = document.getElementById("calcInput");
+        calcDropdown = document.getElementById("calcDropdown");
+        calcHidden = document.getElementById("calcValue");
+        activeInput = document.getElementById("activeInput");
+        activeDropdown = document.getElementById("activeDropdown");
+        activeHidden = document.getElementById("activeValue");
+        applicableInput = document.getElementById("applicableInput");
+        postingInput = document.getElementById("postingInput");
+        outerInput = document.getElementById("outerInput");
+        cstInput = document.getElementById("cstInput");
+        siInput = document.getElementById("siInput");
+        fromInput = document.getElementById("fromInput");
+        endInput = document.getElementById("endInput");
+        rateEditInput = document.getElementById("rateEditInput");
+        rateEditDropdown = document.getElementById("rateEditDropdown");
+        rateEditHidden = document.getElementById("rateEditValue");
+        amtEditInput = document.getElementById("amtEditInput");
+        amtEditDropdown = document.getElementById("amtEditDropdown");
+        amtEditHidden = document.getElementById("amtEditValue");
+        amtRoundInput = document.getElementById("amtRoundInput");
+        amtRoundDropdown = document.getElementById("amtRoundDropdown");
+        amtRoundHidden = document.getElementById("amtRoundValue");
+        divisionInput = document.getElementById("divisionInput");
+        if (descInput && !descInput.dataset.inlineReqBound) {
+            descInput.dataset.inlineReqBound = "1";
+            descInput.addEventListener("input", function () {
+                descInput.classList.remove("field-error");
+                const inline = descInput.parentElement
+                    ? descInput.parentElement.querySelector("span[data-inline-required='1']")
+                    : null;
+                if (inline) inline.style.display = "none";
+            });
+        }
+
+        bindInlineDropdown(paramTypeInput, paramTypeDropdown, paramTypeHidden, paramTypeOptions);
+        bindInlineDropdown(calcInput, calcDropdown, calcHidden, calcOptions);
+        bindInlineDropdown(activeInput, activeDropdown, activeHidden, yesNoOptions);
+        bindInlineDropdown(rateEditInput, rateEditDropdown, rateEditHidden, yesNoOptions);
+        bindInlineDropdown(amtEditInput, amtEditDropdown, amtEditHidden, yesNoOptions);
+        bindInlineDropdown(amtRoundInput, amtRoundDropdown, amtRoundHidden, yesNoOptions);
+    }
+
+    function esc(value) {
+        return (value ?? "").toString().replace(/[&<>"']/g, function (m) {
+            return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+        });
+    }
+
+    function normalizeModule(row) {
+        return {
+            id: Number(row.module_id || 0),
+            name: row.module_name || "",
+            sort_order: Number(row.sort_order || 0),
+            active: row.active || "Y",
+            rows: null,
+            activeRowId: null,
+            loading: false
+        };
+    }
+
+    function normalizeRow(row) {
+        return {
+            id: Number(row.setup_id || 0),
+            description: row.description || "",
+            parameter_type: row.parameter_type || "Add",
+            order_no: row.order_no ?? "",
+            percent: row.percent_value ?? "",
+            calculation: row.calculation || "Percent",
+            active: row.active || "Y",
+            applicable_on: row.applicable_on || "",
+            posting_ac: row.posting_ac || "",
+            outer_column: row.outer_column || "",
+            cst_vat_other: row.cst_vat_other || "",
+            si: row.si_flag || "",
+            from_val: row.from_value ?? "",
+            end_val: row.end_value ?? "",
+            rate_edt: row.rate_edt || "Y",
+            amt_edt: row.amt_edt || "Y",
+            amt_round: row.amt_round || "Y",
+            division_name: row.division_name || ""
+        };
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+        if (mode === "add") {
+            modeTag.textContent = "Add Mode";
+            rightPanel.classList.add("add-mode");
+            setTimeout(function () { if (descInput) descInput.focus(); }, 0);
+        } else if (mode === "modify") {
+            modeTag.textContent = "Edit Mode";
+            rightPanel.classList.add("modify-mode");
+            setTimeout(function () { if (descInput) descInput.focus(); }, 0);
+        } else {
+            modeTag.textContent = "Display Mode";
+            rightPanel.classList.add("display-mode");
+        }
+        closeInlineDropdowns();
+        syncActionMode();
+    }
+
+    function dropdownHtml(inputId, dropdownId, hiddenId, value, placeholder) {
+        return "<div class='dropdown-wrapper'>"
+            + "<input id='" + inputId + "' class='dropdown-input' type='text' autocomplete='off' value='" + esc(value || "") + "' placeholder='" + esc(placeholder || "Select...") + "'>"
+            + "<div id='" + dropdownId + "' class='dropdown-list'></div>"
+            + "<input id='" + hiddenId + "' type='hidden' value='" + esc(value || "") + "'>"
+            + "</div>";
+    }
+
+    function closeInlineDropdowns() {
+        [paramTypeDropdown, calcDropdown, activeDropdown, rateEditDropdown, amtEditDropdown, amtRoundDropdown].forEach(function (dd) {
+            if (dd) dd.classList.remove("open");
+        });
+    }
+
+    function bindInlineDropdown(input, dropdown, hidden, options) {
+        if (!input || !dropdown || !hidden) return;
+        if (input.dataset.dropdownBound) return;
+        input.dataset.dropdownBound = "1";
+
+        let activeIndex = -1;
+        let filtered = options.slice();
+        let currentFilter = "";
+
+        function renderList(filterText) {
+            const q = (filterText || "").toLowerCase();
+            filtered = options.filter(function (opt) {
+                return opt.toLowerCase().includes(q);
+            });
+            if (!filtered.length) {
+                dropdown.innerHTML = "<div class='dropdown-empty'>No options</div>";
+                activeIndex = -1;
+                return;
+            }
+            dropdown.innerHTML = filtered.map(function (opt, idx) {
+                const active = idx === activeIndex ? " active" : "";
+                return "<div class='dropdown-item" + active + "' data-value='" + esc(opt) + "'>" + esc(opt) + "</div>";
+            }).join("");
+        }
+
+        function openDropdown() {
+            if (currentMode === "display") return;
+            dropdown.classList.add("open");
+            const current = hidden.value || input.value || "";
+            const currentIndex = options.findIndex(function (opt) { return opt === current; });
+            activeIndex = currentIndex >= 0 ? currentIndex : -1;
+            currentFilter = "";
+            renderList(currentFilter);
+        }
+
+        function closeDropdown() {
+            dropdown.classList.remove("open");
+            activeIndex = -1;
+        }
+
+        function selectValue(value) {
+            input.value = value;
+            hidden.value = value;
+            closeDropdown();
+        }
+
+        input.addEventListener("focus", function () { openDropdown(); });
+        input.addEventListener("click", function () { openDropdown(); });
+        input.addEventListener("input", function () {
+            if (!dropdown.classList.contains("open")) dropdown.classList.add("open");
+            activeIndex = -1;
+            currentFilter = input.value;
+            renderList(currentFilter);
+        });
+
+        input.addEventListener("keydown", function (e) {
+            if (!dropdown.classList.contains("open") && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+                openDropdown();
+            }
+            if (!dropdown.classList.contains("open")) return;
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!filtered.length) return;
+                activeIndex = activeIndex < 0 ? 0 : Math.min(filtered.length - 1, activeIndex + 1);
+                renderList(currentFilter);
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!filtered.length) return;
+                activeIndex = activeIndex < 0 ? filtered.length - 1 : Math.max(0, activeIndex - 1);
+                renderList(currentFilter);
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (filtered.length && activeIndex >= 0) {
+                    selectValue(filtered[activeIndex]);
+                } else if (options.includes(input.value)) {
+                    selectValue(input.value);
+                } else {
+                    closeDropdown();
+                }
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                closeDropdown();
+            }
+        });
+
+        input.addEventListener("blur", function () {
+            setTimeout(function () {
+                if (!dropdown.contains(document.activeElement)) {
+                    if (options.includes(input.value)) {
+                        hidden.value = input.value;
+                    } else if (hidden.value) {
+                        input.value = hidden.value;
+                    } else if (options.length) {
+                        input.value = options[0];
+                        hidden.value = options[0];
+                    }
+                    closeDropdown();
+                }
+            }, 120);
+        });
+
+        dropdown.addEventListener("mousedown", function (e) {
+            const item = e.target.closest(".dropdown-item");
+            if (!item) return;
+            e.preventDefault();
+            selectValue(item.dataset.value || "");
+            input.focus();
+        });
+
+        document.addEventListener("mousedown", function (e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+    }
+
+    function syncActionMode() {
+        const isDisplay = currentMode === "display";
+        displayButtons.classList.toggle("hidden", !isDisplay);
+        editButtons.classList.toggle("hidden", isDisplay);
+        displayButtons.style.display = isDisplay ? "flex" : "none";
+        editButtons.style.display = isDisplay ? "none" : "flex";
+    }
+
+    function getActiveModule() {
+        return modules.find(function (m) { return m.id === activeModuleId; }) || null;
+    }
+
+    function ensureActiveRow(module) {
+        if (!module) {
+            activeRowId = null;
+            return null;
+        }
+        if (!module.rows || !module.rows.length) {
+            activeRowId = null;
+            module.activeRowId = null;
+            return null;
+        }
+        const existing = module.rows.find(function (r) { return r.id === activeRowId; });
+        if (existing) {
+            module.activeRowId = activeRowId;
+            return existing;
+        }
+        const stored = module.rows.find(function (r) { return r.id === module.activeRowId; });
+        if (stored) {
+            activeRowId = stored.id;
+            return stored;
+        }
+        activeRowId = module.rows[0].id;
+        module.activeRowId = activeRowId;
+        return module.rows[0];
+    }
+
+    function renderModuleList() {
+        if (!modules.length) {
+            moduleList.innerHTML = "<div class='module-row'>No modules found</div>";
+            return;
+        }
+
+        moduleList.innerHTML = modules.map(function (m) {
+            const active = m.id === activeModuleId ? "active" : "";
+            return "<div class='module-row " + active + "' data-id='" + esc(m.id) + "'>" + esc(m.name) + "</div>";
+        }).join("");
+
+        moduleList.querySelectorAll(".module-row[data-id]").forEach(function (row) {
+            row.addEventListener("click", function () {
+                if (currentMode !== "display") return;
+                const id = Number(this.dataset.id || 0);
+                selectModule(id);
+            });
+        });
+    }
+
+    async function loadModules() {
+        const res = await fetch(appRoot + "api/add_less_parameter/get_modules.php", { cache: "no-store" });
+        const data = await res.json();
+        modules = Array.isArray(data) ? data.map(normalizeModule) : [];
+        renderModuleList();
+        if (modules.length) {
+            await selectModule(modules[0].id);
+        } else {
+            activeModuleId = null;
+            entryModuleInput.value = "";
+            renderGridRows();
+            setMode("display");
+        }
+    }
+
+    async function loadRowsForModule(module) {
+        if (!module) return;
+        module.loading = true;
+        renderGridRows();
+
+        const body = new URLSearchParams();
+        body.set("module_id", String(module.id));
+        const res = await fetch(appRoot + "api/add_less_parameter/get_rows.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+        const data = await res.json();
+        module.rows = Array.isArray(data) ? data.map(normalizeRow) : [];
+        module.loading = false;
+    }
+
+    async function selectModule(id) {
+        const module = modules.find(function (m) { return m.id === id; });
+        if (!module) return;
+        activeModuleId = id;
+        moduleIdInput.value = String(id);
+        entryModuleInput.value = module.name || "";
+        if (module.rows === null) {
+            await loadRowsForModule(module);
+        }
+        activeRowId = module.activeRowId || null;
+        ensureActiveRow(module);
+        renderModuleList();
+        renderGridRows();
+        setMode("display");
+    }
+
+    function renderGridRows() {
+        const module = getActiveModule();
+        if (!module) {
+            gridBody.innerHTML = "<div class='grid-row empty'><div>No module selected</div></div>";
+            return;
+        }
+        if (module.loading) {
+            gridBody.innerHTML = "<div class='grid-row empty'><div>Loading...</div></div>";
+            return;
+        }
+
+        const rows = module.rows || [];
+        ensureActiveRow(module);
+
+        function editRowHtml(row, index, isNew) {
+            const data = row || {
+                description: "",
+                parameter_type: "Add",
+                order_no: "",
+                percent: "",
+                calculation: "Percent",
+                active: "Y",
+                applicable_on: "",
+                posting_ac: "",
+                outer_column: "",
+                cst_vat_other: "",
+                si: "",
+                from_val: "",
+                end_val: "",
+                rate_edt: "Y",
+                amt_edt: "Y",
+                amt_round: "Y",
+                division_name: ""
+            };
+            return "<div class='grid-row editing' data-row-id='" + (isNew ? "" : esc(row.id)) + "'>"
+                + "<div>" + (isNew ? "" : (index + 1)) + "</div>"
+                + "<div><input id='descInput' type='text' value='" + esc(data.description) + "' data-add-first></div>"
+                + "<div>" + dropdownHtml("paramTypeInput", "paramTypeDropdown", "paramTypeValue", data.parameter_type || "Add", "Select...") + "</div>"
+                + "<div><input id='orderInput' type='number' step='1' min='0' value='" + esc(data.order_no ?? "") + "'></div>"
+                + "<div><input id='percentInput' type='number' step='0.0001' min='0' value='" + esc(data.percent ?? "") + "'></div>"
+                + "<div>" + dropdownHtml("calcInput", "calcDropdown", "calcValue", data.calculation || "Percent", "Select...") + "</div>"
+                + "<div>" + dropdownHtml("activeInput", "activeDropdown", "activeValue", data.active || "Y", "Select...") + "</div>"
+                + "<div><input id='applicableInput' type='text' value='" + esc(data.applicable_on || "") + "'></div>"
+                + "<div><input id='postingInput' type='text' value='" + esc(data.posting_ac || "") + "'></div>"
+                + "<div><input id='outerInput' type='text' value='" + esc(data.outer_column || "") + "'></div>"
+                + "<div><input id='cstInput' type='text' value='" + esc(data.cst_vat_other || "") + "'></div>"
+                + "<div><input id='siInput' type='text' value='" + esc(data.si || "") + "'></div>"
+                + "<div><input id='fromInput' type='number' step='0.0001' value='" + esc(data.from_val ?? "") + "'></div>"
+                + "<div><input id='endInput' type='number' step='0.0001' value='" + esc(data.end_val ?? "") + "'></div>"
+                + "<div>" + dropdownHtml("rateEditInput", "rateEditDropdown", "rateEditValue", data.rate_edt || "Y", "Select...") + "</div>"
+                + "<div>" + dropdownHtml("amtEditInput", "amtEditDropdown", "amtEditValue", data.amt_edt || "Y", "Select...") + "</div>"
+                + "<div>" + dropdownHtml("amtRoundInput", "amtRoundDropdown", "amtRoundValue", data.amt_round || "Y", "Select...") + "</div>"
+                + "<div><input id='divisionInput' type='text' value='" + esc(data.division_name || "") + "'></div>"
+                + "</div>";
+        }
+
+        let html = "";
+        if (currentMode === "add") {
+            html += editRowHtml(null, -1, true);
+        }
+
+        if (rows.length) {
+            html += rows.map(function (r, index) {
+                if (currentMode === "modify" && r.id === activeRowId) {
+                    return editRowHtml(r, index, false);
+                }
+                const active = r.id === activeRowId ? "active" : "";
+                return "<div class='grid-row " + active + "' data-row-id='" + esc(r.id) + "'>"
+                    + "<div>" + (index + 1) + "</div>"
+                    + "<div>" + esc(r.description || "") + "</div>"
+                    + "<div>" + esc(r.parameter_type || "") + "</div>"
+                    + "<div>" + esc(r.order_no ?? "") + "</div>"
+                    + "<div>" + esc(r.percent ?? "") + "</div>"
+                    + "<div>" + esc(r.calculation || "") + "</div>"
+                    + "<div>" + esc(r.active || "") + "</div>"
+                    + "<div>" + esc(r.applicable_on || "") + "</div>"
+                    + "<div>" + esc(r.posting_ac || "") + "</div>"
+                    + "<div>" + esc(r.outer_column || "") + "</div>"
+                    + "<div>" + esc(r.cst_vat_other || "") + "</div>"
+                    + "<div>" + esc(r.si || "") + "</div>"
+                    + "<div>" + esc(r.from_val ?? "") + "</div>"
+                    + "<div>" + esc(r.end_val ?? "") + "</div>"
+                    + "<div>" + esc(r.rate_edt || "") + "</div>"
+                    + "<div>" + esc(r.amt_edt || "") + "</div>"
+                    + "<div>" + esc(r.amt_round || "") + "</div>"
+                    + "<div>" + esc(r.division_name || "") + "</div>"
+                    + "</div>";
+            }).join("");
+        }
+
+        if (!html) {
+            gridBody.innerHTML = "<div class='grid-row empty'><div>No rows found</div></div>";
+            return;
+        }
+
+        gridBody.innerHTML = html;
+        syncEditRefs();
+
+        gridBody.querySelectorAll(".grid-row[data-row-id]").forEach(function (row) {
+            row.addEventListener("click", function () {
+                if (currentMode !== "display") return;
+                selectRow(Number(this.dataset.rowId || 0));
+            });
+        });
+    }
+
+    function selectRow(rowId) {
+        const module = getActiveModule();
+        if (!module) return;
+        const exists = module.rows.find(function (r) { return r.id === rowId; });
+        if (!exists) return;
+        activeRowId = rowId;
+        module.activeRowId = rowId;
+        renderGridRows();
+    }
+
+    function readEditorRow() {
+        if (!descInput) return null;
+        return {
+            description: descInput.value.trim(),
+            parameter_type: (paramTypeHidden && paramTypeHidden.value) || (paramTypeInput ? paramTypeInput.value : "") || "Add",
+            order_no: orderInput.value.trim(),
+            percent: percentInput.value.trim(),
+            calculation: (calcHidden && calcHidden.value) || (calcInput ? calcInput.value : "") || "Percent",
+            active: (activeHidden && activeHidden.value) || (activeInput ? activeInput.value : "") || "Y",
+            applicable_on: applicableInput.value.trim(),
+            posting_ac: postingInput.value.trim(),
+            outer_column: outerInput.value.trim(),
+            cst_vat_other: cstInput.value.trim(),
+            si: siInput.value.trim(),
+            from_val: fromInput.value.trim(),
+            end_val: endInput.value.trim(),
+            rate_edt: (rateEditHidden && rateEditHidden.value) || (rateEditInput ? rateEditInput.value : "") || "Y",
+            amt_edt: (amtEditHidden && amtEditHidden.value) || (amtEditInput ? amtEditInput.value : "") || "Y",
+            amt_round: (amtRoundHidden && amtRoundHidden.value) || (amtRoundInput ? amtRoundInput.value : "") || "Y",
+            division_name: divisionInput.value.trim()
+        };
+    }
+
+    function validateRow(row) {
+        if (!row) return false;
+        if (!row.description) {
+            if (window.showInlineRequired) { window.showInlineRequired(descInput, "Required"); }
+            descInput.focus();
+            return false;
+        }
+        return true;
+    }
+
+    function handleAddAction() {
+        const module = getActiveModule();
+        if (!module) return;
+        preEditRowId = activeRowId;
+        setMode("add");
+        renderGridRows();
+    }
+
+    function handleModifyAction() {
+        const module = getActiveModule();
+        if (!module) return;
+        if (!activeRowId) {
+            alert("Select a row to modify");
+            return;
+        }
+        preEditRowId = activeRowId;
+        setMode("modify");
+        renderGridRows();
+    }
+
+    async function saveRow() {
+        const module = getActiveModule();
+        if (!module) return;
+        const data = readEditorRow();
+        if (!validateRow(data)) return;
+
+        const confirmFn = currentMode === "modify"
+            ? (window.confirmEdit || function (msg) { return Promise.resolve(window.confirm(msg)); })
+            : (window.confirmAdd || function (msg) { return Promise.resolve(window.confirm(msg)); });
+        const confirmMessage = currentMode === "modify"
+            ? "Do you want to edit this?"
+            : "Are you sure you want to add this?";
+        const ok = await confirmFn(confirmMessage);
+        if (!ok) return;
+
+        const fd = new FormData();
+        fd.set("module_id", String(module.id));
+        fd.set("description", data.description);
+        fd.set("parameter_type", data.parameter_type);
+        fd.set("order_no", data.order_no);
+        fd.set("percent_value", data.percent);
+        fd.set("calculation", data.calculation);
+        fd.set("active", data.active);
+        fd.set("applicable_on", data.applicable_on);
+        fd.set("posting_ac", data.posting_ac);
+        fd.set("outer_column", data.outer_column);
+        fd.set("cst_vat_other", data.cst_vat_other);
+        fd.set("si_flag", data.si);
+        fd.set("from_value", data.from_val);
+        fd.set("end_value", data.end_val);
+        fd.set("rate_edt", data.rate_edt);
+        fd.set("amt_edt", data.amt_edt);
+        fd.set("amt_round", data.amt_round);
+        fd.set("division_name", data.division_name);
+
+        let url = "add_row.php";
+        if (currentMode === "modify") {
+            url = "update_row.php";
+            fd.set("setup_id", String(activeRowId));
+        }
+
+        const res = await fetch(appRoot + "api/add_less_parameter/" + url, {
+            method: "POST",
+            body: fd
+        });
+        const result = await res.json();
+        if (!result || result.status !== "success") {
+            alert((result && result.message) || "Request failed");
+            return;
+        }
+
+        await loadRowsForModule(module);
+        if (currentMode === "add" && result.setup_id) {
+            activeRowId = Number(result.setup_id);
+            module.activeRowId = activeRowId;
+        }
+        if (currentMode === "modify") {
+            module.activeRowId = activeRowId;
+        }
+
+        setMode("display");
+        renderGridRows();
+    }
+
+    function cancelEditMode() {
+        setMode("display");
+        if (preEditRowId) {
+            activeRowId = preEditRowId;
+            const module = getActiveModule();
+            if (module) module.activeRowId = activeRowId;
+        }
+        preEditRowId = null;
+        renderGridRows();
+    }
+
+    async function deleteRow() {
+        const module = getActiveModule();
+        if (!module) return;
+        if (!activeRowId) {
+            alert("Select a row to delete");
+            return;
+        }
+        const row = module.rows.find(function (r) { return r.id === activeRowId; });
+        const rowLabel = row ? (row.description || ("Row " + activeRowId)) : ("Row " + activeRowId);
+        const deleteBtn = document.getElementById("deleteBtn");
+        if (deleteBtn) deleteBtn.dataset.label = rowLabel;
+        const moduleName = (module && module.name) ? module.name : (entryModuleInput.value || "");
+        const activeModuleEl = moduleList.querySelector(".module-row.active");
+        const prevLabel = activeModuleEl ? activeModuleEl.dataset.label : undefined;
+        if (activeModuleEl) activeModuleEl.dataset.label = rowLabel;
+        const confirmFn = window.confirmDelete || function (msg) { return Promise.resolve(window.confirm(msg)); };
+        const ok = await confirmFn("Delete selected row?\n\n" + moduleName);
+        if (activeModuleEl) {
+            if (prevLabel === undefined) delete activeModuleEl.dataset.label;
+            else activeModuleEl.dataset.label = prevLabel;
+        }
+        if (deleteBtn) deleteBtn.removeAttribute("data-label");
+        if (!ok) return;
+
+        const body = new URLSearchParams();
+        body.set("setup_id", String(activeRowId));
+        const res = await fetch(appRoot + "api/add_less_parameter/delete_row.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+        const result = await res.json();
+        if (!result || result.status !== "success") {
+            alert((result && result.message) || "Request failed");
+            return;
+        }
+
+        await loadRowsForModule(module);
+        activeRowId = null;
+        ensureActiveRow(module);
+        renderGridRows();
+    }
+
+    document.getElementById("addBtn").addEventListener("click", handleAddAction);
+    document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+    document.getElementById("deleteBtn").addEventListener("click", deleteRow);
+    document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+    document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = appRoot + "index.html"; });
+    document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+    document.getElementById("saveBtn").addEventListener("click", saveRow);
+
+    document.addEventListener("keydown", function (e) {
+        if (currentMode !== "display") return;
+        if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+        if (document.activeElement && document.activeElement.id === "filterInput") return;
+        const rows = Array.from(moduleList.querySelectorAll(".module-row")).filter(function (r) {
+            return r.dataset && r.dataset.id;
+        });
+        if (!rows.length) return;
+        let index = rows.findIndex(function (r) { return Number(r.dataset.id) === Number(activeModuleId); });
+        if (index === -1) index = 0;
+        if (e.key === "ArrowDown" && index < rows.length - 1) index += 1;
+        if (e.key === "ArrowUp" && index > 0) index -= 1;
+        const next = rows[index];
+        if (next) {
+            e.preventDefault();
+            selectModule(Number(next.dataset.id));
+            next.scrollIntoView({ block: "nearest" });
+        }
+    });
+
+    (async function init() {
+        await loadModules();
+    })();
+</script>
+</body>
+</html>
+

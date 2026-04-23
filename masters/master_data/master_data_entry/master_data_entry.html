@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Master Data Entry | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+
+<script>
+const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () {
+    const res = await fetch(appRoot + "api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 26px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 44px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 10px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel { display: flex; flex-direction: column; }
+
+.left-panel .label {
+    font-size: 18px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 34px;
+    padding: 6px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 8px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 64px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.item-row {
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.item-row:hover { background: rgba(0, 0, 0, 0.08); }
+.item-row.active { background: #0074d9; color: #fff; }
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 8px;
+    padding: 2px 8px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.entry-form {
+    border: 1px solid #d7d7d7;
+    background: #efefef;
+    padding: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 170px 220px 120px minmax(0, 1fr) 120px 200px;
+    gap: 8px 10px;
+    align-items: center;
+}
+
+.form-grid label {
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #2d2d2d;
+}
+
+.form-grid input,
+.form-grid select {
+    width: 100%;
+    height: 28px;
+    padding: 4px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+}
+
+.inline-options {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: #f2a7aa;
+    border: 1px solid #d08f91;
+    padding: 6px 10px;
+}
+
+.inline-options label {
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.inline-options input { margin: 0; }
+
+.proceed-btn {
+    height: 30px;
+    padding: 4px 12px;
+    border: 2px solid #c9c9c9;
+    background: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.table-box {
+    border: 1px solid #3a3a3a;
+    background: #b9b9b9;
+    margin-top: 8px;
+}
+
+.table-head {
+    display: grid;
+    grid-template-columns: 70px 1.4fr 0.8fr 120px;
+    background: #fff;
+    border-bottom: 1px solid #3a3a3a;
+}
+
+.table-head div {
+    padding: 4px 6px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    border-right: 1px solid #3a3a3a;
+}
+
+.table-head div:last-child { border-right: 0; }
+
+.table-body {
+    min-height: 260px;
+    max-height: 260px;
+    overflow: auto;
+}
+
+.action-row {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.btn {
+    min-width: 104px;
+    padding: 4px 10px;
+    height: 32px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.btn.primary, .btn.danger {
+    background: #ea7ce8;
+    color: #000;
+    border-color: #efc9f0;
+}
+
+.action-row.hidden { display: none; }
+
+.right-panel.display-mode input,
+.right-panel.display-mode select,
+.right-panel.display-mode textarea {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    pointer-events: none;
+    user-select: none;
+}
+
+@media (max-width: 1220px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Master Data Entry</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search item...">
+<div class="list-wrap">
+<div class="list-head">Name</div>
+<div id="entryList"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="entryForm" autocomplete="off" class="entry-form">
+<div class="form-grid">
+<label for="zone_area">Enter Zone/Area</label>
+<input id="zone_area" type="text">
+<label for="group_select" style="text-align:center;">Select Group</label>
+<select id="group_select"></select>
+<div class="inline-options">
+<label><input type="radio" name="fill_flag" value="ALL" checked>All</label>
+<label><input type="radio" name="fill_flag" value="EMPTY">Empty</label>
+<label><input type="radio" name="fill_flag" value="FILL">Fill</label>
+</div>
+<div class="inline-options">
+<label><input type="radio" name="party_flag" value="BYR" checked>BYR</label>
+<label><input type="radio" name="party_flag" value="SLR">SLR</label>
+<label><input type="radio" name="party_flag" value="BOTH">BOTH</label>
+</div>
+<button type="button" class="proceed-btn" id="proceedBtn">Proceed</button>
+</div>
+
+<div class="table-box">
+<div class="table-head">
+<div>Sno.</div>
+<div>Account Name</div>
+<div>Station</div>
+<div>(O)</div>
+</div>
+<div class="table-body" id="entryTableBody"></div>
+</div>
+</form>
+
+<div id="displayButtons" class="action-row">
+<button class="btn" type="button" id="modifyBtn">&#128221; F3-Modify</button>
+<button class="btn" type="button" id="exitBtn">&#10060; Esc-Exit</button>
+</div>
+
+<div id="addModeButtons" class="action-row hidden">
+<button class="btn danger" type="button" id="cancelBtn">&#10060; Esc-Cancel</button>
+<button class="btn primary" type="button" id="saveBtn">&#128190; F6-Save</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let activeEntryKey = null;
+let currentMode = "display";
+const entryItems = [
+    "(O)", "C/O", "Company Group", "CST", "Email", "Email Req.", "GST", "Mob",
+    "Opening Balance", "PAN", "Party Type", "Proprietor", "SMS A/C", "SMS OW",
+    "SMS Req.", "Station", "TIN", "Vehicle Required", "Zone/Area"
+];
+
+const filterInput = document.getElementById("filterInput");
+const entryList = document.getElementById("entryList");
+const entryForm = document.getElementById("entryForm");
+const modeTag = document.getElementById("modeTag");
+const rightPanel = document.querySelector(".right-panel");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const groupSelect = document.getElementById("group_select");
+
+function esc(v) {
+    return (v ?? "").toString().replace(/[&<>"']/g, function (m) {
+        return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m];
+    });
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    const isDisplay = mode === "display";
+    displayButtons.classList.toggle("hidden", !isDisplay);
+    addModeButtons.classList.toggle("hidden", isDisplay);
+}
+
+function setFormEditable(editable) {
+    const fields = entryForm.querySelectorAll("input, select, textarea, button");
+    fields.forEach(function (field) {
+        if (editable) field.removeAttribute("tabindex");
+        else field.setAttribute("tabindex", "-1");
+    });
+}
+
+function renderEntryList() {
+    const keyword = (filterInput.value || "").trim().toLowerCase();
+    const rows = entryItems.filter(function (name) {
+        return !keyword || name.toLowerCase().includes(keyword);
+    });
+    let selectedKey = activeEntryKey || "";
+    if (!selectedKey || rows.indexOf(selectedKey) === -1) {
+        if (rows.length) selectedKey = rows[0];
+        activeEntryKey = selectedKey;
+    }
+    entryList.innerHTML = rows.map(function (name) {
+        const active = name === selectedKey ? "active" : "";
+        return "<div class='item-row " + active + "' data-id='" + esc(name) + "'>" + esc(name) + "</div>";
+    }).join("");
+    entryList.querySelectorAll(".item-row").forEach(function (row) {
+        row.addEventListener("click", function () {
+            activeEntryKey = this.dataset.id || "";
+            renderEntryList();
+        });
+    });
+}
+
+function loadGroups() {
+    return fetch(appRoot + "api/group/get_group.php")
+        .then(res => res.json())
+        .then(data => {
+            const list = Array.isArray(data) ? data : [];
+            const options = ["<option value=''>Select group</option>"];
+            options.push(list.map(function (g) {
+                return "<option value='" + esc(g.group_id) + "'>" + esc(g.group_name || "") + "</option>";
+            }).join(""));
+            groupSelect.innerHTML = options.join("");
+        });
+}
+
+filterInput.addEventListener("input", renderEntryList);
+
+document.addEventListener("keydown", function (e) {
+    if (!rightPanel.classList.contains("display-mode")) return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const rows = Array.from(entryList.querySelectorAll(".item-row")).filter(function (r) {
+        if (!r.dataset || !r.dataset.id) return false;
+        if (r.offsetParent === null) return false;
+        return true;
+    });
+    if (!rows.length) return;
+    let currentIndex = rows.findIndex(function (row) {
+        return row.dataset.id === activeEntryKey;
+    });
+    if (currentIndex === -1) currentIndex = 0;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentIndex < rows.length - 1) currentIndex += 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentIndex > 0) currentIndex -= 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+});
+
+const modifyBtn = document.getElementById("modifyBtn");
+const exitBtn = document.getElementById("exitBtn");
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+
+if (modifyBtn) modifyBtn.addEventListener("click", function () {
+    setMode("modify");
+    setFormEditable(true);
+});
+if (exitBtn) exitBtn.addEventListener("click", function () { window.location.href = appRoot + "index.html"; });
+if (saveBtn) saveBtn.addEventListener("click", function () { setMode("display"); setFormEditable(false); });
+if (cancelBtn) cancelBtn.addEventListener("click", function () { setMode("display"); setFormEditable(false); });
+
+(async function init() {
+    await loadGroups();
+    renderEntryList();
+    setMode("display");
+    setFormEditable(false);
+})();
+</script>
+</body>
+</html>

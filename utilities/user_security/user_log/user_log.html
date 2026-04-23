@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <base href="../../../">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Log | SoftBrokerage</title>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="global-style.css?v=2">
+    <script>
+        (async function () {
+            const res = await fetch("api/check_auth.php");
+            const data = await res.json();
+            if (!data.logged_in) window.location.replace("login.html");
+        })();
+    </script>
+    <script src="global-nav.js" defer></script>
+    <style>
+        .shell {
+            max-width: 1100px;
+            margin: 26px auto;
+            padding: 30px;
+            border: 1px solid #cfcfcf;
+            border-radius: 10px;
+            background: #dcdcdc;
+        }
+        .title {
+            margin: 0;
+            text-align: center;
+            font-size: 46px;
+            font-weight: 700;
+            color: #178f3e;
+            letter-spacing: 0.02em;
+        }
+    </style>
+<script src="delete-mode.js" defer data-delete-mode="1"></script>
+<script src="edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+    <main class="shell">
+        <h1 class="title">User Log</h1>
+    </main>
+</body>
+</html>

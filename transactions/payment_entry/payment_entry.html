@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="../../">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Entry | SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<script>
+const appRoot = (function () {
+    const path = String(location.pathname || "").replace(/\\/g, "/");
+    const lower = path.toLowerCase();
+    const marker = "/brokerapp/";
+    const idx = lower.indexOf(marker);
+    if (idx !== -1) return location.origin + path.slice(0, idx + marker.length);
+    return location.origin + "/";
+})();
+
+(async function () {
+    const res = await fetch(appRoot + "api/check_auth.php", { cache: "no-store" });
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="global-nav.js" defer></script>
+<script src="global-keyboard.js" defer data-global-keyboard="1"></script>
+<style>
+body { color:#000; }
+.payment-content { padding: 6px 10px 8px; }
+.payment-feature { max-width:none; width:100%; margin:0; padding:8px 10px 10px; border-radius:18px; }
+.payment-shell { border:1px solid #ef3a3a; background:#fff; padding:6px 10px 10px; font-family:"Times New Roman",serif; }
+.payment-header { position:relative; min-height:34px; margin-bottom:4px; }
+.payment-title { margin:0; text-align:center; font-size:22px; font-weight:400; color:#129a2a; line-height:1; }
+.mode-chip { position:absolute; right:0; top:0; min-width:152px; padding:2px 10px; border:1px solid #d9a0ab; background:#f7bcc8; text-align:center; font-size:12px; font-weight:700; }
+.payment-panel { border:1px solid #ddd; padding:10px 10px 8px; }
+.top-layout { display:grid; grid-template-columns: 590px 1fr; gap:18px; align-items:start; }
+.top-left { display:grid; grid-template-columns: 96px 120px 74px 280px; gap:6px; align-items:center; }
+.top-left .full-row { grid-column: 1 / -1; display:grid; grid-template-columns: 96px 1fr; gap:6px; align-items:center; }
+.field-label { font-size:12px; }
+.field-input, .field-select { width:100%; min-height:28px; border:1px solid #a5a5a5; background:#fff; padding:0 6px; font-family:"Times New Roman",serif; font-size:12px; color:#000; box-sizing:border-box; }
+.field-input.readonly { background:#e8e8e8; }
+.inline-row { display:flex; gap:4px; align-items:center; }
+.inline-row .book { width:116px; }
+.inline-row .chr { width:88px; }
+.inline-row .num { width:62px; }
+.helper-line { display:grid; grid-template-columns: 1fr 1.35fr; gap:16px; align-items:center; margin-top:8px; }
+.helper-strip { display:inline-block; padding:2px 10px; border:1px solid #d7756c; background:#f39a94; color:#7d0e0e; font-size:11px; font-weight:700; }
+.narration-row { display:grid; grid-template-columns: 112px 1fr; gap:8px; align-items:center; }
+.param-box { border:1px solid #666; min-height:152px; background:#fff; }
+.erp-grid { width:100%; border-collapse:collapse; table-layout:fixed; }
+.erp-grid th,.erp-grid td { border:1px solid #1ba7af; padding:2px 4px; font-size:11px; }
+.erp-grid th { background:#e4b06c; text-align:left; font-weight:400; }
+.erp-grid tbody tr:nth-child(odd) { background:#b9f3f6; }
+.erp-grid tbody tr.active-row { background:#0d83d8; color:#fff; font-weight:700; }
+.erp-grid tbody tr.active-row td,.erp-grid tbody tr.active-row input { color:#fff; }
+.grid-wrap { margin-top:10px; border:1px solid #666; min-height:330px; background:#fff; }
+.grid-input { width:100%; border:none; background:transparent; color:inherit; font-family:"Times New Roman",serif; font-size:11px; outline:none; padding:0; }
+.rec-strip { display:grid; grid-template-columns: 1fr 124px 80px 82px 124px 80px; gap:6px; align-items:center; margin-top:4px; }
+.rec-label { color:#ff2020; font-size:11px; font-weight:700; text-align:right; }
+.rec-box { min-height:22px; border:1px solid #989898; background:#ececec; padding:2px 5px; font-size:11px; font-weight:700; text-align:right; box-sizing:border-box; }
+.remarks-row { display:grid; grid-template-columns: 96px 1fr; gap:8px; align-items:center; margin-top:12px; }
+.button-row { display:grid; grid-template-columns: repeat(8, minmax(92px, 1fr)); gap:4px; margin-top:10px; }
+.erp-btn { width:100%; height:30px; border:1px solid #f2c7ff; background:#d96be0; color:#000; font-family:"Times New Roman",serif; font-size:11px; font-weight:700; box-shadow: inset 0 0 0 1px #fff; }
+.param-grid-input { width:100%; border:none; background:transparent; font-family:"Times New Roman",serif; font-size:11px; color:inherit; outline:none; padding:0; }
+@media (max-width: 1420px) {
+    .top-layout { grid-template-columns:1fr; }
+    .button-row { grid-template-columns: repeat(4, minmax(92px,1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="content payment-content">
+    <div class="feature-box payment-feature">
+        <div class="payment-shell">
+            <div class="payment-header">
+                <h1 class="payment-title">Payment Entry</h1>
+                <div class="mode-chip">Display Mode</div>
+            </div>
+
+            <div class="payment-panel">
+                <div class="top-layout">
+                    <div>
+                        <div class="top-left">
+                            <div class="field-label">Entry Date</div>
+                            <input id="entryDate" class="field-input" type="date">
+                            <div class="field-label">DiviSion</div>
+                            <input id="divisionName" class="field-input readonly" type="text" readonly>
+
+                            <div class="field-label">Ref No.</div>
+                            <div class="inline-row">
+                                <select id="bookCode" class="field-select book">
+                                    <option value="PAY">PAY</option>
+                                </select>
+                                <input id="entryNo" class="field-input num" type="number" min="1">
+                                <input id="entryChr" class="field-input chr" type="text" value="A">
+                            </div>
+                            <div></div>
+                            <div></div>
+
+                            <div class="full-row">
+                                <div class="field-label">Buyer</div>
+                                <input id="buyerName" class="field-input" type="text">
+                            </div>
+
+                            <div class="full-row">
+                                <div class="field-label">Seller</div>
+                                <input id="sellerName" class="field-input" type="text">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="param-box">
+                            <table class="erp-grid" id="paramTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width:46px;">SNO.</th>
+                                        <th>PARAMETER</th>
+                                        <th style="width:74px;">RATE</th>
+                                        <th style="width:110px;">AMOUNT</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="helper-line">
+                    <div class="helper-strip">A - Add E - Edit D - Delete F1 - Move Back</div>
+                    <div class="narration-row">
+                        <div class="field-label">Narration</div>
+                        <input id="narration" class="field-input" type="text">
+                    </div>
+                </div>
+
+                <div class="grid-wrap">
+                    <table class="erp-grid" id="billTable">
+                        <thead>
+                            <tr>
+                                <th style="width:38px;">SNO</th>
+                                <th style="width:84px;">DATE</th>
+                                <th style="width:86px;">BILL-NO.</th>
+                                <th style="width:220px;">SELLER</th>
+                                <th style="width:120px;">SELLER-CITY</th>
+                                <th style="width:104px;">BILL-AMT</th>
+                                <th style="width:104px;">BAL-AMT</th>
+                                <th style="width:104px;">AMOUNT</th>
+                                <th style="width:88px;">EXP-AMT</th>
+                                <th>NET-AMT</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="rec-strip">
+                    <div></div>
+                    <div class="rec-label">Rec Amt</div>
+                    <div id="recAmt" class="rec-box">0</div>
+                    <div class="rec-label">Net Amt</div>
+                    <div id="netAmt" class="rec-box">0</div>
+                    <div></div>
+                </div>
+
+                <div class="remarks-row">
+                    <div class="field-label">Remarks</div>
+                    <input id="remarks" class="field-input" type="text">
+                </div>
+
+                <div class="button-row">
+                    <button id="addBtn" class="erp-btn" type="button">F2-Add</button>
+                    <button id="modifyBtn" class="erp-btn" type="button">F3-Modify</button>
+                    <button id="deleteBtn" class="erp-btn" type="button">F5-Delete</button>
+                    <button id="printBtn" class="erp-btn" type="button">F7-Print</button>
+                    <button id="exitBtn" class="erp-btn" type="button">Esc-Exit</button>
+                    <button id="topBtn" class="erp-btn" type="button">F4 - Top</button>
+                    <button id="bottomBtn" class="erp-btn" type="button">F8 - Bot</button>
+                    <button id="findBtn" class="erp-btn" type="button">F - Find</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const divisionName = document.getElementById("divisionName");
+const entryDate = document.getElementById("entryDate");
+const recAmt = document.getElementById("recAmt");
+const netAmt = document.getElementById("netAmt");
+const billTable = document.getElementById("billTable").tBodies[0];
+const paramTable = document.getElementById("paramTable").tBodies[0];
+let activeBillRow = 0;
+
+function selectedDivisionName() {
+    return document.body.dataset.selectedDivisionName || document.body.dataset.selectedCompanyName || "";
+}
+
+function money(value) {
+    return Number(value || 0).toFixed(2);
+}
+
+function displayDate(value) {
+    if (!value) return "";
+    const parts = String(value).split("-");
+    return parts.length === 3 ? [parts[2], parts[1], parts[0]].join("/") : value;
+}
+
+function activateBillRow(index) {
+    activeBillRow = index;
+    Array.from(billTable.rows).forEach(function (row, rowIndex) {
+        row.classList.toggle("active-row", rowIndex === index);
+    });
+}
+
+function recalcPaymentTotals() {
+    let recTotal = 0;
+    let netTotal = 0;
+    Array.from(billTable.rows).forEach(function (row) {
+        recTotal += Number(row.querySelector(".amount").value || 0);
+        netTotal += Number(row.querySelector(".netamt").value || 0);
+    });
+    recAmt.textContent = recTotal ? money(recTotal).replace(/\.00$/, "") : "0";
+    netAmt.textContent = netTotal ? money(netTotal).replace(/\.00$/, "") : "0";
+}
+
+function addBillRow(seed) {
+    const row = seed || {};
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+        "<td class='sno'></td>" +
+        "<td><input class='grid-input readonly' type='text' value='" + (row.date || displayDate(entryDate.value)) + "' readonly></td>" +
+        "<td><input class='grid-input billno' type='text' value='" + (row.billNo || "") + "'></td>" +
+        "<td><input class='grid-input seller' type='text' value='" + (row.seller || document.getElementById('sellerName').value || "") + "'></td>" +
+        "<td><input class='grid-input city' type='text' value='" + (row.city || "") + "'></td>" +
+        "<td><input class='grid-input billamt' type='number' value='" + money(row.billAmt || 0) + "'></td>" +
+        "<td><input class='grid-input balamt' type='number' value='" + money(row.balAmt || 0) + "'></td>" +
+        "<td><input class='grid-input amount' type='number' value='" + money(row.amount || 0) + "'></td>" +
+        "<td><input class='grid-input expamt' type='number' value='" + money(row.expAmt || 0) + "'></td>" +
+        "<td><input class='grid-input netamt' type='number' value='" + money(row.netAmt || 0) + "' readonly></td>";
+    billTable.appendChild(tr);
+
+    tr.addEventListener("click", function () {
+        activateBillRow(Array.from(billTable.rows).indexOf(tr));
+    });
+
+    const amount = tr.querySelector(".amount");
+    const expAmt = tr.querySelector(".expamt");
+    const netAmtCell = tr.querySelector(".netamt");
+
+    function recalc() {
+        netAmtCell.value = money(Number(amount.value || 0) - Number(expAmt.value || 0));
+        recalcPaymentTotals();
+    }
+
+    amount.addEventListener("input", recalc);
+    expAmt.addEventListener("input", recalc);
+    Array.from(billTable.rows).forEach(function (rowItem, index) {
+        rowItem.querySelector(".sno").textContent = index + 1;
+    });
+    activateBillRow(Math.max(0, billTable.rows.length - 1));
+    recalc();
+}
+
+function addParamRow(seed) {
+    const row = seed || {};
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+        "<td class='sno'></td>" +
+        "<td><input class='param-grid-input parameter' type='text' value='" + (row.parameter || "") + "'></td>" +
+        "<td><input class='param-grid-input rate' type='number' value='" + money(row.rate || 0) + "'></td>" +
+        "<td><input class='param-grid-input amount' type='number' value='" + money(row.amount || 0) + "'></td>";
+    paramTable.appendChild(tr);
+    Array.from(paramTable.rows).forEach(function (rowItem, index) {
+        rowItem.querySelector(".sno").textContent = index + 1;
+    });
+}
+
+function resetForm() {
+    entryDate.value = new Date().toISOString().split("T")[0];
+    document.getElementById("entryNo").value = "";
+    document.getElementById("entryChr").value = "A";
+    document.getElementById("buyerName").value = "";
+    document.getElementById("sellerName").value = "";
+    document.getElementById("narration").value = "";
+    document.getElementById("remarks").value = "";
+    billTable.innerHTML = "";
+    paramTable.innerHTML = "";
+    addBillRow();
+    addParamRow();
+    recalcPaymentTotals();
+}
+
+document.getElementById("addBtn").addEventListener("click", resetForm);
+document.getElementById("modifyBtn").addEventListener("click", function () {
+    const row = billTable.rows[activeBillRow] || billTable.rows[0];
+    if (row) row.querySelector(".billno").focus();
+});
+document.getElementById("deleteBtn").addEventListener("click", function () {
+    const row = billTable.rows[activeBillRow];
+    if (!row) return;
+    row.remove();
+    Array.from(billTable.rows).forEach(function (rowItem, index) {
+        rowItem.querySelector(".sno").textContent = index + 1;
+    });
+    activateBillRow(Math.max(0, Math.min(activeBillRow, billTable.rows.length - 1)));
+    recalcPaymentTotals();
+});
+document.getElementById("printBtn").addEventListener("click", function () {
+    alert("Print will be added after payment posting/report wiring.");
+});
+document.getElementById("exitBtn").addEventListener("click", function () {
+    location.href = appRoot + "index.html";
+});
+document.getElementById("topBtn").addEventListener("click", function () {
+    activateBillRow(0);
+});
+document.getElementById("bottomBtn").addEventListener("click", function () {
+    if (billTable.rows.length) activateBillRow(billTable.rows.length - 1);
+});
+document.getElementById("findBtn").addEventListener("click", function () {
+    alert("Find/load flow will be added after payment backend is wired.");
+});
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "F2") { event.preventDefault(); resetForm(); }
+    else if (event.key === "F3") { event.preventDefault(); const row = billTable.rows[activeBillRow] || billTable.rows[0]; if (row) row.querySelector(".billno").focus(); }
+    else if (event.key === "F4") { event.preventDefault(); activateBillRow(0); }
+    else if (event.key === "F8") { event.preventDefault(); if (billTable.rows.length) activateBillRow(billTable.rows.length - 1); }
+    else if (event.key === "Escape") { location.href = appRoot + "index.html"; }
+});
+
+(function init() {
+    divisionName.value = selectedDivisionName();
+    resetForm();
+})();
+</script>
+</body>
+</html>

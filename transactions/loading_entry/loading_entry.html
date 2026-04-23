@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="../../">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loading Entry | SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot = (function () {
+    const path = String(location.pathname || "").replace(/\\/g, "/");
+    const lower = path.toLowerCase();
+    const marker = "/brokerapp/";
+    const idx = lower.indexOf(marker);
+    if (idx !== -1) return location.origin + path.slice(0, idx + marker.length);
+    return location.origin + "/";
+})();
+
+(async function () {
+    const res = await fetch(appRoot + "api/check_auth.php", { cache: "no-store" });
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="global-nav.js" defer></script>
+<script src="global-keyboard.js" defer data-global-keyboard="1"></script>
+<style>
+body { color: #000; }
+.loading-content { padding: 6px 10px 8px; }
+.loading-feature { max-width: none; width: 100%; margin: 0; padding: 8px 10px 10px; border-radius: 18px; }
+.loading-shell { border: 1px solid #ef3a3a; background: #fff; padding: 4px 8px 8px; font-family: "Times New Roman", serif; color: #000; }
+.loading-headline { display: grid; grid-template-columns: 290px 1fr 180px; align-items: center; margin-bottom: 4px; }
+.sauda-banner { font-size: 12px; font-weight: 700; color: #e26b6b; }
+.loading-title { margin: 0; text-align: center; font-size: 23px; font-weight: 400; line-height: 1; color: #129a2a; }
+.mode-chip { justify-self: end; min-width: 156px; padding: 2px 10px; border: 1px solid #d9a0ab; background: #f7bcc8; text-align: center; font-size: 12px; font-weight: 700; }
+.loading-main { display: grid; grid-template-columns: 1fr 300px; gap: 8px; }
+.loading-left { min-width: 0; }
+.top-grid { display: grid; grid-template-columns: 86px 126px 74px 250px 168px 1fr; gap: 4px 6px; align-items: center; }
+.line-grid { display: grid; grid-template-columns: 86px 1fr 84px 1fr; gap: 4px 6px; align-items: center; margin-top: 4px; }
+.line-grid.single-right { grid-template-columns: 86px 1fr 170px; }
+.field-label { font-size: 12px; }
+.field-input, .field-select { width: 100%; min-height: 24px; border: 1px solid #a5a5a5; background: #fff; padding: 0 5px; font-family: "Times New Roman", serif; font-size: 12px; color: #000; border-radius: 0; box-sizing: border-box; }
+.field-input.readonly { background: #e8e8e8; }
+.inline-row { display: flex; gap: 4px; align-items: center; }
+.inline-row .mini { width: 64px; }
+.inline-row .chr { width: 42px; }
+.inline-row .number { width: 58px; }
+.check-strip { display: flex; gap: 16px; align-items: center; font-size: 11px; font-weight: 700; }
+.check-strip label { display: inline-flex; gap: 5px; align-items: center; margin: 0; font-size: 11px; font-weight: 700; }
+.lookup-wrap { position: relative; }
+.lookup-menu { position: absolute; left: 0; right: 0; top: calc(100% + 1px); max-height: 180px; overflow-y: auto; background: #fff; border: 1px solid #1ba7af; box-shadow: 0 6px 18px rgba(0,0,0,.12); display: none; z-index: 80; }
+.lookup-item { padding: 3px 6px; cursor: pointer; font-size: 11px; }
+.lookup-item:hover { background: #b9f3f6; }
+.helper-strip { display: inline-block; margin: 4px 0 4px; padding: 1px 8px; border: 1px solid #d7756c; background: #f39a94; color: #7d0e0e; font-size: 11px; font-weight: 700; }
+.weight-box { min-height: 24px; padding: 2px 6px; border: 1px solid #9e9e9e; background: #f3f3f3; font-size: 12px; font-weight: 700; text-align: left; }
+.broker-box { border: 1px solid #e2d7bb; background: #fff8e8; padding: 4px 5px 5px; }
+.broker-title { margin: 0 0 4px; color: #d38d00; font-size: 12px; font-weight: 700; }
+.broker-row { display: grid; grid-template-columns: 40px 54px 54px 76px; gap: 4px; align-items: center; margin-top: 3px; }
+.broker-tag { font-size: 11px; font-weight: 700; color: #b16d00; }
+.grid-wrap { margin-top: 4px; border: 1px solid #666; min-height: 180px; background: #fff; }
+.erp-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.erp-grid th, .erp-grid td { border: 1px solid #1ba7af; padding: 2px 4px; font-size: 11px; }
+.erp-grid th { background: #e4b06c; text-align: left; font-weight: 400; }
+.erp-grid tbody tr:nth-child(odd) { background: #b9f3f6; }
+.erp-grid tbody tr.active-row { background: #0d83d8; color: #fff; font-weight: 700; }
+.erp-grid tbody tr.active-row td, .erp-grid tbody tr.active-row input { color: #fff; }
+.grid-input { width: 100%; border: none; background: transparent; color: inherit; font-family: "Times New Roman", serif; font-size: 11px; outline: none; padding: 0; }
+.totals-strip { display: grid; grid-template-columns: 130px 110px 80px 110px 1fr 110px 110px; gap: 6px; align-items: center; margin: 6px 0 4px; }
+.totals-label { font-size: 11px; font-weight: 700; color: #e26b6b; }
+.total-caption { font-size: 11px; font-weight: 700; color: #ff2020; text-align: right; }
+.total-box { min-height: 22px; border: 1px solid #9a9a9a; background: #ececec; padding: 2px 5px; font-size: 11px; font-weight: 700; text-align: right; box-sizing: border-box; }
+.pink-total { background: #f6b7c7; }
+.bottom-layout { display: grid; grid-template-columns: 1.15fr 250px 1fr; gap: 14px; margin-top: 4px; }
+.form-stack { display: grid; grid-template-columns: 132px 1fr 86px 1fr; gap: 4px 6px; align-items: center; }
+.form-stack.wide { grid-template-columns: 100px 1fr 86px 1fr; }
+.summary-stack { display: grid; grid-template-columns: 1fr 118px; gap: 4px 6px; align-items: center; }
+.summary-name { font-size: 11px; text-align: right; }
+.summary-name.strong { font-weight: 700; }
+.sub-check { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; font-weight: 700; }
+.remarks-row { display: grid; grid-template-columns: 104px 1fr; gap: 6px; align-items: center; margin-top: 6px; }
+.button-row { display: grid; grid-template-columns: repeat(9, minmax(90px, 1fr)); gap: 4px; margin-top: 6px; }
+.erp-btn { width: 100%; height: 28px; border: 1px solid #f2c7ff; background: #d96be0; color: #000; font-family: "Times New Roman", serif; font-size: 11px; font-weight: 700; box-shadow: inset 0 0 0 1px #fff; }
+.history-box { border: 1px solid #444; background: #fff; min-height: 170px; }
+.history-title { margin: 0; padding: 4px 6px; border-bottom: 1px solid #d9d9d9; background: #fff6df; color: #8c6000; font-size: 12px; font-weight: 700; }
+.history-box .erp-grid td, .history-box .erp-grid th { white-space: nowrap; }
+.right-stack { display: grid; gap: 8px; }
+@media (max-width: 1480px) {
+    .loading-main { grid-template-columns: 1fr; }
+    .button-row { grid-template-columns: repeat(5, minmax(90px, 1fr)); }
+}
+</style>
+</head>
+<body>
+<div class="content loading-content">
+    <div class="feature-box loading-feature">
+        <div class="loading-shell">
+            <div class="loading-headline">
+                <div id="saudaBanner" class="sauda-banner">Sauda No. -</div>
+                <h1 class="loading-title">Loading</h1>
+                <div id="modeChip" class="mode-chip">Display Mode</div>
+            </div>
+            <div class="loading-main">
+                <div class="loading-left">
+                    <div class="top-grid">
+                        <div class="field-label">Entry Date</div>
+                        <input id="entryDate" class="field-input" type="date">
+                        <div class="field-label">DiviSion</div>
+                        <input id="divisionName" class="field-input readonly" type="text" readonly>
+                        <div class="check-strip" style="grid-column: span 2;">
+                            <label><input id="brokerageRequired" type="checkbox"> Brokerage Req.</label>
+                            <label><input id="subBrokerRequired" type="checkbox"> Sub Broker</label>
+                        </div>
+
+                        <div class="field-label">Ref No.</div>
+                        <div class="inline-row">
+                            <select id="bookCode" class="field-select mini">
+                                <option value="LD001">LD001</option>
+                            </select>
+                            <input id="entryNo" class="field-input number" type="number" min="1">
+                            <input id="entryChr" class="field-input chr" type="text" value="A">
+                        </div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+
+                    <div class="line-grid">
+                        <div class="field-label">Buyer (LD)</div>
+                        <input id="buyerLdName" class="field-input readonly" type="text" readonly>
+                        <div class="field-label">Buyer (SD)</div>
+                        <input id="buyerSdName" class="field-input readonly" type="text" readonly>
+                    </div>
+
+                    <div class="line-grid">
+                        <div class="field-label">Seller (LD)</div>
+                        <input id="sellerLdName" class="field-input readonly" type="text" readonly>
+                        <div class="field-label">Seller (SD)</div>
+                        <input id="sellerSdName" class="field-input readonly" type="text" readonly>
+                    </div>
+
+                    <div class="line-grid single-right">
+                        <div class="field-label">Sub Broker</div>
+                        <div class="inline-row">
+                            <select id="subBrokerType" class="field-select" style="width:74px;">
+                                <option value="BYR">BYR</option>
+                                <option value="SLR">SLR</option>
+                            </select>
+                            <div class="lookup-wrap" style="flex:1;">
+                                <input id="subBrokerName" class="field-input" type="text" autocomplete="off">
+                                <input id="subBrokerId" type="hidden">
+                                <div id="subBrokerMenu" class="lookup-menu"></div>
+                            </div>
+                            <div class="helper-strip">A - Add E - Edit D - Delete F1 - Move Back</div>
+                        </div>
+                        <div id="weightSummary" class="weight-box">0.000 QTL</div>
+                    </div>
+
+                    <div class="grid-wrap">
+                        <table class="erp-grid" id="itemTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:46px;">SNO.</th>
+                                    <th style="width:180px;">SELLER NAME</th>
+                                    <th style="width:145px;">PRODUCT NAME</th>
+                                    <th style="width:92px;">BRAND</th>
+                                    <th style="width:60px;">QTY</th>
+                                    <th style="width:54px;">UNIT</th>
+                                    <th style="width:62px;">PACK</th>
+                                    <th style="width:74px;">WEIGHT</th>
+                                    <th style="width:54px;">UNIT</th>
+                                    <th style="width:72px;">RATE</th>
+                                    <th style="width:46px;">Q/W</th>
+                                    <th style="width:60px;">TERM</th>
+                                    <th>AMOUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="totals-strip">
+                        <div class="field-label">Bill No.</div>
+                        <input id="billNo" class="field-input" type="text">
+                        <div class="total-caption">DYS TOT</div>
+                        <div id="daysTotal" class="total-box pink-total">0.000</div>
+                        <div></div>
+                        <div id="totalQty" class="total-box">0</div>
+                        <div id="totalWeight" class="total-box">0.000</div>
+                    </div>
+
+                    <div class="bottom-layout">
+                        <div class="form-stack">
+                            <div class="field-label">Transport</div>
+                            <div class="lookup-wrap">
+                                <input id="transportName" class="field-input" type="text" autocomplete="off">
+                                <input id="transportId" type="hidden">
+                                <div id="transportMenu" class="lookup-menu"></div>
+                            </div>
+                            <div></div>
+                            <div></div>
+
+                            <div class="field-label">Vehicle No.</div>
+                            <input id="vehicleNo" class="field-input" type="text">
+                            <div class="field-label">Mobile</div>
+                            <input id="mobileNo" class="field-input" type="text">
+
+                            <div class="field-label">Challan No.</div>
+                            <input id="challanNo" class="field-input" type="text">
+                            <div class="field-label">Chl. Dt</div>
+                            <input id="challanDate" class="field-input" type="date">
+
+                            <div class="field-label">FR Rate</div>
+                            <div class="inline-row">
+                                <input id="frRate" class="field-input" type="number" step="0.01" value="0">
+                                <select id="frRateType" class="field-select" style="width:84px;">
+                                    <option value="Pack">Pack</option>
+                                    <option value="Qtl">Qtl</option>
+                                </select>
+                            </div>
+                            <div class="field-label">Freight</div>
+                            <input id="freightTotal" class="field-input readonly" type="text" readonly value="0.00">
+
+                            <div class="field-label">Diff. FR Rate</div>
+                            <input id="diffFrRate" class="field-input" type="number" step="0.01" value="0">
+                            <div class="field-label">Diff. Frt</div>
+                            <input id="diffFreight" class="field-input readonly" type="text" readonly value="0.00">
+
+                            <div class="field-label">Delv From</div>
+                            <input id="deliveryFrom" class="field-input" type="text">
+                            <div></div>
+                            <div></div>
+
+                            <div class="field-label">Delv To</div>
+                            <input id="deliveryTo" class="field-input" type="text">
+                            <div></div>
+                            <div></div>
+
+                            <div class="field-label">Cross. City</div>
+                            <input id="crossCity" class="field-input" type="text">
+                            <div></div>
+                            <div></div>
+
+                            <div class="field-label">Cross. Tpt.</div>
+                            <input id="crossTransport" class="field-input" type="text">
+                            <div></div>
+                            <div></div>
+                        </div>
+
+                        <div class="summary-stack">
+                            <div class="summary-name">Total FRT.</div>
+                            <div id="sumFreight" class="total-box">0.00</div>
+
+                            <div class="summary-name">Del. Chrgs.</div>
+                            <div id="sumDeliveryCharges" class="total-box">0.00</div>
+
+                            <div class="summary-name">Misc Chrgs.</div>
+                            <div id="sumMiscCharges" class="total-box">0.00</div>
+
+                            <div class="summary-name">Less Adv.</div>
+                            <div id="sumLessAdvance" class="total-box">0.00</div>
+
+                            <div class="summary-name">Less Misc</div>
+                            <div id="sumLessMisc" class="total-box">0.00</div>
+
+                            <div class="summary-name">Brokerage</div>
+                            <div id="sumBrokerage" class="total-box">0.00</div>
+
+                            <div class="summary-name strong">Net FRT.</div>
+                            <div id="sumNetFreight" class="total-box">0.00</div>
+
+                            <div></div>
+                            <label class="sub-check"><input id="addBrokerageFlag" type="checkbox"> Add Brokerage</label>
+                        </div>
+
+                        <div class="form-stack wide">
+                            <div class="total-caption" style="grid-column: 1 / span 2; text-align: center;">Prv. TPT Details</div>
+                            <div class="total-caption">Total</div>
+                            <div id="grandAmount" class="total-box">0.00</div>
+
+                            <div class="field-label">Transport</div>
+                            <input id="prevTransport" class="field-input" type="text">
+                            <div class="field-label">Veh. No.</div>
+                            <input id="prevVehicleNo" class="field-input" type="text">
+
+                            <div class="field-label">Up-To</div>
+                            <input id="upToPlace" class="field-input" type="text">
+                            <div class="field-label">Chl. No.</div>
+                            <input id="prevChallanNo" class="field-input" type="text">
+
+                            <div class="field-label">Chl. Date</div>
+                            <input id="prevChallanDate" class="field-input" type="date">
+                            <div class="field-label">Prv. FRT.</div>
+                            <input id="prevFreight" class="field-input" type="number" step="0.01" value="0">
+                        </div>
+                    </div>
+
+                    <div class="remarks-row">
+                        <div class="field-label">Remarks</div>
+                        <input id="remarks" class="field-input" type="text">
+                    </div>
+
+                    <div class="button-row">
+                        <button id="addBtn" class="erp-btn" type="button">F2-Add</button>
+                        <button id="modifyBtn" class="erp-btn" type="button">F3-Modify</button>
+                        <button id="deleteBtn" class="erp-btn" type="button">F5-Delete</button>
+                        <button id="printBtn" class="erp-btn" type="button">F7-Print</button>
+                        <button id="exitBtn" class="erp-btn" type="button">Esc-Exit</button>
+                        <button id="topBtn" class="erp-btn" type="button">F4 - Top</button>
+                        <button id="bottomBtn" class="erp-btn" type="button">F8 - Bot</button>
+                        <button id="findBtn" class="erp-btn" type="button">F - Find</button>
+                        <button id="optionsBtn" class="erp-btn" type="button">F11 - Opt</button>
+                    </div>
+                </div>
+                <div class="right-stack">
+                    <div class="broker-box">
+                        <h3 class="broker-title">BROKERAGE</h3>
+                        <div class="broker-row">
+                            <div class="broker-tag">BYR</div>
+                            <select id="buyerBrokerageType" class="field-select">
+                                <option value="%">%</option>
+                                <option value="Rs">Rs</option>
+                            </select>
+                            <input id="buyerBrokerageRate" class="field-input" type="number" step="0.01" value="0">
+                            <input id="buyerBrokerageAmt" class="field-input readonly" type="text" readonly value="0.00">
+                        </div>
+                        <div class="broker-row">
+                            <div class="broker-tag">SLR</div>
+                            <select id="sellerBrokerageType" class="field-select">
+                                <option value="%">%</option>
+                                <option value="Rs">Rs</option>
+                            </select>
+                            <input id="sellerBrokerageRate" class="field-input" type="number" step="0.01" value="0">
+                            <input id="sellerBrokerageAmt" class="field-input readonly" type="text" readonly value="0.00">
+                        </div>
+                    </div>
+
+                    <div class="history-box">
+                        <h3 class="history-title">Recent Loading</h3>
+                        <table class="erp-grid">
+                            <thead>
+                                <tr>
+                                    <th style="width:36%;">DATE</th>
+                                    <th style="width:34%;">BOOK</th>
+                                    <th>NO</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="history-box">
+                        <h3 class="history-title">Pending Sauda</h3>
+                        <table class="erp-grid">
+                            <thead>
+                                <tr>
+                                    <th style="width:36%;">DATE</th>
+                                    <th style="width:32%;">NO</th>
+                                    <th>PEND</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingBody"></tbody>
+                        </table>
+</div>
+</div>
+</div>
+<script>
+let parties = [];
+let recentRows = [];
+let pendingSauda = [];
+let activeVoucherNo = null;
+let activeRowIndex = 0;
+let loadedEntryMode = false;
+
+const entryDate = document.getElementById("entryDate");
+const divisionName = document.getElementById("divisionName");
+const entryNo = document.getElementById("entryNo");
+const entryChr = document.getElementById("entryChr");
+const bookCode = document.getElementById("bookCode");
+const buyerLdName = document.getElementById("buyerLdName");
+const buyerSdName = document.getElementById("buyerSdName");
+const sellerLdName = document.getElementById("sellerLdName");
+const sellerSdName = document.getElementById("sellerSdName");
+const subBrokerName = document.getElementById("subBrokerName");
+const subBrokerId = document.getElementById("subBrokerId");
+const saudaBook = document.getElementById("saudaBook");
+const saudaChr = document.getElementById("saudaChr");
+const saudaNo = document.getElementById("saudaNo");
+const saudaBanner = document.getElementById("saudaBanner");
+const transportName = document.getElementById("transportName");
+const transportId = document.getElementById("transportId");
+const vehicleNo = document.getElementById("vehicleNo");
+const itemTable = document.getElementById("itemTable").tBodies[0];
+const recentBody = document.getElementById("recentBody");
+const pendingBody = document.getElementById("pendingBody");
+const modeChip = document.getElementById("modeChip");
+const weightSummary = document.getElementById("weightSummary");
+const totalQty = document.getElementById("totalQty");
+const totalWeight = document.getElementById("totalWeight");
+const daysTotal = document.getElementById("daysTotal");
+const grandAmount = document.getElementById("grandAmount");
+const freightTotal = document.getElementById("freightTotal");
+const diffFreight = document.getElementById("diffFreight");
+const sumFreight = document.getElementById("sumFreight");
+const sumBrokerage = document.getElementById("sumBrokerage");
+const sumNetFreight = document.getElementById("sumNetFreight");
+const sumDeliveryCharges = document.getElementById("sumDeliveryCharges");
+const sumMiscCharges = document.getElementById("sumMiscCharges");
+const sumLessAdvance = document.getElementById("sumLessAdvance");
+const sumLessMisc = document.getElementById("sumLessMisc");
+const buyerBrokerageRate = document.getElementById("buyerBrokerageRate");
+const buyerBrokerageAmt = document.getElementById("buyerBrokerageAmt");
+const sellerBrokerageRate = document.getElementById("sellerBrokerageRate");
+const sellerBrokerageAmt = document.getElementById("sellerBrokerageAmt");
+const remarks = document.getElementById("remarks");
+
+function safeText(value) {
+    return String(value ?? "").replace(/[&<>"']/g, function (char) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
+    });
+}
+
+function apiRows(payload) {
+    return Array.isArray(payload) ? payload : Array.isArray(payload?.rows) ? payload.rows : [];
+}
+
+function money(value) {
+    return Number(value || 0).toFixed(2);
+}
+
+function qtyText(value) {
+    const num = Number(value || 0);
+    return num ? num.toFixed(2).replace(/\.00$/, "") : "0";
+}
+
+function weight(value) {
+    return Number(value || 0).toFixed(3);
+}
+
+function displayDate(value) {
+    if (!value) return "";
+    const parts = String(value).split("-");
+    return parts.length === 3 ? [parts[2], parts[1], parts[0]].join("/") : value;
+}
+
+async function fetchJson(url, options) {
+    const response = await fetch(url, options);
+    const payload = await response.json();
+    if (!response.ok || payload?.status === "error" || payload?.success === false) {
+        throw new Error(payload?.message || "Request failed");
+    }
+    return payload;
+}
+
+function selectedDivisionName() {
+    return document.body.dataset.selectedDivisionName || document.body.dataset.selectedCompanyName || "";
+}
+
+function activateRow(index) {
+    activeRowIndex = index;
+    Array.from(itemTable.rows).forEach(function (row, rowIndex) {
+        row.classList.toggle("active-row", rowIndex === index);
+    });
+}
+
+function clearRows() {
+    itemTable.innerHTML = "";
+    activeRowIndex = 0;
+}
+
+function refreshRowState() {
+    Array.from(itemTable.rows).forEach(function (row, index) {
+        row.querySelector(".sno").textContent = index + 1;
+    });
+    if (itemTable.rows.length) {
+        activateRow(Math.min(activeRowIndex, itemTable.rows.length - 1));
+    }
+}
+
+function renderLookupMenu(menuEl, rows, callback) {
+    if (!rows.length) {
+        menuEl.style.display = "none";
+        menuEl.innerHTML = "";
+        return;
+    }
+    menuEl.innerHTML = rows.map(function (party) {
+        const meta = [party.city, party.state].filter(Boolean).join(" | ");
+        return "<div class='lookup-item' data-id='" + safeText(party.party_id) + "' data-name='" + safeText(party.party_name) + "'>" +
+            "<div>" + safeText(party.party_name) + "</div>" +
+            (meta ? "<div style='font-size:10px;color:#555;'>" + safeText(meta) + "</div>" : "") +
+            "</div>";
+    }).join("");
+    menuEl.querySelectorAll(".lookup-item").forEach(function (item) {
+        item.addEventListener("mousedown", function (event) {
+            event.preventDefault();
+            callback(this.dataset.id, this.dataset.name);
+            menuEl.style.display = "none";
+        });
+    });
+    menuEl.style.display = "block";
+}
+
+function bindPartyField(inputEl, hiddenEl, menuEl) {
+    function filteredRows(term) {
+        const lower = String(term || "").trim().toLowerCase();
+        return parties.filter(function (party) {
+            return !lower || String(party.party_name || "").toLowerCase().includes(lower);
+        }).slice(0, 30);
+    }
+    inputEl.addEventListener("focus", function () {
+        renderLookupMenu(menuEl, filteredRows(inputEl.value), function (id, name) {
+            hiddenEl.value = id;
+            inputEl.value = name;
+        });
+    });
+    inputEl.addEventListener("input", function () {
+        hiddenEl.value = "";
+        renderLookupMenu(menuEl, filteredRows(inputEl.value), function (id, name) {
+            hiddenEl.value = id;
+            inputEl.value = name;
+        });
+    });
+}
+
+function addItemRow(seed) {
+    const row = seed || {};
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+        "<td class='sno'></td>" +
+        "<td><input class='grid-input sellerName' type='text' value='" + safeText(row.seller_name || sellerLdName.value || "") + "' readonly></td>" +
+        "<td><input class='grid-input productName' type='text' value='" + safeText(row.product_name || "") + "' readonly></td>" +
+        "<td><input class='grid-input brandName' type='text' value='" + safeText(row.brand_name || "") + "' readonly></td>" +
+        "<td><input class='grid-input qty' type='number' min='0' step='0.01' value='" + safeText(row.qty || 0) + "'></td>" +
+        "<td><input class='grid-input unit' type='text' value='BGS' readonly></td>" +
+        "<td><input class='grid-input pack' type='number' value='" + safeText(row.pack || 0) + "' readonly></td>" +
+        "<td><input class='grid-input wght' type='number' value='" + safeText(weight(row.weight || 0)) + "' readonly></td>" +
+        "<td><input class='grid-input wunit' type='text' value='QTL' readonly></td>" +
+        "<td><input class='grid-input rate' type='number' value='" + safeText(row.rate || 0) + "' readonly></td>" +
+        "<td><input class='grid-input qw' type='text' value='W' readonly></td>" +
+        "<td><input class='grid-input term' type='text' value='SPOT' readonly></td>" +
+        "<td><input class='grid-input amount' type='number' value='" + safeText(money(row.amount || 0)) + "' readonly></td>" +
+        "<input class='source-detail' type='hidden' value='" + safeText(row.source_detail_sno || 0) + "'>" +
+        "<input class='seller-detail' type='hidden' value='" + safeText(row.seller_detail_sno || 0) + "'>" +
+        "<input class='product-id' type='hidden' value='" + safeText(row.product_id || 0) + "'>" +
+        "<input class='brand-id' type='hidden' value='" + safeText(row.brand_id || 0) + "'>" +
+        "<input class='pending-qty' type='hidden' value='" + safeText(row.pending_qty || 0) + "'>" +
+        "<input class='source-qty' type='hidden' value='" + safeText(row.source_qty || row.pending_qty || 0) + "'>" +
+        "<input class='brokerage' type='hidden' value='" + safeText(row.brokerage || 0) + "'>" +
+        "<input class='freight' type='hidden' value='" + safeText(row.freight || 0) + "'>";
+    itemTable.appendChild(tr);
+
+    tr.addEventListener("click", function () {
+        activateRow(Array.from(itemTable.rows).indexOf(tr));
+    });
+
+    const qty = tr.querySelector(".qty");
+    const rate = tr.querySelector(".rate");
+    const wght = tr.querySelector(".wght");
+    const amount = tr.querySelector(".amount");
+    const sourceQty = tr.querySelector(".source-qty");
+    const hiddenBrokerage = tr.querySelector(".brokerage");
+    const hiddenFreight = tr.querySelector(".freight");
+    const pendingQty = tr.querySelector(".pending-qty");
+
+    function recalc() {
+        let qtyValue = Number(qty.value || 0);
+        const maxQty = Number(pendingQty.value || 0);
+        if (qtyValue < 0) qtyValue = 0;
+        if (maxQty > 0 && qtyValue > maxQty) qtyValue = maxQty;
+        qty.value = qtyValue ? qtyValue.toFixed(2).replace(/\.00$/, "") : "0";
+        const baseQty = Number(sourceQty.value || 0);
+        const seedWeight = Number(row.weight || wght.value || 0);
+        const currentWeight = baseQty > 0 ? (seedWeight * qtyValue / baseQty) : qtyValue;
+        wght.value = weight(currentWeight);
+        amount.value = money((qtyValue * Number(rate.value || 0)) + Number(hiddenBrokerage.value || 0) + Number(hiddenFreight.value || 0));
+        calculateTotals();
+    }
+
+    qty.addEventListener("input", recalc);
+    refreshRowState();
+    recalc();
+}
+
+function currentItems() {
+    return Array.from(itemTable.rows).map(function (row) {
+        return {
+            source_detail_sno: Number(row.querySelector(".source-detail").value || 0),
+            seller_detail_sno: Number(row.querySelector(".seller-detail").value || 0),
+            product_id: Number(row.querySelector(".product-id").value || 0),
+            product_name: row.querySelector(".productName").value.trim(),
+            brand_id: Number(row.querySelector(".brand-id").value || 0),
+            brand_name: row.querySelector(".brandName").value.trim(),
+            pending_qty: Number(row.querySelector(".pending-qty").value || 0),
+            source_qty: Number(row.querySelector(".source-qty").value || 0),
+            qty: Number(row.querySelector(".qty").value || 0),
+            pack: Number(row.querySelector(".pack").value || 0),
+            weight: Number(row.querySelector(".wght").value || 0),
+            rate: Number(row.querySelector(".rate").value || 0),
+            brokerage: Number(row.querySelector(".brokerage").value || 0),
+            freight: Number(row.querySelector(".freight").value || 0),
+            amount: Number(row.querySelector(".amount").value || 0)
+        };
+    }).filter(function (item) {
+        return item.source_detail_sno > 0 && item.qty > 0;
+    });
+}
+
+function calculateBrokerage() {
+    const totalAmountValue = Number(grandAmount.textContent || 0);
+    const buyerRate = Number(buyerBrokerageRate.value || 0);
+    const sellerRate = Number(sellerBrokerageRate.value || 0);
+    const buyerAmt = totalAmountValue * buyerRate / 100;
+    const sellerAmt = totalAmountValue * sellerRate / 100;
+    buyerBrokerageAmt.value = money(buyerAmt);
+    sellerBrokerageAmt.value = money(sellerAmt);
+    sumBrokerage.textContent = money(buyerAmt + sellerAmt);
+    calculateNetFreight();
+}
+
+function calculateFreightPanel() {
+    const qtyValue = Number(totalQty.textContent || 0);
+    const frRate = Number(document.getElementById("frRate").value || 0);
+    const diffRate = Number(document.getElementById("diffFrRate").value || 0);
+    const freightValue = qtyValue * frRate;
+    const diffValue = qtyValue * diffRate;
+    freightTotal.value = money(freightValue);
+    diffFreight.value = money(diffValue);
+    sumFreight.textContent = money(freightValue);
+    calculateNetFreight();
+}
+
+function calculateNetFreight() {
+    const freightValue = Number(sumFreight.textContent || 0);
+    const deliveryCharges = Number(sumDeliveryCharges.textContent || 0);
+    const miscCharges = Number(sumMiscCharges.textContent || 0);
+    const lessAdvance = Number(sumLessAdvance.textContent || 0);
+    const lessMisc = Number(sumLessMisc.textContent || 0);
+    const brokerage = Number(sumBrokerage.textContent || 0);
+    const prevFreight = Number(document.getElementById("prevFreight").value || 0);
+    const net = freightValue + deliveryCharges + miscCharges - lessAdvance - lessMisc + brokerage + prevFreight;
+    sumNetFreight.textContent = money(net);
+}
+
+function calculateTotals() {
+    let qtySum = 0;
+    let weightSum = 0;
+    let amountSum = 0;
+    Array.from(itemTable.rows).forEach(function (row) {
+        qtySum += Number(row.querySelector(".qty").value || 0);
+        weightSum += Number(row.querySelector(".wght").value || 0);
+        amountSum += Number(row.querySelector(".amount").value || 0);
+    });
+    totalQty.textContent = qtyText(qtySum);
+    totalWeight.textContent = weight(weightSum);
+    weightSummary.textContent = weight(weightSum) + " QTL";
+    daysTotal.textContent = weight(weightSum);
+    grandAmount.textContent = money(amountSum);
+    calculateBrokerage();
+    calculateFreightPanel();
+}
+
+async function loadParties() {
+    const data = await fetchJson(appRoot + "api/daily_sauda/get_buyers.php", { cache: "no-store" });
+    parties = apiRows(data);
+}
+
+async function loadNextVoucher() {
+    if (loadedEntryMode) return;
+    const params = new URLSearchParams({
+        entry_date: entryDate.value || new Date().toISOString().split("T")[0],
+        book_code: bookCode.value || "LD001",
+        entry_chr: entryChr.value.trim() || "A"
+    });
+    const data = await fetchJson(appRoot + "api/loading_entry/get_next_voucher.php?" + params.toString(), { cache: "no-store" });
+    entryNo.value = data.next_no || "";
+}
+
+async function loadPendingSauda() {
+    const params = new URLSearchParams({
+        entry_date: entryDate.value || new Date().toISOString().split("T")[0]
+    });
+    const data = await fetchJson(appRoot + "api/loading_entry/get_pending_sauda.php?" + params.toString(), { cache: "no-store" });
+    pendingSauda = apiRows(data);
+    renderPending();
+}
+
+function renderPending() {
+    if (!pendingSauda.length) {
+        pendingBody.innerHTML = "<tr><td colspan='3'>No pending</td></tr>";
+        return;
+    }
+    pendingBody.innerHTML = pendingSauda.map(function (row) {
+        return "<tr data-entry='" + safeText(row.vouc_code) + "' data-date='" + safeText(row.entry_date || "") + "' data-book='" + safeText(row.c_j_s_p || "SUD") + "' data-chr='" + safeText(row.vouc_chr || "A") + "'>" +
+            "<td>" + safeText(displayDate(row.entry_date || "")) + "</td>" +
+            "<td>" + safeText((row.c_j_s_p || "SUD") + "-" + (row.vouc_code || "")) + "</td>" +
+            "<td>" + safeText(qtyText(row.pending_qty || 0)) + "</td>" +
+            "</tr>";
+    }).join("");
+    pendingBody.querySelectorAll("tr[data-entry]").forEach(function (row) {
+        row.addEventListener("click", function () {
+            saudaBook.value = this.dataset.book || "SUD";
+            saudaChr.value = this.dataset.chr || "A";
+            saudaNo.value = this.dataset.entry || "";
+            loadSauda();
+        });
+    });
+}
+
+async function loadRecent() {
+    const params = new URLSearchParams({
+        entry_date: entryDate.value || new Date().toISOString().split("T")[0],
+        book_code: bookCode.value || "LD001"
+    });
+    const data = await fetchJson(appRoot + "api/loading_entry/get_recent.php?" + params.toString(), { cache: "no-store" });
+    recentRows = apiRows(data);
+    renderRecent();
+}
+
+function renderRecent() {
+    if (!recentRows.length) {
+        recentBody.innerHTML = "<tr><td colspan='3'>No entries</td></tr>";
+        return;
+    }
+    recentBody.innerHTML = recentRows.map(function (row) {
+        const active = Number(row.vouc_code) === Number(activeVoucherNo) ? " class='active-row'" : "";
+        return "<tr data-entry='" + safeText(row.vouc_code) + "' data-date='" + safeText(row.entry_date || "") + "' data-book='" + safeText(row.c_j_s_p || "LD001") + "' data-chr='" + safeText(row.vouc_chr || "A") + "'" + active + ">" +
+            "<td>" + safeText(displayDate(row.entry_date || "")) + "</td>" +
+            "<td>" + safeText(row.c_j_s_p || "LD001") + "</td>" +
+            "<td>" + safeText(row.vouc_code || "") + "</td>" +
+            "</tr>";
+    }).join("");
+    recentBody.querySelectorAll("tr[data-entry]").forEach(function (row) {
+        row.addEventListener("click", function () {
+            loadEntry(this.dataset.entry, this.dataset.date, this.dataset.book, this.dataset.chr);
+        });
+    });
+}
+
+async function loadSauda() {
+    if (!saudaNo.value.trim()) {
+        alert("Enter or select a sauda number");
+        return;
+    }
+    const params = new URLSearchParams({
+        entry_no: saudaNo.value.trim(),
+        entry_date: entryDate.value || new Date().toISOString().split("T")[0],
+        book_code: saudaBook.value || "SUD",
+        entry_chr: saudaChr.value.trim() || "A"
+    });
+    const data = await fetchJson(appRoot + "api/loading_entry/get_sauda.php?" + params.toString(), { cache: "no-store" });
+    const header = data.header || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    buyerLdName.value = header.buyer_name || "";
+    buyerSdName.value = header.buyer_name || "";
+    sellerLdName.value = header.seller_name || "";
+    sellerSdName.value = header.seller_name || "";
+    buyerLdName.dataset.partyId = header.buyer_id || "";
+    sellerLdName.dataset.partyId = header.seller_id || "";
+    subBrokerId.value = header.sub_broker_id || "";
+    subBrokerName.value = header.sub_broker_name || "";
+    saudaBanner.textContent = "Sauda No. " + (header.entry_no || "") + " - " + displayDate(header.entry_date || "");
+
+    clearRows();
+    items.forEach(function (item) {
+        item.seller_name = header.seller_name || "";
+        addItemRow(item);
+    });
+    if (!items.length) addItemRow();
+    calculateTotals();
+}
+
+async function saveEntry() {
+    const items = currentItems();
+    if (!entryDate.value) { alert("Loading date is required"); return; }
+    if (!entryNo.value.trim()) { alert("Loading number is required"); return; }
+    if (!saudaNo.value.trim()) { alert("Select a linked sauda"); return; }
+    if (!items.length) { alert("Enter at least one loading row"); return; }
+
+    await fetchJson(appRoot + "api/loading_entry/save_loading_entry.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            header: {
+                entry_date: entryDate.value,
+                book_code: bookCode.value || "LD001",
+                entry_chr: entryChr.value.trim() || "A",
+                entry_no: entryNo.value.trim(),
+                sauda_book: saudaBook.value || "SUD",
+                sauda_chr: saudaChr.value.trim() || "A",
+                sauda_no: saudaNo.value.trim(),
+                buyer_id: buyerLdName.dataset.partyId || 0,
+                buyer_name: buyerLdName.value.trim(),
+                seller_id: sellerLdName.dataset.partyId || 0,
+                seller_name: sellerLdName.value.trim(),
+                transport_id: transportId.value || 0,
+                transport_name: transportName.value.trim(),
+                vehicle_no: vehicleNo.value.trim(),
+                remarks: remarks.value.trim()
+            },
+            items: items
+        })
+    });
+
+    alert("Loading entry saved");
+    await resetForm();
+    await Promise.all([loadPendingSauda(), loadRecent()]);
+}
+
+async function loadEntry(voucherNo, voucherDate, voucherBook, voucherChr) {
+    const params = new URLSearchParams({
+        entry_no: voucherNo,
+        entry_date: voucherDate || entryDate.value,
+        book_code: voucherBook || "LD001",
+        entry_chr: voucherChr || "A"
+    });
+    const data = await fetchJson(appRoot + "api/loading_entry/get_entry.php?" + params.toString(), { cache: "no-store" });
+    const header = data.header || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    loadedEntryMode = true;
+    modeChip.textContent = "Loaded Entry";
+    activeVoucherNo = header.entry_no || voucherNo;
+    entryDate.value = header.entry_date || entryDate.value;
+    bookCode.value = header.book_code || "LD001";
+    entryChr.value = header.entry_chr || "A";
+    entryNo.value = header.entry_no || voucherNo;
+    saudaBook.value = header.sauda_book || "SUD";
+    saudaChr.value = header.sauda_chr || "A";
+    saudaNo.value = header.sauda_no || "";
+    buyerLdName.value = header.buyer_name || "";
+    buyerSdName.value = header.buyer_name || "";
+    sellerLdName.value = header.seller_name || "";
+    sellerSdName.value = header.seller_name || "";
+    buyerLdName.dataset.partyId = header.buyer_id || "";
+    sellerLdName.dataset.partyId = header.seller_id || "";
+    transportId.value = header.transport_id || "";
+    transportName.value = header.transport_name || "";
+    vehicleNo.value = header.vehicle_no || "";
+    remarks.value = header.remarks || "";
+    saudaBanner.textContent = "Sauda No. " + (header.sauda_no || "") + " - " + displayDate(header.entry_date || "");
+
+    clearRows();
+    items.forEach(function (item) {
+        item.seller_name = header.seller_name || "";
+        addItemRow(item);
+    });
+    if (!items.length) addItemRow();
+    calculateTotals();
+    renderRecent();
+}
+
+async function resetForm() {
+    loadedEntryMode = false;
+    activeVoucherNo = null;
+    modeChip.textContent = "Display Mode";
+    entryDate.value = new Date().toISOString().split("T")[0];
+    bookCode.value = "LD001";
+    entryChr.value = "A";
+    saudaBook.value = "SUD";
+    saudaChr.value = "A";
+    saudaNo.value = "";
+    buyerLdName.value = "";
+    buyerSdName.value = "";
+    sellerLdName.value = "";
+    sellerSdName.value = "";
+    buyerLdName.dataset.partyId = "";
+    sellerLdName.dataset.partyId = "";
+    subBrokerName.value = "";
+    subBrokerId.value = "";
+    transportName.value = "";
+    transportId.value = "";
+    vehicleNo.value = "";
+    remarks.value = "";
+    saudaBanner.textContent = "Sauda No. -";
+    clearRows();
+    addItemRow();
+    calculateTotals();
+    await loadNextVoucher();
+    renderRecent();
+}
+
+function focusActiveRow() {
+    const row = itemTable.rows[activeRowIndex] || itemTable.rows[0];
+    if (row) row.querySelector(".qty").focus();
+}
+
+document.addEventListener("click", function (event) {
+    if (!event.target.closest(".lookup-wrap")) {
+        document.querySelectorAll(".lookup-menu").forEach(function (menu) {
+            menu.style.display = "none";
+        });
+    }
+});
+
+document.getElementById("loadSaudaBtn").addEventListener("click", loadSauda);
+document.getElementById("addBtn").addEventListener("click", function () { resetForm(); });
+document.getElementById("modifyBtn").addEventListener("click", focusActiveRow);
+document.getElementById("deleteBtn").addEventListener("click", function () { alert("Delete will be added after loading edit flow is wired."); });
+document.getElementById("printBtn").addEventListener("click", function () { alert("Print will be added after loading reports are wired."); });
+document.getElementById("exitBtn").addEventListener("click", function () { location.href = appRoot + "index.html"; });
+document.getElementById("topBtn").addEventListener("click", function () { activateRow(0); });
+document.getElementById("bottomBtn").addEventListener("click", function () { if (itemTable.rows.length) activateRow(itemTable.rows.length - 1); });
+document.getElementById("findBtn").addEventListener("click", function () {
+    if (!activeVoucherNo) {
+        alert("Select a loading entry from the recent list");
+        return;
+    }
+    const row = recentRows.find(function (item) { return Number(item.vouc_code) === Number(activeVoucherNo); });
+    if (row) loadEntry(row.vouc_code, row.entry_date, row.c_j_s_p, row.vouc_chr);
+});
+document.getElementById("optionsBtn").addEventListener("click", function () {
+    alert("Options panel will be added after print/email/wp flow is migrated.");
+});
+document.getElementById("saveBtn").addEventListener("click", saveEntry);
+buyerBrokerageRate.addEventListener("input", calculateBrokerage);
+sellerBrokerageRate.addEventListener("input", calculateBrokerage);
+document.getElementById("frRate").addEventListener("input", calculateFreightPanel);
+document.getElementById("diffFrRate").addEventListener("input", calculateFreightPanel);
+document.getElementById("prevFreight").addEventListener("input", calculateNetFreight);
+
+entryDate.addEventListener("change", async function () {
+    if (!loadedEntryMode) {
+        await loadNextVoucher();
+        await Promise.all([loadPendingSauda(), loadRecent()]);
+    }
+});
+
+bookCode.addEventListener("change", async function () {
+    if (!loadedEntryMode) {
+        await loadNextVoucher();
+        await loadRecent();
+    }
+});
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "F2") { event.preventDefault(); resetForm(); }
+    else if (event.key === "F3") { event.preventDefault(); focusActiveRow(); }
+    else if (event.key === "F6") { event.preventDefault(); saveEntry(); }
+    else if (event.key === "F4") { event.preventDefault(); activateRow(0); }
+    else if (event.key === "F8") { event.preventDefault(); if (itemTable.rows.length) activateRow(itemTable.rows.length - 1); }
+    else if (event.key === "Escape") { location.href = appRoot + "index.html"; }
+});
+
+(async function init() {
+    divisionName.value = selectedDivisionName();
+    entryDate.value = new Date().toISOString().split("T")[0];
+    await loadParties();
+    bindPartyField(subBrokerName, subBrokerId, document.getElementById("subBrokerMenu"));
+    bindPartyField(transportName, transportId, document.getElementById("transportMenu"));
+    addItemRow();
+    calculateTotals();
+    await loadNextVoucher();
+    await Promise.all([loadPendingSauda(), loadRecent()]);
+})();
+</script>
+</body>
+</html>

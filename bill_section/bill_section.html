@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="../">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BILL SECTION | SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<script>
+(async function () {
+    const res = await fetch("./api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace("login.html");
+})();
+</script>
+<style>
+.content { padding-top: 36px; }
+.page-name { margin: 0 0 10px; font-size: 34px; letter-spacing: .04em; }
+.section-shell { display: grid; gap: 24px; }
+.section-copy { margin: 0; color: rgba(0, 0, 0, 0.72); line-height: 1.65; }
+.context-strip, .permission-panel { display: flex; flex-wrap: wrap; gap: 10px; }
+.context-pill, .permission-badge {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .06em;
+}
+.permission-badge.on {
+    background: rgba(26, 127, 55, 0.14);
+    color: #0d5d27;
+}
+.action-row { display: flex; flex-wrap: wrap; gap: 14px; }
+.action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 180px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    text-decoration: none;
+    color: #111;
+    font-weight: 700;
+    background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(239,243,247,0.96));
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.06);
+}
+@media (max-width: 640px) {
+    .page-name { font-size: 28px; }
+    .action-link { width: 100%; }
+}
+</style>
+<script src="global-nav.js" defer></script>
+</head>
+<body>
+<div class="content">
+    <div class="feature-box section-shell">
+        <div>
+            <h1 class="page-name">BILL SECTION</h1>
+            <p class="section-copy">Bill Section now resolves correctly from its new folder and follows the same section and page permission rules as the rest of the ERP.</p>
+        </div>
+        <div class="context-strip" id="contextStrip"></div>
+        <div class="permission-panel" id="permissionPanel"></div>
+        <div class="action-row">
+            <a class="action-link" href="index.html">Back to Home</a>
+            <a class="action-link" href="company.html">Change Company / Division</a>
+        </div>
+    </div>
+</div>
+<script>
+(async function () {
+    const contextStrip = document.getElementById("contextStrip");
+    const permissionPanel = document.getElementById("permissionPanel");
+
+    function addPill(text) {
+        const pill = document.createElement("div");
+        pill.className = "context-pill";
+        pill.textContent = text;
+        contextStrip.appendChild(pill);
+    }
+
+    if (document.body.dataset.selectedCompanyName || document.body.dataset.selectedCompanyCode) {
+        addPill("Company: " + (document.body.dataset.selectedCompanyName || document.body.dataset.selectedCompanyCode));
+    }
+    if (document.body.dataset.selectedDivisionName || document.body.dataset.selectedDivisionCode) {
+        addPill("Division: " + (document.body.dataset.selectedDivisionName || document.body.dataset.selectedDivisionCode));
+    }
+
+    try {
+        const res = await fetch("./api/get_logged_user_page_permissions.php?page=bill_section.html&section=BILL SECTION", { cache: "no-store" });
+        const data = await res.json();
+        const perms = data.permissions || {};
+        [
+            ["View", perms.v],
+            ["Add", perms.a],
+            ["Edit", perms.e],
+            ["Delete", perms.d],
+            ["Print", perms.p]
+        ].forEach(function (entry) {
+            const badge = document.createElement("div");
+            badge.className = "permission-badge" + (Number(entry[1] || 0) === 1 ? " on" : "");
+            badge.textContent = entry[0];
+            permissionPanel.appendChild(badge);
+        });
+    } catch (error) {
+        addPill("Permissions unavailable");
+    }
+})();
+</script>
+</body>
+</html>

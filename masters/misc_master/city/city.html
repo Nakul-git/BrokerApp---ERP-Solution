@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>City Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../../style.css?v=8">
+    <link rel="stylesheet" href="./style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <script>
+        const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () { const res = await fetch(appRoot + "api/check_auth.php"); const data = await res.json(); if (!data.logged_in) window.location.replace(appRoot + "login.html"); })();
+    </script>
+    <script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+    <link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+    <script src="../../../add-mode.js" defer></script>
+    <script src="../../../permissions-catalog.js"></script>
+    <script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">City Master</h2>
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div><input id="filterInput" type="text" autocomplete="off"
+                        placeholder="Search city...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="cityList"></div>
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <div class="mode-header"><span id="modeTag" class="mode-tag">Display Mode</span></div>
+                    <form id="cityForm" autocomplete="off"><input type="hidden" id="city_id" name="city_id">
+                        <div class="form-grid">
+                            <div class="form-group full">
+                                <label for="city_name" class="label-with-error"><span>City
+                                        Name</span><span id="cityNameError" class="error-text"
+                                        style="display:none;"></span></label>
+                                <div class="city-name-inline">
+                                    <input id="city_name" name="city_name" required data-add-first
+                                        data-duplicate-check="checkDuplicateCityName">
+                                    <label class="same-district-inline" id="sameDistrictWrap"><input type="checkbox"
+                                            id="sameAsDistrictChk" data-enter-include>Same as District</label>
+                                </div>
+                            </div>
+                            <div class="form-group"><label for="district_name_input">District Name</label>
+                                <div class="dropdown-wrapper"><input type="text" id="district_name_input"
+                                        placeholder="Select District" autocomplete="off" data-enter-next
+                                        data-enter-skip-when="#sameAsDistrictChk:checked">
+                                    <div class="dropdown-list" id="districtDropdown"></div>
+                                </div><input type="hidden" id="district_id" name="district_id">
+                            </div>
+                            <div class="form-group"><label class="label-with-error"><span>State Name</span><span
+                                        id="stateNameError" class="error-text" style="display:none;"></span></label>
+                                <div class="dropdown-wrapper"><input type="text" id="state_name_input"
+                                        placeholder="Select State" autocomplete="off" required data-required-check="checkStateRequired">
+                                    <div class="dropdown-list" id="stateDropdown"></div>
+                                </div><input type="hidden" id="state_id" name="state_id" required>
+                            </div>
+                            <div class="form-group"><label for="pin_code">Pin Code</label><input id="pin_code"
+                                    type="number" name="pin_code" maxlength="10"></div>
+                            <div class="form-group"><label for="std_code">Std Code</label><input id="std_code"
+                                    type="number" name="std_code" maxlength="10"></div>
+                            <div class="form-group"><label for="distance_kms">Distance (KMS.)</label><input
+                                    id="distance_kms" name="distance_kms" type="number" step="0.01" min="0"
+                                    value="0.00"></div>
+                        </div>
+                    </form>
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            const stateInput = document.getElementById("state_name_input");
+            const stateDropdown = document.getElementById("stateDropdown");
+            const hiddenStateInput = document.getElementById("state_id");
+            const districtInput = document.getElementById("district_name_input");
+            const districtDropdown = document.getElementById("districtDropdown");
+            const hiddenDistrictInput = document.getElementById("district_id");
+            const sameAsDistrictChk = document.getElementById("sameAsDistrictChk");
+            const sameDistrictWrap = document.getElementById("sameDistrictWrap");
+
+            let allCities = [], allStates = [], allDistricts = [];
+            let activeCityId = null, currentMode = "display", preEditCityId = null;
+            let stateIndex = -1, districtIndex = -1;
+
+            const filterInput = document.getElementById("filterInput");
+            const cityList = document.getElementById("cityList");
+            const cityForm = document.getElementById("cityForm");
+            const modeTag = document.getElementById("modeTag");
+            const displayButtons = document.getElementById("displayButtons");
+            const addModeButtons = document.getElementById("addModeButtons");
+            const cityNameInput = document.getElementById("city_name");
+            const cityNameError = document.getElementById("cityNameError");
+            const stateNameError = document.getElementById("stateNameError");
+            function esc(v) { return (v ?? "").toString().replace(/[&<>\"']/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[m]; }); }
+
+            function showCityNameError(message) { cityNameInput.classList.add("field-error"); cityNameError.textContent = message; cityNameError.style.display = "inline"; }
+            function clearCityNameError() { cityNameInput.classList.remove("field-error"); cityNameError.textContent = ""; cityNameError.style.display = "none"; }
+            function showStateError(message) { stateInput.classList.add("field-error"); stateNameError.textContent = message; stateNameError.style.display = "inline"; }
+            function clearStateError() { stateInput.classList.remove("field-error"); stateNameError.textContent = ""; stateNameError.style.display = "none"; }
+
+            function checkDuplicateCityName() {
+                const name = cityNameInput.value.trim().toLowerCase();
+                if (!name) { clearCityNameError(); return false; }
+                const currentId = Number(document.getElementById("city_id").value || 0);
+                const duplicate = allCities.some(function (c) {
+                    const sameName = (c.city_name || "").trim().toLowerCase() === name;
+                    const sameId = Number(c.city_id) === currentId;
+                    return sameName && !sameId;
+                });
+                if (duplicate) { showCityNameError("Already exists"); return true; }
+                clearCityNameError();
+                return false;
+            }
+
+            function checkStateRequired() {
+                if (currentMode !== "add" && currentMode !== "modify") { clearStateError(); return false; }
+                if (!hiddenStateInput.value.trim()) { showStateError("Required"); return true; }
+                clearStateError();
+                return false;
+            }
+
+            function renderStateDropdown(list) {
+                stateDropdown.innerHTML = "";
+                if (!list.length) { stateDropdown.style.display = "none"; return; }
+                const currentValue = hiddenStateInput.value;
+                list.forEach(function (s, index) {
+                    const div = document.createElement("div");
+                    div.textContent = s.state_name || "";
+                    div.dataset.id = s.state_id;
+                    if (String(s.state_id) === String(currentValue)) { div.classList.add("active"); stateIndex = index; }
+                    div.onclick = function () { selectState(s); };
+                    stateDropdown.appendChild(div);
+                });
+                stateDropdown.style.display = "block";
+                if (stateIndex >= 0 && stateDropdown.children[stateIndex]) stateDropdown.children[stateIndex].scrollIntoView({ block: "nearest" });
+            }
+
+            function selectState(s) {
+                stateInput.value = s.state_name || "";
+                hiddenStateInput.value = s.state_id || "";
+                stateDropdown.style.display = "none";
+                stateIndex = -1;
+                clearStateError();
+            }
+
+            function closeStateDropdown() { stateDropdown.style.display = "none"; stateIndex = -1; }
+
+            function renderDistrictDropdown(list) {
+                districtDropdown.innerHTML = "";
+                if (!list.length) { districtDropdown.style.display = "none"; return; }
+                const currentValue = hiddenDistrictInput.value;
+                list.forEach(function (d, index) {
+                    const div = document.createElement("div");
+                    div.textContent = d.district_name || "";
+                    div.dataset.id = d.district_id;
+                    if (String(d.district_id) === String(currentValue)) { div.classList.add("active"); districtIndex = index; }
+                    div.onclick = function () { selectDistrict(d); };
+                    districtDropdown.appendChild(div);
+                });
+                districtDropdown.style.display = "block";
+                if (districtIndex >= 0 && districtDropdown.children[districtIndex]) districtDropdown.children[districtIndex].scrollIntoView({ block: "nearest" });
+            }
+
+            function selectDistrict(d) {
+                districtInput.value = d.district_name || "";
+                hiddenDistrictInput.value = d.district_id || "";
+                districtDropdown.style.display = "none";
+                districtIndex = -1;
+            }
+
+            function closeDistrictDropdown() { districtDropdown.style.display = "none"; districtIndex = -1; }
+
+            function highlightItems(items, index) {
+                items.forEach(function (item, i) {
+                    item.classList.toggle("active", i === index);
+                    if (i === index) item.scrollIntoView({ block: "nearest" });
+                });
+            }
+
+            stateInput.addEventListener("focus", function () {
+                if (currentMode === "add" || currentMode === "modify") { stateIndex = -1; renderStateDropdown(allStates); }
+            });
+            stateInput.addEventListener("input", function () {
+                hiddenStateInput.value = "";
+                clearStateError();
+                const term = this.value.toLowerCase();
+                const filtered = allStates.filter(function (opt) { return (opt.state_name || "").toLowerCase().includes(term); });
+                renderStateDropdown(filtered);
+                if (filtered.length === 1) {
+                    stateIndex = 0;
+                    const items = Array.from(stateDropdown.children);
+                    if (items.length) highlightItems(items, stateIndex);
+                } else {
+                    stateIndex = -1;
+                }
+            });
+            stateInput.addEventListener("keydown", function (e) {
+                const items = Array.from(stateDropdown.children);
+                if (stateDropdown.style.display !== "block" || !items.length) return;
+                if (e.key === "ArrowDown") { e.preventDefault(); stateIndex = (stateIndex + 1) % items.length; highlightItems(items, stateIndex); }
+                else if (e.key === "ArrowUp") { e.preventDefault(); stateIndex = (stateIndex - 1 + items.length) % items.length; highlightItems(items, stateIndex); }
+                else if (e.key === "Enter") { e.preventDefault(); if (stateIndex >= 0) { const item = allStates.find(function (s) { return String(s.state_id) === String(items[stateIndex].dataset.id); }); if (item) selectState(item); } }
+                else if (e.key === "Escape") { closeStateDropdown(); }
+            });
+            stateInput.addEventListener("blur", function () { setTimeout(closeStateDropdown, 150); });
+
+            districtInput.addEventListener("focus", function () {
+                if (currentMode === "add" || currentMode === "modify") { districtIndex = -1; renderDistrictDropdown(allDistricts); }
+            });
+            districtInput.addEventListener("input", function () {
+                hiddenDistrictInput.value = "";
+                const term = this.value.toLowerCase();
+                const filtered = allDistricts.filter(function (opt) { return (opt.district_name || "").toLowerCase().includes(term); });
+                renderDistrictDropdown(filtered);
+                if (filtered.length === 1) {
+                    districtIndex = 0;
+                    const items = Array.from(districtDropdown.children);
+                    if (items.length) highlightItems(items, districtIndex);
+                } else {
+                    districtIndex = -1;
+                }
+            });
+            districtInput.addEventListener("keydown", function (e) {
+                const items = Array.from(districtDropdown.children);
+                if (districtDropdown.style.display !== "block" || !items.length) return;
+                if (e.key === "ArrowDown") { e.preventDefault(); districtIndex = (districtIndex + 1) % items.length; highlightItems(items, districtIndex); }
+                else if (e.key === "ArrowUp") { e.preventDefault(); districtIndex = (districtIndex - 1 + items.length) % items.length; highlightItems(items, districtIndex); }
+                else if (e.key === "Enter") { e.preventDefault(); if (districtIndex >= 0) { const item = allDistricts.find(function (d) { return String(d.district_id) === String(items[districtIndex].dataset.id); }); if (item) selectDistrict(item); } }
+                else if (e.key === "Escape") { closeDistrictDropdown(); }
+            });
+            districtInput.addEventListener("blur", function () { setTimeout(closeDistrictDropdown, 150); });
+
+            sameAsDistrictChk.addEventListener("change", function () {
+                if (this.checked) {
+                    districtInput.value = "";
+                    hiddenDistrictInput.value = "";
+                    districtInput.readOnly = true;
+                } else {
+                    districtInput.readOnly = false;
+                }
+            });
+
+            function setFormEditable(editable) {
+                const fields = cityForm.querySelectorAll("input, select");
+                fields.forEach(function (field) {
+                    if (field.id === "city_id") return;
+                    if (!editable) field.setAttribute("tabindex", "-1");
+                    else field.removeAttribute("tabindex");
+                    if (field.tagName === "SELECT") field.disabled = !editable;
+                    else field.readOnly = !editable;
+                });
+                sameAsDistrictChk.disabled = !editable;
+            }
+
+            function keepCityNameActive() {
+                if (currentMode === "add" || currentMode === "modify") {
+                    setTimeout(function () { if (!cityForm.contains(document.activeElement)) cityNameInput.focus(); }, 0);
+                }
+            }
+
+            function resetForm() { cityForm.reset(); document.getElementById("city_id").value = ""; document.getElementById("distance_kms").value = "0.00"; document.getElementById("state_id").value = ""; document.getElementById("state_name_input").value = ""; document.getElementById("district_id").value = ""; document.getElementById("district_name_input").value = ""; sameAsDistrictChk.checked = false; districtInput.readOnly = false; activeCityId = null; clearCityNameError(); clearStateError(); setMode("add"); setFormEditable(true); syncActionMode(); renderCities(); }
+            function fillForm(city) { document.getElementById("city_id").value = city.city_id || ""; document.getElementById("city_name").value = city.city_name || ""; document.getElementById("district_id").value = city.district_id || ""; document.getElementById("district_name_input").value = city.district_name || ""; document.getElementById("pin_code").value = city.pin_code || ""; document.getElementById("std_code").value = city.std_code || ""; document.getElementById("distance_kms").value = city.distance_kms || "0.00"; document.getElementById("state_id").value = city.state_id || ""; document.getElementById("state_name_input").value = city.state_name || ""; sameAsDistrictChk.checked = false; districtInput.readOnly = false; activeCityId = Number(city.city_id); setMode("display"); setFormEditable(false); syncActionMode(); clearCityNameError(); clearStateError(); }
+            function fillFormWithoutRender(city) { document.getElementById("city_id").value = city.city_id || ""; document.getElementById("city_name").value = city.city_name || ""; document.getElementById("district_id").value = city.district_id || ""; document.getElementById("district_name_input").value = city.district_name || ""; document.getElementById("pin_code").value = city.pin_code || ""; document.getElementById("std_code").value = city.std_code || ""; document.getElementById("distance_kms").value = city.distance_kms || "0.00"; document.getElementById("state_id").value = city.state_id || ""; document.getElementById("state_name_input").value = city.state_name || ""; sameAsDistrictChk.checked = false; districtInput.readOnly = false; activeCityId = Number(city.city_id); }
+
+            function setMode(mode) {
+                currentMode = mode;
+                const rightPanel = document.querySelector(".right-panel");
+                rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+
+                if (mode === "add") {
+                    modeTag.textContent = "Add Mode";
+                    rightPanel.classList.add("add-mode");
+                    setTimeout(function () { cityNameInput.focus(); }, 0);
+                }
+
+                if (mode === "modify") {
+                    modeTag.textContent = "Edit Mode";
+                    rightPanel.classList.add("modify-mode");
+                    setTimeout(function () { cityNameInput.focus(); }, 0);
+                }
+
+                if (mode === "display") {
+                    modeTag.textContent = "Display Mode";
+                    rightPanel.classList.add("display-mode");
+                    preEditCityId = null;
+                    clearCityNameError();
+                    clearStateError();
+                    syncSelectionHighlight();
+                }
+
+                if (mode === "add") sameDistrictWrap.style.display = "inline-flex";
+                else {
+                    sameDistrictWrap.style.display = "none";
+                    sameAsDistrictChk.checked = false;
+                    districtInput.readOnly = false;
+                }
+
+                closeStateDropdown();
+                closeDistrictDropdown();
+            }
+            function syncActionMode() { const isDisplay = currentMode === "display"; displayButtons.classList.toggle("hidden", !isDisplay); addModeButtons.classList.toggle("hidden", isDisplay); displayButtons.style.display = isDisplay ? "flex" : "none"; addModeButtons.style.display = isDisplay ? "none" : "flex"; }
+            function renderCities() { const keyword = ""; const rows = allCities.filter(function (c) { return !keyword || (c.city_name || "").toLowerCase().includes(keyword); }); if (!rows.length) { cityList.innerHTML = "<div class='city-row'>No cities found</div>"; return; } cityList.innerHTML = rows.map(function (city) { const active = Number(city.city_id) === activeCityId ? "active" : ""; return "<div class='city-row " + active + "' data-id='" + esc(city.city_id) + "'>" + esc(city.city_name) + "</div>"; }).join(""); cityList.querySelectorAll(".city-row").forEach(function (row) { row.addEventListener("click", function () { selectRow(this); }); }); syncSelectionHighlight(); }
+            function syncSelectionHighlight() { const rows = Array.from(cityList.querySelectorAll(".city-row")).filter(function (r) { return r.dataset.id; }); rows.forEach(function (r) { r.classList.remove("active"); }); const activeRow = rows.find(function (r) { return Number(r.dataset.id) === Number(activeCityId); }); if (activeRow) { activeRow.classList.add("active"); activeRow.scrollIntoView({ block: "nearest" }); } }
+            function selectRow(row) { cityList.querySelectorAll(".city-row").forEach(function (r) { r.classList.remove("active"); }); row.classList.add("active"); const id = Number(row.dataset.id); activeCityId = id; const city = allCities.find(function (x) { return Number(x.city_id) === id; }); if (!city) return; fillFormWithoutRender(city); row.scrollIntoView({ block: "center" }); }
+
+            async function loadStates() { const res = await fetch("../../../api/city/get_state.php"); allStates = await res.json(); }
+            async function loadDistricts() { const res = await fetch("../../../api/city/get_district.php"); const data = await res.json(); allDistricts = (data && data.data) ? data.data : []; }
+            async function loadCities() { const res = await fetch("../../../api/city/get_city.php"); allCities = await res.json(); if (allCities.length) { activeCityId = Number(allCities[0].city_id); renderCities(); fillFormWithoutRender(allCities[0]); document.querySelector(".list-wrap").scrollTop = 0; } else { renderCities(); setMode("display"); setFormEditable(false); syncActionMode(); } }
+
+            function customConfirm(message, callback) {
+                if (window.deleteModeConfirm) {
+                    window.deleteModeConfirm(message, callback);
+                    return;
+                }
+            }
+
+            cityNameInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkDuplicateCityName(); });
+            stateInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkStateRequired(); });
+
+            cityForm.addEventListener("focusin", function (e) {
+                if (currentMode !== "modify") return;
+                const field = e.target;
+                if (field.tagName === "INPUT" && field.type !== "hidden" && !field.readOnly) { setTimeout(function () { field.select(); }, 0); }
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                const rows = Array.from(cityList.querySelectorAll(".city-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeCityId); });
+                if (currentIndex === -1) currentIndex = 0;
+
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    if (currentIndex < rows.length - 1) currentIndex++;
+                    selectRow(rows[currentIndex]);
+                }
+                if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    if (currentIndex > 0) currentIndex--;
+                    selectRow(rows[currentIndex]);
+                }
+            });
+
+
+            async function saveCity(isModify) { const fd = new FormData(cityForm); const cityId = fd.get("city_id"); const sameAsDistrict = sameAsDistrictChk.checked; const name = (fd.get("city_name") || "").trim(); const stateId = (fd.get("state_id") || "").trim(); if (checkDuplicateCityName()) { cityNameInput.focus(); cityNameInput.select(); return; } if (checkStateRequired()) { stateInput.focus(); return; } if (!name) { showCityNameError("Required"); setTimeout(function () { setMode("add"); cityNameInput.focus(); cityNameInput.select(); }, 50); return; } if (!stateId) { alert("State is required"); setTimeout(function () { stateInput.focus(); }, 50); return; } if (!isModify) { const confirmAdd = await window.confirmAdd("Are you sure you want to add this city?\n\n" + name); if (!confirmAdd) return; } let url = "../../../api/city/city.php"; if (isModify) { if (!cityId) { alert("Select a city to modify"); return; } url = "../../../api/city/update_city.php"; } if (sameAsDistrict) fd.append("auto_create_district", "1"); const res = await fetch(url, { method: "POST", body: fd }); const data = await res.json(); if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); } if (data.status === "success") { await loadCities(); if (isModify && cityId) { const updated = allCities.find(function (c) { return Number(c.city_id) === Number(cityId); }); if (updated) fillForm(updated); return; } resetForm(); setMode("add"); setFormEditable(true); syncActionMode(); cityNameInput.focus(); } }
+
+            function handleAddAction() { preEditCityId = activeCityId; resetForm(); cityNameInput.focus(); }
+            function getSelectedCityId() {
+                const val = document.getElementById("city_id").value;
+                if (val) return val;
+                if (activeCityId) {
+                    document.getElementById("city_id").value = activeCityId;
+                    return activeCityId;
+                }
+                return "";
+            }
+            function handleModifyAction() { const cityId = getSelectedCityId(); if (!cityId) { alert("Select a city to modify"); return; } preEditCityId = Number(cityId); setMode("modify"); setFormEditable(true); syncActionMode(); }
+            function cancelEditMode() { if (preEditCityId) { const previous = allCities.find(function (c) { return Number(c.city_id) === Number(preEditCityId); }); if (previous) { fillForm(previous); preEditCityId = null; return; } } setMode("display"); setFormEditable(false); syncActionMode(); renderCities(); }
+            async function deleteCity() { const cityId = getSelectedCityId(); if (!cityId) { alert("Select a city to delete"); return; } customConfirm("Delete this city?", async function () { const body = new URLSearchParams(); body.set("city_id", cityId); const res = await fetch("../../../api/city/delete_city.php", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() }); const data = await res.json(); if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); } if (data.status === "success") { await loadCities(); if (allCities.length) { setMode("display"); setFormEditable(false); syncActionMode(); } else resetForm(); } }); }
+
+            document.getElementById("addBtn").addEventListener("click", handleAddAction);
+            document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+            document.getElementById("deleteBtn").addEventListener("click", deleteCity);
+            document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+            document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../../index.html"; });
+            document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+            document.getElementById("saveBtn").addEventListener("click", function () { if (currentMode === "modify") saveCity(true); else saveCity(false); });
+            
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key !== "F11") return;
+                if ((currentMode === "add" || currentMode === "modify") && document.activeElement.id === "state_name_input") {
+                    e.preventDefault();
+                    window.location.href = "../state/state.html";
+                    return;
+                }
+                if ((currentMode === "add" || currentMode === "modify") && document.activeElement.id === "district_name_input") {
+                    e.preventDefault();
+                    window.location.href = "../district/district_master.html";
+                    return;
+                }
+            });
+
+            document.addEventListener("mousedown", function (e) { if (currentMode === "add" || currentMode === "modify") { if (!cityForm.contains(e.target)) keepCityNameActive(); } });
+            (function () {
+                let navMode = false, mainIndex = 0, subIndex = -1; const topNavItems = function () { return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function (li) { return li.offsetParent !== null; }); }; function getSubItems(li) { return Array.from(li.querySelectorAll("ul li")).filter(function (item) { return item.offsetParent !== null; }); } function highlightMain(index) { const items = topNavItems(); items.forEach(function (i) { i.classList.remove("nav-active"); }); if (!items[index]) return; items[index].classList.add("nav-active"); if (items[index].focus) items[index].focus(); } function highlightSub(subItems, index) { subItems.forEach(function (i) { i.classList.remove("nav-sub-active"); }); if (!subItems[index]) return; subItems[index].classList.add("nav-sub-active"); subItems[index].scrollIntoView({ block: "nearest" }); } function resetNav() { navMode = false; mainIndex = 0; subIndex = -1; document.querySelectorAll(".nav-active").forEach(function (el) { el.classList.remove("nav-active"); }); document.querySelectorAll(".nav-sub-active").forEach(function (el) { el.classList.remove("nav-sub-active"); }); }
+                document.addEventListener("keydown", function (e) { if (e.key === "Alt" && !navMode) { e.preventDefault(); navMode = true; mainIndex = 0; subIndex = -1; highlightMain(mainIndex); return; } if (!navMode) return; const items = topNavItems(); const currentMain = items[mainIndex]; const subItems = currentMain ? getSubItems(currentMain) : []; if (e.key === "Escape") { e.preventDefault(); resetNav(); return; } if (e.key === "ArrowRight") { e.preventDefault(); mainIndex = (mainIndex + 1) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowLeft") { e.preventDefault(); mainIndex = (mainIndex - 1 + items.length) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowDown") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = 0; else subIndex = (subIndex + 1) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "ArrowUp") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = subItems.length - 1; else subIndex = (subIndex - 1 + subItems.length) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "Enter") { e.preventDefault(); if (subIndex >= 0 && subItems[subIndex]) subItems[subIndex].click(); else if (currentMain) currentMain.click(); resetNav(); } });
+            })();setMode("display");
+            setFormEditable(false);
+            syncActionMode();
+            (async function init() { await loadStates(); await loadDistricts(); await loadCities(); })();
+        </script>
+</body>
+
+</html>
+

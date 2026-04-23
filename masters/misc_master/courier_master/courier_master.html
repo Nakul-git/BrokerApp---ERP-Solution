@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Courier Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../../../style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="./style.css?v=8">
+    
+
+    <script>
+        const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () {
+            const res = await fetch(appRoot + "api/check_auth.php");
+            const data = await res.json();
+            if (!data.logged_in) window.location.replace(appRoot + "login.html");
+        })();
+    </script>
+    <script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+    <link rel="stylesheet" href="../../../selection-mode.css?v=1">
+    <link rel="stylesheet" href="../../../add-mode.css?v=1">
+    <script src="../../../add-mode.js" defer></script>
+    <script src="../../../permissions-catalog.js"></script>
+    <script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">Courier Master</h2>
+
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div>
+                    <input id="filterInput" type="text" autocomplete="off" placeholder="Search courier...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="courierList"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <span id="modeTag" class="mode-tag">Display Mode</span>
+                    <form id="courierForm" autocomplete="off">
+                        <input type="hidden" id="courier_id" name="courier_id">
+                        <input type="hidden" id="station" name="station">
+                        <input type="hidden" id="applicable_divisions" name="applicable_divisions">
+                        <div class="form-grid">
+                            <div class="left-stack">
+                                <div class="form-group"><label for="courier_name" class="label-with-error"><span>Courier
+                                            Name</span><span id="courierNameError" class="error-text"
+                                            style="display:none;"></span></label><input id="courier_name"
+                                        name="courier_name" required data-add-first
+                                        data-duplicate-check="checkDuplicateCourierName"></div>
+                                <div class="pair-row">
+                                    <div class="form-group">
+                                        <label for="stationInput">Station</label>
+                                        <div class="dropdown-wrapper">
+                                            <input id="stationInput" autocomplete="off" placeholder="Select station..."
+                                                data-enter-next>
+                                            <div id="stationDropdown" class="dropdown-list"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="state_name">State</label><input id="state_name" name="state_name"
+                                            class="read-only-input" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group"><label for="pin_code">Pin Code</label><input id="pin_code"
+                                        name="pin_code"></div>
+                                <div class="form-group"><label for="pan_no">Pan No.</label><input id="pan_no"
+                                        name="pan_no"></div>
+                                <div class="form-group"><label for="contact_person">Contact Person</label><input
+                                        id="contact_person" name="contact_person"></div>
+                            </div>
+                            <div class="right-stack">
+                                <div class="form-group address-row">
+                                    <label for="address1">Address</label>
+                                    <div class="address-grid">
+                                        <input id="address1" name="address1">
+                                        <input id="address2" name="address2">
+                                    </div>
+                                </div>
+                                <div class="form-group address-row">
+                                    <label>&nbsp;</label>
+                                    <div class="address-grid">
+                                        <input id="address3" name="address3">
+                                        <input id="address4" name="address4">
+                                    </div>
+                                </div>
+                                <div class="division-row">
+                                    <div class="form-group division-group">
+                                        <label>Applicable Divisions</label>
+                                        <div class="division-box">
+                                            <div class="division-head">DivName</div>
+                                            <div id="divisionOptions" class="division-list"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group active-group">
+                                        <label>Active</label>
+                                        <div class="check-row"><label><input id="is_active" name="is_active"
+                                                    type="checkbox" checked></label></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                   <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let allCouriers = [];
+            let allCities = [];
+            let allDivisions = [];
+            let activeCourierId = null;
+            let preEditCourierId = null;
+            let currentMode = "display";
+            let stationIndex = -1;
+
+            const filterInput = document.getElementById("filterInput");
+            const courierList = document.getElementById("courierList");
+            const courierForm = document.getElementById("courierForm");
+            const modeTag = document.getElementById("modeTag");
+            const displayButtons = document.getElementById("displayButtons");
+            const addModeButtons = document.getElementById("addModeButtons");
+            const courierNameInput = document.getElementById("courier_name");
+            const courierNameError = document.getElementById("courierNameError");
+            const stationInput = document.getElementById("stationInput");
+            const stationHidden = document.getElementById("station");
+            const stateInput = document.getElementById("state_name");
+            const stationDropdown = document.getElementById("stationDropdown");
+            const applicableDivisionsInput = document.getElementById("applicable_divisions");
+            const divisionOptions = document.getElementById("divisionOptions");
+
+            function esc(v) { return (v ?? "").toString().replace(/[&<>\"']/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[m]; }); }
+            function courierNameOf(c) { return (c?.courier_name ?? "").toString(); }
+            function showCourierNameError(message) { courierNameInput.classList.add("field-error"); courierNameError.textContent = message; courierNameError.style.display = "inline"; }
+            function clearCourierNameError() { courierNameInput.classList.remove("field-error"); courierNameError.textContent = ""; courierNameError.style.display = "none"; }
+
+            function checkDuplicateCourierName() {
+                const name = courierNameInput.value.trim().toLowerCase();
+                if (!name) { clearCourierNameError(); return false; }
+                const currentId = Number(document.getElementById("courier_id").value || 0);
+                const duplicate = allCouriers.some(function (c) {
+                    const sameName = courierNameOf(c).trim().toLowerCase() === name;
+                    const sameId = Number(c.courier_id) === currentId;
+                    return sameName && !sameId;
+                });
+                if (duplicate) { showCourierNameError("Already exists"); return true; }
+                clearCourierNameError();
+                return false;
+            }
+
+            function setMode(mode) {
+                currentMode = mode;
+                const rightPanel = document.querySelector(".right-panel");
+                rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+                if (mode === "add") { modeTag.textContent = "Add Mode"; rightPanel.classList.add("add-mode"); setTimeout(function () { courierNameInput.focus(); }, 0); }
+                if (mode === "modify") { modeTag.textContent = "Edit Mode"; rightPanel.classList.add("modify-mode"); setTimeout(function () { courierNameInput.focus(); }, 0); }
+                if (mode === "display") { modeTag.textContent = "Display Mode"; rightPanel.classList.add("display-mode"); preEditCourierId = null; clearCourierNameError(); syncSelectionHighlight(); }
+                syncActionMode();
+            }
+
+            function syncActionMode() {
+                const isDisplay = currentMode === "display";
+                displayButtons.classList.toggle("hidden", !isDisplay);
+                addModeButtons.classList.toggle("hidden", isDisplay);
+                displayButtons.style.display = isDisplay ? "flex" : "none";
+                addModeButtons.style.display = isDisplay ? "none" : "flex";
+            }
+
+            function setFormEditable(editable) {
+                const fields = courierForm.querySelectorAll("input");
+                fields.forEach(function (field) {
+                    if (field.id === "courier_id" || field.id === "station" || field.id === "applicable_divisions") return;
+                    if (field.id === "state_name") { field.readOnly = true; return; }
+                    if (field.type === "checkbox") {
+                        field.disabled = !editable;
+                        if (!editable) field.setAttribute("tabindex", "-1"); else field.removeAttribute("tabindex");
+                        return;
+                    }
+                    if (!editable) field.setAttribute("tabindex", "-1"); else field.removeAttribute("tabindex");
+                    field.readOnly = !editable;
+                });
+                stationInput.readOnly = !editable;
+                stationInput.tabIndex = editable ? 0 : -1;
+                divisionOptions.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+                    cb.disabled = !editable;
+                    cb.tabIndex = editable ? 0 : -1;
+                });
+            }
+
+            function parseStoredDivisionValues(raw) {
+                if (!raw) return [];
+                return raw.split(",").map(function (v) { return v.trim(); }).filter(Boolean);
+            }
+
+            function getSelectedDivisionIds() {
+                return Array.from(divisionOptions.querySelectorAll("input[type='checkbox']:checked")).map(function (cb) { return cb.value; });
+            }
+
+            function syncApplicableDivisionsHidden() {
+                applicableDivisionsInput.value = getSelectedDivisionIds().join(",");
+            }
+
+            function renderDivisionOptions(selectedValues) {
+                const selectedSet = new Set((selectedValues || []).map(function (v) { return v.toString().toLowerCase(); }));
+                if (!allDivisions.length) {
+                    divisionOptions.innerHTML = "<div style='font-size:14px;font-family:\"Times New Roman\",serif;'>No divisions found</div>";
+                    applicableDivisionsInput.value = "";
+                    return;
+                }
+                divisionOptions.innerHTML = allDivisions.map(function (d) {
+                    const id = String(d.division_id ?? "");
+                    const name = String(d.div_name ?? "");
+                    const checked = selectedSet.has(id.toLowerCase()) || selectedSet.has(name.toLowerCase()) ? "checked" : "";
+                    return "<label class='division-option'><input type='checkbox' value='" + esc(id) + "' data-name='" + esc(name) + "' " + checked + "> " + esc(name) + "</label>";
+                }).join("");
+                divisionOptions.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+                    cb.addEventListener("change", syncApplicableDivisionsHidden);
+                });
+                syncApplicableDivisionsHidden();
+            }
+            function setField(id, v) { const el = document.getElementById(id); if (el) el.value = v ?? ""; }
+            function setCheck(id, v) { const el = document.getElementById(id); if (el) el.checked = Number(v) === 1; }
+
+            function fillForm(c) {
+                setField("courier_id", c.courier_id);
+                setField("courier_name", c.courier_name);
+                setField("address1", c.address1);
+                setField("address2", c.address2);
+                setField("address3", c.address3);
+                setField("address4", c.address4);
+                stationInput.value = c.station || "";
+                stationHidden.value = c.station || "";
+                setField("state_name", c.state_name);
+                setField("pin_code", c.pin_code);
+                setField("contact_person", c.contact_person);
+                setField("pan_no", c.pan_no);
+                setCheck("is_active", c.is_active);
+                renderDivisionOptions(parseStoredDivisionValues(c.applicable_divisions || ""));
+                activeCourierId = Number(c.courier_id);
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                clearCourierNameError();
+            }
+
+            function fillFormWithoutRender(c) {
+                setField("courier_id", c.courier_id);
+                setField("courier_name", c.courier_name);
+                setField("address1", c.address1);
+                setField("address2", c.address2);
+                setField("address3", c.address3);
+                setField("address4", c.address4);
+                stationInput.value = c.station || "";
+                stationHidden.value = c.station || "";
+                setField("state_name", c.state_name);
+                setField("pin_code", c.pin_code);
+                setField("contact_person", c.contact_person);
+                setField("pan_no", c.pan_no);
+                setCheck("is_active", c.is_active);
+                renderDivisionOptions(parseStoredDivisionValues(c.applicable_divisions || ""));
+                activeCourierId = Number(c.courier_id);
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                clearCourierNameError();
+            }
+
+            function ensureActiveCourierSelection() {
+                if (!allCouriers.length) { activeCourierId = null; return null; }
+                let active = allCouriers.find(function (c) { return Number(c.courier_id) === Number(activeCourierId); });
+                if (!active) { active = allCouriers[0]; activeCourierId = Number(active.courier_id); }
+                return active;
+            }
+
+            function renderCouriers() {
+                ensureActiveCourierSelection();
+                const keyword = "";
+                const rows = allCouriers.filter(function (c) {
+                    const name = (c.courier_name || "").toLowerCase();
+                    const station = (c.station || "").toLowerCase();
+                    return !keyword || name.includes(keyword) || station.includes(keyword);
+                });
+                if (!rows.length) { courierList.innerHTML = "<div class='courier-row'>No records found</div>"; return; }
+                courierList.innerHTML = rows.map(function (c) {
+                    const active = Number(c.courier_id) === activeCourierId ? "active" : "";
+                    return "<div class='courier-row " + active + "' data-id='" + esc(c.courier_id) + "'>" + esc(courierNameOf(c)) + "</div>";
+                }).join("");
+                courierList.querySelectorAll(".courier-row").forEach(function (row) {
+                    row.addEventListener("click", function () { selectRow(this); });
+                });
+                syncSelectionHighlight();
+            }
+
+            function syncSelectionHighlight() {
+                const rows = Array.from(courierList.querySelectorAll(".courier-row")).filter(function (r) { return r.dataset.id; });
+                rows.forEach(function (r) { r.classList.remove("active"); });
+                const activeRow = rows.find(function (r) { return Number(r.dataset.id) === Number(activeCourierId); });
+                if (activeRow) { activeRow.classList.add("active"); activeRow.scrollIntoView({ block: "nearest" }); }
+            }
+
+            function selectRow(row) {
+                courierList.querySelectorAll(".courier-row").forEach(function (r) { r.classList.remove("active"); });
+                row.classList.add("active");
+                const id = Number(row.dataset.id);
+                activeCourierId = id;
+                const c = allCouriers.find(function (x) { return Number(x.courier_id) === id; });
+                if (!c) return;
+                fillFormWithoutRender(c);
+                row.scrollIntoView({ block: "center" });
+            }
+
+            function resetForm() {
+                courierForm.reset();
+                setField("courier_id", "");
+                setField("station", "");
+                stationInput.value = "";
+                setField("state_name", "");
+                setCheck("is_active", 1);
+                activeCourierId = null;
+                clearCourierNameError();
+                renderDivisionOptions([]);
+                setMode("add");
+                setFormEditable(true);
+                syncActionMode();
+                renderCouriers();
+            }
+
+            function filterCities(term) {
+                const q = (term || "").trim().toLowerCase();
+                return allCities.filter(function (c) { return (c.city_name || "").toLowerCase().includes(q); });
+            }
+
+            function selectCity(city) {
+                stationInput.value = city.city_name || "";
+                stationHidden.value = city.city_name || "";
+                stateInput.value = city.state_name || "";
+                stationDropdown.style.display = "none";
+                stationIndex = -1;
+            }
+
+            function renderStationDropdown(cities) {
+                stationDropdown.innerHTML = "";
+                if (!cities.length) { stationDropdown.style.display = "none"; return; }
+                cities.forEach(function (city, idx) {
+                    const row = document.createElement("div");
+                    row.textContent = (city.city_name || "") + " (" + (city.state_name || "") + ")";
+                    if (idx === stationIndex) row.classList.add("active");
+                    row.addEventListener("click", function () { selectCity(city); });
+                    stationDropdown.appendChild(row);
+                });
+                stationDropdown.style.display = "block";
+            }
+
+            function openStationDropdown() {
+                if (currentMode !== "add" && currentMode !== "modify") return;
+                const list = allCities.slice();
+                stationIndex = -1;
+                renderStationDropdown(list);
+            }
+
+            function closeStationDropdown() {
+                stationDropdown.style.display = "none";
+                stationIndex = -1;
+            }
+
+            async function loadDivisions() {
+                const res = await fetch("../../../api/division/get_division.php");
+                allDivisions = await res.json();
+                renderDivisionOptions(parseStoredDivisionValues(applicableDivisionsInput.value || ""));
+            }
+
+            async function loadCities() {
+                const res = await fetch("../../../api/area/get_cities.php");
+                allCities = await res.json();
+            }
+
+            async function loadCouriers() {
+                const res = await fetch("../../../api/courier/get_courier.php");
+                allCouriers = await res.json();
+                if (allCouriers.length) {
+                    ensureActiveCourierSelection();
+                    renderCouriers();
+                    const selected = ensureActiveCourierSelection();
+                    if (selected) fillFormWithoutRender(selected);
+                    document.querySelector(".list-wrap").scrollTop = 0;
+                } else {
+                    renderCouriers();
+                    setMode("display");
+                    setFormEditable(false);
+                    syncActionMode();
+                }
+            }
+
+            async function saveCourier(isModify) {
+                if (checkDuplicateCourierName()) { courierNameInput.focus(); courierNameInput.select(); return; }
+                const courierId = document.getElementById("courier_id").value;
+                const courierName = (courierNameInput.value || "").trim();
+                if (!courierName) { showCourierNameError("Required"); setTimeout(function () { courierNameInput.focus(); courierNameInput.select(); }, 50); return; }
+
+                if (stationInput.value.trim() && !stationHidden.value) {
+                    const city = allCities.find(function (c) { return (c.city_name || "").toLowerCase() === stationInput.value.trim().toLowerCase(); });
+                    if (city) selectCity(city);
+                }
+
+                syncApplicableDivisionsHidden();
+
+                let url = "../../../api/courier/add_courier.php";
+                if (isModify) {
+                    if (!courierId) { alert("Select a courier to modify"); return; }
+                    url = "../../../api/courier/update_courier.php";
+                } else {
+                    const c = await window.confirmAdd("Are you sure you want to add this courier?\n\n" + courierName);
+                    if (!c) return;
+                }
+
+                const fd = new FormData(courierForm);
+                const res = await fetch(url, { method: "POST", body: fd });
+                const data = await res.json();
+                if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+                if (data.status === "success") {
+                    await loadCouriers();
+                    if (isModify && courierId) {
+                        const updated = allCouriers.find(function (c) { return Number(c.courier_id) === Number(courierId); });
+                        if (updated) fillForm(updated);
+                        return;
+                    }
+                    resetForm();
+                    setMode("add");
+                    setFormEditable(true);
+                    syncActionMode();
+                    courierNameInput.focus();
+                }
+            }
+            async function deleteCourier() {
+                const courierId = document.getElementById("courier_id").value;
+                if (!courierId) { alert("Select a courier to delete"); return; }
+                const yes = await confirmDelete("Delete this courier?");
+                if (!yes) return;
+                const body = new URLSearchParams();
+                body.set("courier_id", courierId);
+                const res = await fetch("../../../api/courier/delete_courier.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: body.toString()
+                });
+                const data = await res.json();
+                if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+                if (data.status === "success") {
+                    await loadCouriers();
+                    if (allCouriers.length) { setMode("display"); setFormEditable(false); syncActionMode(); }
+                    else resetForm();
+                }
+            }
+
+            function handleAddAction() { preEditCourierId = activeCourierId; resetForm(); courierNameInput.focus(); }
+            function handleModifyAction() {
+                const courierId = document.getElementById("courier_id").value;
+                if (!courierId) { alert("Select a courier to modify"); return; }
+                preEditCourierId = Number(courierId);
+                setMode("modify");
+                setFormEditable(true);
+                syncActionMode();
+            }
+            function cancelEditMode() {
+                if (preEditCourierId) {
+                    const prev = allCouriers.find(function (c) { return Number(c.courier_id) === Number(preEditCourierId); });
+                    if (prev) { fillForm(prev); preEditCourierId = null; return; }
+                }
+                const fallback = ensureActiveCourierSelection();
+                if (fallback) { fillForm(fallback); return; }
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                renderCouriers();
+            }
+
+            courierNameInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkDuplicateCourierName(); });
+            stationInput.addEventListener("focus", function () {
+                if (currentMode === "add" || currentMode === "modify") {
+                    stationIndex = -1;
+                    renderStationDropdown(allCities);
+                }
+            });
+            stationInput.addEventListener("input", function () {
+                stationHidden.value = "";
+                stateInput.value = "";
+                const term = this.value.toLowerCase();
+                const filtered = allCities.filter(function (c) { return (c.city_name || "").toLowerCase().includes(term); });
+                renderStationDropdown(filtered);
+                if (filtered.length === 1) {
+                    stationIndex = 0;
+                    const items = Array.from(stationDropdown.children);
+                    if (items.length) {
+                        items.forEach(function (item, i) { item.classList.toggle("active", i === stationIndex); });
+                    }
+                } else {
+                    stationIndex = -1;
+                }
+            });
+            stationInput.addEventListener("keydown", function (e) {
+                if (currentMode !== "add" && currentMode !== "modify") return;
+                const items = Array.from(stationDropdown.children);
+                if (!items.length) {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        renderStationDropdown(allCities);
+                    }
+                    return;
+                }
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    stationIndex = (stationIndex + 1) % items.length;
+                    items.forEach(function (item, i) { item.classList.toggle("active", i === stationIndex); });
+                    items[stationIndex].scrollIntoView({ block: "nearest" });
+                } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    stationIndex = (stationIndex - 1 + items.length) % items.length;
+                    items.forEach(function (item, i) { item.classList.toggle("active", i === stationIndex); });
+                    items[stationIndex].scrollIntoView({ block: "nearest" });
+                } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (stationIndex >= 0 && items[stationIndex]) {
+                        const text = items[stationIndex].textContent || "";
+                        const cityName = text.split(" (")[0];
+                        const city = allCities.find(function (c) { return (c.city_name || "") === cityName; });
+                        if (city) selectCity(city);
+                    }
+                } else if (e.key === "Escape") {
+                    closeStationDropdown();
+                }
+            });
+            stationInput.addEventListener("blur", function () { setTimeout(closeStationDropdown, 150); });
+            document.addEventListener("click", function (e) {
+                if (!e.target.closest(".dropdown-wrapper")) {
+                    closeStationDropdown();
+                }
+            });
+            document.getElementById("addBtn").addEventListener("click", handleAddAction);
+            document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+            document.getElementById("deleteBtn").addEventListener("click", deleteCourier);
+            document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+            document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../../index.html"; });
+            document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+            document.getElementById("saveBtn").addEventListener("click", function () { if (currentMode === "modify") saveCourier(true); else saveCourier(false); });let typeBuffer = "", typeTimer = null, lastMatchedIndex = -1;
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+                const rows = Array.from(courierList.querySelectorAll(".courier-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                const isSearchBox = document.activeElement.id === "filterInput";
+                if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+                    if (isSearchBox) return;
+                    e.preventDefault();
+                    const letter = e.key.toLowerCase();
+                    if (typeTimer) clearTimeout(typeTimer);
+                    typeBuffer += letter;
+                    typeTimer = setTimeout(function () { typeBuffer = ""; lastMatchedIndex = -1; }, 700);
+                    let matchIndex = -1;
+                    if (typeBuffer.length === 1) {
+                        const startIndex = lastMatchedIndex + 1;
+                        matchIndex = rows.findIndex(function (row, index) { return index >= startIndex && row.textContent.trim().toLowerCase().startsWith(letter); });
+                        if (matchIndex === -1) matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(letter); });
+                    } else {
+                        matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(typeBuffer); });
+                    }
+                    if (matchIndex !== -1) { lastMatchedIndex = matchIndex; selectRow(rows[matchIndex]); }
+                }
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                const rows = Array.from(courierList.querySelectorAll(".courier-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeCourierId); });
+                if (currentIndex === -1) currentIndex = 0;
+                if (e.key === "ArrowDown") { e.preventDefault(); if (currentIndex < rows.length - 1) currentIndex++; selectRow(rows[currentIndex]); }
+                if (e.key === "ArrowUp") { e.preventDefault(); if (currentIndex > 0) currentIndex--; selectRow(rows[currentIndex]); }
+            });(function () { let navMode = false, mainIndex = 0, subIndex = -1; const topNavItems = function () { return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function (li) { return li.offsetParent !== null; }); }; function getSubItems(li) { return Array.from(li.querySelectorAll("ul li")).filter(function (item) { return item.offsetParent !== null; }); } function highlightMain(index) { const items = topNavItems(); items.forEach(function (i) { i.classList.remove("nav-active"); }); if (!items[index]) return; items[index].classList.add("nav-active"); if (items[index].focus) items[index].focus(); } function highlightSub(subItems, index) { subItems.forEach(function (i) { i.classList.remove("nav-sub-active"); }); if (!subItems[index]) return; subItems[index].classList.add("nav-sub-active"); subItems[index].scrollIntoView({ block: "nearest" }); } function resetNav() { navMode = false; mainIndex = 0; subIndex = -1; document.querySelectorAll(".nav-active").forEach(function (el) { el.classList.remove("nav-active"); }); document.querySelectorAll(".nav-sub-active").forEach(function (el) { el.classList.remove("nav-sub-active"); }); } document.addEventListener("keydown", function (e) { if (e.key === "Alt" && !navMode) { e.preventDefault(); navMode = true; mainIndex = 0; subIndex = -1; highlightMain(mainIndex); return; } if (!navMode) return; const items = topNavItems(); const currentMain = items[mainIndex]; const subItems = currentMain ? getSubItems(currentMain) : []; if (e.key === "Escape") { e.preventDefault(); resetNav(); return; } if (e.key === "ArrowRight") { e.preventDefault(); mainIndex = (mainIndex + 1) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowLeft") { e.preventDefault(); mainIndex = (mainIndex - 1 + items.length) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowDown") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = 0; else subIndex = (subIndex + 1) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "ArrowUp") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = subItems.length - 1; else subIndex = (subIndex - 1 + subItems.length) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "Enter") { e.preventDefault(); if (subIndex >= 0 && subItems[subIndex]) subItems[subIndex].click(); else if (currentMain) currentMain.click(); resetNav(); } }); })();
+
+            setMode("display");
+            setFormEditable(false);
+            syncActionMode();
+            (async function init() {
+                await loadDivisions();
+                await loadCities();
+                await loadCouriers();
+                if (allCouriers.length) {
+                    const first = ensureActiveCourierSelection();
+                    if (first) fillFormWithoutRender(first);
+                    renderCouriers();
+                }
+            })();
+        </script>
+
+</body>
+
+</html>
+

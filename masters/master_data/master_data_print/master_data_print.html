@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Master Data Print | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+
+<script>
+const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () {
+    const res = await fetch(appRoot + "api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 26px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 44px);
+    min-height: 0;
+}
+
+.right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 10px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-end;
+    margin-bottom: 8px;
+    padding: 2px 8px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.print-form {
+    border: 1px solid #d7d7d7;
+    background: #efefef;
+    padding: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.top-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid #c9c9c9;
+    background: #fff;
+    padding: 6px 8px;
+}
+
+.top-bar label {
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 8px;
+    margin-top: 8px;
+    min-height: 0;
+}
+
+.list-panel {
+    border: 1px solid #3a3a3a;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.list-head {
+    display: grid;
+    grid-template-columns: 1fr 160px 80px;
+    border-bottom: 1px solid #3a3a3a;
+    background: #fff;
+}
+
+.list-head div {
+    padding: 4px 6px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    border-right: 1px solid #3a3a3a;
+}
+
+.list-head div:last-child { border-right: 0; }
+
+.list-body {
+    flex: 1;
+    overflow: auto;
+    background: #fff;
+}
+
+.list-row {
+    display: grid;
+    grid-template-columns: 1fr 160px 80px;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+}
+
+.list-row > div { padding: 4px 6px; }
+
+.list-row input { margin: 0; }
+
+.filter-row {
+    border: 1px solid #3a3a3a;
+    height: 28px;
+    margin-top: 6px;
+    background: #fff;
+}
+
+.side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.deals-box {
+    border: 1px solid #3a3a3a;
+    background: #ffb5be;
+    min-height: 140px;
+    padding: 6px;
+}
+
+.deals-title {
+    text-align: center;
+    color: #f07c00;
+    font-weight: 700;
+    font-family: "Times New Roman", serif;
+    margin: 0 0 6px;
+}
+
+.deals-head {
+    font-weight: 700;
+    font-family: "Times New Roman", serif;
+    margin-bottom: 4px;
+}
+
+.deals-row { display: flex; align-items: center; gap: 6px; }
+
+.option-box {
+    border: 1px solid #c9c9c9;
+    background: #fff;
+    padding: 6px;
+}
+
+.option-title {
+    font-weight: 700;
+    font-family: "Times New Roman", serif;
+    margin-bottom: 6px;
+}
+
+.option-box label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-family: "Times New Roman", serif;
+    margin-bottom: 4px;
+}
+
+.action-row {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    min-width: 120px;
+    padding: 4px 10px;
+    height: 32px;
+    border-radius: 2px;
+    border: 2px solid #c9c9c9;
+    background: #fff;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.action-row.hidden { display: none; }
+
+.right-panel.display-mode input,
+.right-panel.display-mode select,
+.right-panel.display-mode textarea {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Print screen filters must stay interactive in Display Mode */
+.right-panel.display-mode .print-form input,
+.right-panel.display-mode .print-form select,
+.right-panel.display-mode .print-form textarea {
+    pointer-events: auto;
+    user-select: auto;
+}
+
+@media (max-width: 1220px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .main-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Master Data Print</h2>
+
+<div class="master-layout">
+<div class="right-panel">
+<span id="modeTag" class="mode-tag" style="display:none;">Display Mode</span>
+<form id="printForm" autocomplete="off" class="print-form">
+
+<div class="top-bar">
+<label><input type="radio" name="print_mode" value="PARTY" checked>Party Wise</label>
+<label><input type="radio" name="print_mode" value="STATION">Station Wise</label>
+<label><input type="radio" name="print_mode" value="STATE">State Wise</label>
+<label><input type="radio" name="print_mode" value="GROUP">Group Wise</label>
+</div>
+
+<div class="main-grid">
+<div>
+<div class="list-panel">
+<div class="list-head">
+<div id="colName">Name</div>
+<div id="colStation">Station</div>
+<div id="colCode">Code</div>
+</div>
+<div class="list-body" id="mainList"></div>
+</div>
+<div class="filter-row"></div>
+
+<div class="action-row">
+<button type="button" class="btn" id="selectAllBtn">Select All</button>
+<button type="button" class="btn" id="deselectAllBtn">De-Select All [F4]</button>
+<button type="button" class="btn" id="proceedBtn">Proceed [F6]</button>
+</div>
+</div>
+
+<div class="side-panel">
+<div class="deals-title">DEALS IN PARTY</div>
+<div class="deals-box">
+<div class="deals-head">DEALS</div>
+<div id="dealsList"></div>
+</div>
+
+<div class="option-box">
+<div class="option-title">Select Type</div>
+<label><input type="radio" name="deal_type" value="BUYER" checked>Buyer</label>
+<label><input type="radio" name="deal_type" value="SELLER">Seller</label>
+<label><input type="radio" name="deal_type" value="BOTH">Both</label>
+</div>
+
+<div class="option-box">
+<div class="option-title">Format-</div>
+<label><input type="radio" name="format_type" value="FORMAT1" checked>Format1</label>
+<label><input type="radio" name="format_type" value="FORMAT2">Format2</label>
+<label><input type="radio" name="format_type" value="FORMAT3">Format3</label>
+</div>
+</div>
+</div>
+</form>
+
+<div id="displayButtons" class="action-row">
+<button class="btn" type="button" id="exitBtn">&#10060; Esc-Exit</button>
+</div>
+
+<div id="addModeButtons" class="action-row hidden">
+<button class="btn" type="button" id="cancelBtn">&#10060; Esc-Cancel</button>
+<button class="btn" type="button" id="saveBtn">&#128190; F6-Save</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let currentMode = "display";
+
+const printForm = document.getElementById("printForm");
+const modeTag = document.getElementById("modeTag");
+const rightPanel = document.querySelector(".right-panel");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const mainList = document.getElementById("mainList");
+const colName = document.getElementById("colName");
+const colStation = document.getElementById("colStation");
+const colCode = document.getElementById("colCode");
+const dealsList = document.getElementById("dealsList");
+let cachedParties = null;
+let cachedCities = null;
+let cachedStates = null;
+let cachedGroups = null;
+
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    const isDisplay = mode === "display";
+    displayButtons.classList.toggle("hidden", !isDisplay);
+    addModeButtons.classList.toggle("hidden", isDisplay);
+}
+
+function setFormEditable(editable) {
+    const fields = printForm.querySelectorAll("input, select, textarea, button");
+    fields.forEach(function (field) {
+        if (editable) field.removeAttribute("tabindex");
+        else field.setAttribute("tabindex", "-1");
+    });
+}
+
+function renderList(rows) {
+    mainList.innerHTML = rows.map(function (r) {
+        return "<div class='list-row'>"
+            + "<div><label><input type='checkbox'>" + r.name + "</label></div>"
+            + "<div>" + (r.station || "") + "</div>"
+            + "<div>" + (r.code || "") + "</div>"
+            + "</div>";
+    }).join("");
+}
+
+function renderDeals(rows) {
+    if (!rows.length) {
+        dealsList.innerHTML = "<div class='deals-row'>No deals available</div>";
+        return;
+    }
+    dealsList.innerHTML = rows.map(function (d, idx) {
+        const id = "deal_" + String(d.deals_id || idx);
+        return "<div class='deals-row'>"
+            + "<input type='checkbox' id='" + id + "' value='" + (d.deals_id || "") + "'>"
+            + "<span class='deal-name' data-for='" + id + "'>" + (d.deals_name || "") + "</span>"
+            + "</div>";
+    }).join("");
+}
+
+function loadDeals() {
+    return fetch(appRoot + "api/deals_in/get_deals_in.php")
+        .then(res => res.json())
+        .then(data => {
+            const rows = Array.isArray(data) ? data : [];
+            renderDeals(rows);
+        });
+}
+
+function loadParties() {
+    if (cachedParties) return Promise.resolve(cachedParties);
+    return fetch(appRoot + "api/party/get_party.php")
+        .then(res => res.json())
+        .then(data => {
+            cachedParties = Array.isArray(data) ? data : [];
+            return cachedParties;
+        });
+}
+
+function loadCities() {
+    if (cachedCities) return Promise.resolve(cachedCities);
+    return fetch(appRoot + "api/city/get_city.php")
+        .then(res => res.json())
+        .then(data => {
+            cachedCities = Array.isArray(data) ? data : [];
+            return cachedCities;
+        });
+}
+
+function loadStates() {
+    if (cachedStates) return Promise.resolve(cachedStates);
+    return fetch(appRoot + "api/state/get_states.php")
+        .then(res => res.json())
+        .then(data => {
+            cachedStates = Array.isArray(data) ? data : [];
+            return cachedStates;
+        });
+}
+
+function loadGroups() {
+    if (cachedGroups) return Promise.resolve(cachedGroups);
+    return fetch(appRoot + "api/group/get_group.php")
+        .then(res => res.json())
+        .then(data => {
+            cachedGroups = Array.isArray(data) ? data : [];
+            return cachedGroups;
+        });
+}
+
+function updateColumns(mode) {
+    if (mode === "PARTY") {
+        colName.textContent = "Name";
+        colStation.textContent = "Station";
+        colCode.textContent = "Code";
+        loadParties().then(function (rows) {
+            renderList(rows.map(function (p) {
+                return {
+                    name: (p.party_name || ""),
+                    station: (p.city || ""),
+                    code: (p.party_id || "")
+                };
+            }));
+        });
+    } else if (mode === "STATION") {
+        colName.textContent = "CityName";
+        colStation.textContent = "";
+        colCode.textContent = "";
+        loadCities().then(function (rows) {
+            renderList(rows.map(function (c) {
+                return { name: (c.city_name || "") };
+            }));
+        });
+    } else if (mode === "STATE") {
+        colName.textContent = "State Name";
+        colStation.textContent = "";
+        colCode.textContent = "";
+        loadStates().then(function (rows) {
+            renderList(rows.map(function (s) {
+                return { name: (s.state_name || "") };
+            }));
+        });
+    } else {
+        colName.textContent = "Group Name";
+        colStation.textContent = "";
+        colCode.textContent = "";
+        loadGroups().then(function (rows) {
+            renderList(rows.map(function (g) {
+                return { name: (g.group_name || "") };
+            }));
+        });
+    }
+}
+
+printForm.querySelectorAll("input[name='print_mode']").forEach(function (radio) {
+    radio.addEventListener("change", function () { updateColumns(radio.value); });
+});
+
+const exitBtn = document.getElementById("exitBtn");
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+
+if (exitBtn) exitBtn.addEventListener("click", function () { window.location.href = appRoot + "index.html"; });
+if (saveBtn) saveBtn.addEventListener("click", function () { setMode("display"); setFormEditable(false); });
+if (cancelBtn) cancelBtn.addEventListener("click", function () { setMode("display"); setFormEditable(false); });
+
+(function init() {
+    updateColumns("PARTY");
+    setMode("display");
+    setFormEditable(false);
+    loadDeals();
+})();
+</script>
+</body>
+</html>

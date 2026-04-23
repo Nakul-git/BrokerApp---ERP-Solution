@@ -1,0 +1,480 @@
+* {
+    box-sizing: border-box
+}
+
+html,
+body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden
+}
+
+.page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 28px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 52px);
+    min-height: 0
+}
+
+.left-panel,
+.right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 10px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column
+}
+
+.left-panel .label {
+    font-size: 18px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 34px;
+    padding: 6px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6
+}
+
+.list-wrap {
+    margin-top: 8px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 64px);
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, .2);
+    background: #fff
+}
+
+.division-row {
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px
+}
+
+.division-row:hover {
+    background: rgba(0, 0, 0, .08)
+}
+
+.division-row.active {
+    background: #0074d9;
+    color: #fff
+}
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 10px;
+    padding: 2px 8px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700
+}
+
+#divisionForm {
+    border: 1px solid #d7d7d7;
+    padding: 4px;
+    background: #efefef;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0
+}
+
+.tab-shell {
+    border: 1px solid #d0d0d0;
+    background: #f6f6f6;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-top: 8px;
+    margin-top: 6px
+}
+
+.tab-row {
+    display: flex;
+    gap: 4px;
+    padding: 0 0 0 8px;
+    margin-top: -1px;
+    margin-bottom: 0;
+    flex: 0 0 auto
+}
+
+.tab-btn {
+    display: inline-block;
+    width: auto;
+    min-width: 0;
+    height: 26px;
+    margin: 0;
+    padding: 3px 12px 4px;
+    border: 1px solid #d0d0d0;
+    border-bottom: none;
+    border-radius: 0;
+    background: #e9e9e9;
+    color: #222;
+    cursor: pointer;
+    font-family: "Times New Roman", serif;
+    font-size: 14px;
+    line-height: 18px;
+    white-space: nowrap;
+    vertical-align: bottom;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none;
+    outline: none;
+    position: relative;
+    top: 0
+}
+
+.tab-btn.active {
+    background: #fff;
+    font-weight: 400
+}
+
+.tab-btn:focus,
+.tab-btn:hover {
+    background: #fff
+}
+
+.tab-panel {
+    display: none;
+    overflow: auto;
+    min-height: 0;
+    flex: 1;
+    padding: 12px 6px 6px
+}
+
+.tab-panel.active {
+    display: block
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px 8px;
+    align-content: start
+}
+
+.additional-grid {
+    grid-auto-flow: row dense
+}
+
+.terms-box {
+    grid-column: 2;
+    grid-row: 1 / span 6
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px
+}
+
+#basicTab .form-group {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 6px;
+    row-gap: 0
+}
+
+#additionalTab .form-group {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 6px;
+    row-gap: 0
+}
+
+#additionalTab .form-group label {
+    font-size: 12px
+}
+
+#additionalTab .form-group input,
+#additionalTab .form-group textarea {
+    height: 20px;
+    font-size: 11px
+}
+
+#additionalTab .form-group textarea {
+    height: 120px
+}
+
+#additionalTab .terms-box {
+    grid-column: 2;
+    grid-row: 1 / span 6
+}
+
+#additionalTab .terms-box label {
+    grid-column: 1;
+    grid-row: 1
+}
+
+#additionalTab .terms-box textarea {
+    grid-column: 2;
+    grid-row: 1 / span 6
+}
+
+#basicTab .form-group label {
+    font-size: 12px
+}
+
+#basicTab .form-group input {
+    height: 20px;
+    font-size: 11px
+}
+
+#basicTab .top-checks {
+    grid-template-columns: 1fr;
+    align-items: start
+}
+
+#basicTab .top-checks .check-row {
+    padding-top: 0
+}
+
+.form-group.full {
+    grid-column: 1 / -1
+}
+
+.form-group label {
+    font-size: 12px;
+    line-height: 1;
+    font-family: "Times New Roman", serif;
+    color: #2d2d2d
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    max-width: 100%;
+    height: 22px;
+    padding: 1px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #f0f0f0;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    color: #000
+}
+
+.form-group textarea {
+    height: 56px;
+    resize: vertical
+}
+
+.terms-box textarea {
+    height: 140px
+}
+
+.check-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-top: 0
+}
+
+.check-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px
+}
+
+.check-row input[type="checkbox"] {
+    width: 11px;
+    height: 11px;
+    margin: 0
+}
+
+.right-panel.display-mode input,
+.right-panel.display-mode textarea {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    cursor: default;
+    pointer-events: none;
+    user-select: none
+}
+
+.right-panel.display-mode input[type="checkbox"] {
+    pointer-events: none
+}
+
+.action-row {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px
+}
+
+.action-row.hidden {
+    display: none
+}
+
+.btn {
+    min-width: 104px;
+    padding: 4px 10px;
+    height: 32px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+    display: flex;
+    align-items: center;
+    gap: 6px
+}
+
+.btn:hover {
+    filter: brightness(.98)
+}
+
+.btn.primary,
+.btn.danger {
+    background: #ea7ce8;
+    color: #000;
+    border-color: #efc9f0
+}
+
+.simple-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999
+}
+
+.simple-modal-box {
+    background: #1f2937;
+    color: #fff;
+    padding: 20px;
+    width: 320px;
+    border-radius: 10px
+}
+
+.simple-modal-buttons {
+    margin-top: 15px;
+    text-align: right
+}
+
+.simple-modal-buttons button {
+    margin-left: 10px;
+    padding: 5px 15px;
+    cursor: pointer
+}
+
+@media (max-width:900px) {
+
+    html,
+    body {
+        overflow: auto;
+        height: auto
+    }
+
+    .content {
+        padding: 10px 8px 16px;
+        height: auto;
+        overflow: visible
+    }
+
+    .feature-box {
+        height: auto;
+        overflow: visible
+    }
+
+    .master-layout {
+        grid-template-columns: 1fr
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr
+    }
+
+    .list-wrap {
+        height: 260px
+    }
+}

@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>State Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../../../style.css?v=8">
+    <link rel="stylesheet" href="./style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script>
+        const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () {
+            const res = await fetch(appRoot + "api/check_auth.php");
+            const data = await res.json();
+            if (!data.logged_in) window.location.replace(appRoot + "login.html");
+        })();
+    </script>
+    <script src="../../../global-nav.js" defer></script>
+    <script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+    <link rel="stylesheet" href="../../../selection-mode.css?v=1">
+    <link rel="stylesheet" href="../../../add-mode.css?v=1">
+    <script src="../../../add-mode.js" defer></script>
+    <script src="../../../permissions-catalog.js"></script>
+    <script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">State Master</h2>
+
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div>
+                    <input id="filterInput" type="text" autocomplete="off" placeholder="Search state...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="stateList"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <span id="modeTag" class="mode-tag">Display Mode</span>
+                    <form id="stateForm" autocomplete="off">
+                        <input type="hidden" id="stateId" name="id">
+                        <div class="form-grid">
+                            <div class="form-group full">
+                                <label for="state_name" class="label-with-error">
+                                    <span>State Name</span>
+                                    <span id="stateNameError" class="error-text" style="display:none;"></span>
+                                </label>
+                                <input id="state_name" name="state_name" required data-add-first
+                                    data-duplicate-check="checkDuplicateStateName">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="state_capital">State Capital</label>
+                                <input id="state_capital" type="number" name="state_capital">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="label-with-error">
+                                    <span>Type (S/I)</span>
+                                    <span id="stateTypeError" class="error-text" style="display:none;"></span>
+                                </label>
+
+                                <div class="dropdown-wrapper">
+                                    <input type="text" id="state_type_input" placeholder="Select Type"
+                                        autocomplete="off" required readonly data-required-check="checkTypeRequired">
+
+                                    <div class="dropdown-list" id="typeDropdown"></div>
+                                </div>
+
+                                <input type="hidden" id="state_type" name="state_type" required>
+                            </div>
+
+
+                            <div class="form-group">
+                                <label for="state_area">State Area (Sq. Kms)</label>
+                                <input id="state_area" name="state_area" type="number" step="0.01" min="0" value="0.00">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="state_code_char">State Code(Char)</label>
+                                <input id="state_code_char" name="state_code_char" maxlength="5">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="state_code_digit">State Code(Digit)</label>
+                                <input id="state_code_digit" type="number" name="state_code_digit" maxlength="5">
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+
+
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+            /* =========================
+           TYPE CUSTOM DROPDOWN
+        ========================= */
+
+            const typeInput = document.getElementById("state_type_input");
+            const typeDropdown = document.getElementById("typeDropdown");
+            const hiddenTypeInput = document.getElementById("state_type");
+
+            const typeOptions = [
+                "INTER-STATE",
+                "STATE",
+                "LOCAL"
+            ];
+
+            let typeIndex = -1;
+
+            /* Render dropdown */
+            function renderTypeDropdown(list) {
+
+                typeDropdown.innerHTML = "";
+
+                if (!list.length) {
+                    typeDropdown.style.display = "none";
+                    return;
+                }
+
+                const currentValue = hiddenTypeInput.value || typeInput.value;
+
+                list.forEach((item, index) => {
+
+                    const div = document.createElement("div");
+                    div.textContent = item;
+
+                    // ?? Auto highlight selected value
+                    if (item === currentValue) {
+                        div.classList.add("active");
+                        typeIndex = index;
+                    }
+
+                    div.onclick = () => selectType(item);
+
+                    typeDropdown.appendChild(div);
+                });
+
+                typeDropdown.style.display = "block";
+
+                // ?? Ensure highlighted item is visible
+                if (typeIndex >= 0) {
+                    const activeItem = typeDropdown.children[typeIndex];
+                    activeItem.scrollIntoView({ block: "nearest" });
+                }
+            }
+
+            /* Select value */
+            function selectType(value) {
+                typeInput.value = value;
+                hiddenTypeInput.value = value;
+                typeDropdown.style.display = "none";
+                typeIndex = -1;
+
+                clearTypeError(); // ?? clear required error when selected
+            }
+
+            /* Open on focus */
+            typeInput.addEventListener("focus", function () {
+                if (currentMode === "add" || currentMode === "modify") {
+                    typeIndex = -1; // reset before rendering
+                    renderTypeDropdown(typeOptions);
+                }
+            });
+
+
+            typeInput.addEventListener("blur", function () {
+                setTimeout(() => {
+                    typeDropdown.style.display = "none";
+                    typeIndex = -1;
+                }, 150);
+            });
+
+            /* Filter on typing + invalidate selection */
+            typeInput.addEventListener("input", function () {
+
+                hiddenTypeInput.value = "";
+
+                const term = this.value.toLowerCase();
+
+                const filtered = typeOptions.filter(opt =>
+                    opt.toLowerCase().includes(term)
+                );
+
+                renderTypeDropdown(filtered);
+                if (filtered.length === 1) {
+                    typeIndex = 0;
+                    const items = Array.from(typeDropdown.children);
+                    if (items.length) highlightType(items);
+                } else {
+                    typeIndex = -1;
+                }
+            });
+
+            /* Keyboard control */
+            typeInput.addEventListener("keydown", function (e) {
+
+                const items = Array.from(typeDropdown.children);
+
+                if (typeDropdown.style.display !== "block") return;
+                if (!items.length) return;
+
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (typeIndex >= 0) {
+                        selectType(items[typeIndex].textContent);
+                    }
+                }
+
+                else if (e.key === "Escape") {
+                    typeDropdown.style.display = "none";
+                    typeIndex = -1;
+                }
+            });
+
+            function highlightType(items) {
+                items.forEach((item, i) => {
+                    item.classList.toggle("active", i === typeIndex);
+                    if (i === typeIndex) {
+                        item.scrollIntoView({ block: "nearest" });
+                    }
+                });
+            }
+
+            /* Close if clicking outside */
+            document.addEventListener("click", function (e) {
+                if (!e.target.closest(".dropdown-wrapper")) {
+                    typeDropdown.style.display = "none";
+                    typeIndex = -1;
+                }
+            });
+
+
+
+            function selectRow(row) {
+
+                stateList.querySelectorAll(".state-row")
+                    .forEach(r => r.classList.remove("active"));
+
+                row.classList.add("active");
+
+                const id = Number(row.dataset.id);
+                activeStateId = id;
+
+                const state = allStates.find(s => Number(s.id) === id);
+                if (!state) return;
+
+                fillFormWithoutRender(state);
+
+                // ?? Center the selected row
+                row.scrollIntoView({
+                    block: "center"
+                });
+            }
+
+            // Load state list from API
+            function loadStates() {
+                fetch("../../../api/get_states.php")
+                    .then(res => res.json())
+                    .then(states => {
+                        const ul = document.getElementById("stateList");
+                        if (!ul) return;
+
+                        ul.innerHTML = "";
+
+                        if (states.length === 0) {
+                            ul.innerHTML = "<li>No states found</li>";
+                            return;
+                        }
+
+                        states.forEach(name => {
+                            const li = document.createElement("li");
+                            li.style.display = "flex";
+                            li.style.justifyContent = "space-between";
+                            li.style.alignItems = "center";
+                            li.style.marginBottom = "5px";
+
+                            const span = document.createElement("span");
+                            span.textContent = name;
+
+                            // Trash icon button
+                            const btn = document.createElement("button");
+                            btn.style.marginLeft = "10px";
+                            btn.style.background = "none";
+                            btn.style.border = "none";
+                            btn.style.cursor = "pointer";
+                            btn.style.padding = "0";
+                            btn.title = "Delete";
+
+                            // Inline SVG for trash
+                            btn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#ff4d4f" viewBox="0 0 24 24">
+                        <path d="M3 6h18v2H3V6zm2 3h14v13H5V9zm3 3v7h2v-7H8zm4 0v7h2v-7h-2z"/>
+                    </svg>
+                `;
+
+                            // Delete event
+                            btn.onclick = () => {
+                                if (window.deleteModeConfirm) {
+                                    window.deleteModeConfirm(`Are you sure you want to delete "${name}"?`, function () {
+                                        deleteState(name);
+                                    });
+                                    return;
+                                }
+                            };
+
+                            li.appendChild(span);
+                            li.appendChild(btn);
+                            ul.appendChild(li);
+                        });
+                    });
+            }
+            function customConfirm(message, callback) {
+                if (window.deleteModeConfirm) {
+                    window.deleteModeConfirm(message, callback);
+                    return;
+                }
+            }
+
+
+            // Delete a state
+            function deleteState(name) {
+                fetch(`../../../api/delete_state.php`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `state_name=${encodeURIComponent(name)}`
+                })
+                    .then(res => res.json())
+                    .then(resp => {
+                        if (!resp || resp.status !== "success") { alert((resp && resp.message) || "Request failed"); }
+                        if (resp.success) loadStates(); // refresh list only on success
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("Failed to delete state");
+                    });
+            }
+
+            function toggleDropdown(el) {
+                document.querySelectorAll('.dropdown')
+                    .forEach(d => d !== el.parentElement && d.classList.remove('open'));
+                el.parentElement.classList.toggle('open');
+            }
+
+            let allStates = [];
+            let activeStateId = null;
+            let currentMode = "display";
+            let preEditStateId = null;
+
+            const filterInput = document.getElementById("filterInput");
+            const stateList = document.getElementById("stateList");
+            const stateForm = document.getElementById("stateForm");
+            const modeTag = document.getElementById("modeTag");
+            const displayButtons = document.getElementById("displayButtons");
+            const addModeButtons = document.getElementById("addModeButtons");
+            const stateNameInput = document.getElementById("state_name");
+
+            const stateNameError = document.getElementById("stateNameError");
+
+            // Toggle a class on the left panel while search input is focused
+            function checkDuplicateStateName() {
+
+                // ?? STRICT: only validate in Add / Modify
+                if (currentMode !== "add" && currentMode !== "modify") {
+                    clearStateNameError();
+                    return false;
+                }
+
+                const name = stateNameInput.value.trim().toLowerCase();
+                const currentId = document.getElementById("stateId").value;
+
+                if (!name) {
+                    clearStateNameError();
+                    return false;
+                }
+
+                const duplicate = allStates.find(s =>
+                    s.state_name.toLowerCase() === name &&
+                    String(s.id) !== String(currentId)
+                );
+
+                if (duplicate) {
+                    showStateNameError("Already exists");
+                    return true;
+                }
+
+                clearStateNameError();
+                return false;
+            }
+
+            stateNameInput.addEventListener("input", function () {
+                if (currentMode === "add" || currentMode === "modify") {
+                    checkDuplicateStateName();
+                }
+            });
+
+            function showStateNameError(message) {
+                stateNameInput.classList.add("field-error");
+                stateNameError.textContent = message;
+                stateNameError.style.display = "inline";
+            }
+
+            function clearStateNameError() {
+                stateNameInput.classList.remove("field-error");
+                stateNameError.textContent = "";
+                stateNameError.style.display = "none";
+            }
+
+            function keepStateNameActive() {
+                if (currentMode === "add" || currentMode === "modify") {
+                    setTimeout(() => {
+                        if (!stateForm.contains(document.activeElement)) {
+                            stateNameInput.focus();
+                        }
+                    }, 0);
+                }
+            }
+            stateForm.addEventListener("input", function (e) {
+
+                if (
+                    e.target.tagName === "INPUT" &&
+                    e.target.type === "text" &&
+                    !e.target.readOnly
+                ) {
+                }
+
+            });
+
+
+
+            // Auto-select full value in Edit Mode
+            stateForm.addEventListener("focusin", function (e) {
+
+                if (currentMode !== "modify") return;
+
+                const field = e.target;
+
+                if (
+                    field.tagName === "INPUT" &&
+                    field.type !== "hidden" &&
+                    !field.readOnly
+                ) {
+                    // slight delay ensures proper focus first
+                    setTimeout(() => {
+                        field.select();
+                    }, 0);
+                }
+
+            });
+
+
+            function setFormEditable(editable) {
+
+                const fields = stateForm.querySelectorAll("input, select, textarea");
+
+                fields.forEach(function (field) {
+
+                    if (field.id === "stateId") return;
+
+                    if (!editable) {
+                        field.setAttribute("tabindex", "-1");
+                    } else {
+                        field.removeAttribute("tabindex");
+                    }
+
+                    if (field.tagName === "SELECT") {
+                        field.disabled = !editable;
+                    } else {
+                        field.readOnly = !editable;
+                    }
+
+                });
+            }
+
+
+            function esc(v) {
+                return (v ?? "").toString().replace(/[&<>"']/g, function (m) {
+                    return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[m];
+                });
+            }
+            function resetForm() {
+
+                stateForm.reset();
+
+                document.getElementById("stateId").value = "";
+                document.getElementById("state_area").value = "0.00";
+
+                // ? Clear type properly
+                document.getElementById("state_type").value = "";
+                document.getElementById("state_type_input").value = "";
+
+                activeStateId = null;
+
+                setMode("add");
+                setFormEditable(true);
+                syncActionMode();
+                renderStates();
+            }
+
+
+            function fillForm(state) {
+
+                const typeValue = state.state_type || "";
+
+                document.getElementById("stateId").value = state.id || "";
+                document.getElementById("state_name").value = state.state_name || "";
+                document.getElementById("state_capital").value = state.state_capital || "";
+                document.getElementById("state_area").value = state.state_area || "0.00";
+
+                // ? Update BOTH hidden + visible
+                document.getElementById("state_type").value = typeValue;
+                document.getElementById("state_type_input").value = typeValue;
+
+                document.getElementById("state_code_char").value = state.state_code_char || "";
+                document.getElementById("state_code_digit").value = state.state_code_digit || "";
+
+                activeStateId = Number(state.id);
+
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                clearTypeError();
+            }
+
+            function fillFormWithoutRender(state) {
+
+                document.getElementById("stateId").value = state.id || "";
+                document.getElementById("state_name").value = state.state_name || "";
+                document.getElementById("state_capital").value = state.state_capital || "";
+                document.getElementById("state_area").value = state.state_area || "0.00";
+
+                document.getElementById("state_type").value = state.state_type || "";
+                document.getElementById("state_type_input").value = state.state_type || "";
+
+                document.getElementById("state_code_char").value = state.state_code_char || "";
+                document.getElementById("state_code_digit").value = state.state_code_digit || "";
+
+                activeStateId = Number(state.id);
+            }
+
+            function setMode(mode) {
+
+                currentMode = mode;
+
+                const rightPanel = document.querySelector(".right-panel");
+
+                rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+
+                if (mode === "add") {
+                    modeTag.textContent = "Add Mode";
+                    rightPanel.classList.add("add-mode");
+                    setTimeout(() => stateNameInput.focus(), 0);
+                    // Make left panel visually inactive and non-clickable in Add Mode
+                }
+
+                if (mode === "modify") {
+                    modeTag.textContent = "Edit Mode";
+                    rightPanel.classList.add("modify-mode");
+                    setTimeout(() => stateNameInput.focus(), 0);
+                }
+
+                if (mode === "display") {
+                    modeTag.textContent = "Display Mode";
+                    rightPanel.classList.add("display-mode");
+                    preEditStateId = null;
+                    clearStateNameError();   // ?? STRICT DISPLAY CLEANUP
+
+                    syncSelectionHighlight(); // ?? Force selection sync
+                }
+                // ?? CLOSE DROPDOWN ALWAYS
+                typeDropdown.style.display = "none";
+                typeIndex = -1;
+            }
+
+
+
+            function syncActionMode() {
+                const isDisplay = currentMode === "display";
+                displayButtons.classList.toggle("hidden", !isDisplay);
+                addModeButtons.classList.toggle("hidden", isDisplay);
+                displayButtons.style.display = isDisplay ? "flex" : "none";
+                addModeButtons.style.display = isDisplay ? "none" : "flex";
+            }
+
+            function renderStates() {
+                const keyword = "";
+                const rows = allStates.filter(function (s) {
+                    return !keyword || (s.state_name || "").toLowerCase().includes(keyword);
+                });
+
+                if (!rows.length) {
+                    stateList.innerHTML = "<div class='state-row'>No states found</div>";
+                    return;
+                }
+
+                stateList.innerHTML = rows.map(function (state) {
+                    const active = Number(state.id) === activeStateId ? "active" : "";
+                    return "<div class='state-row " + active + "' data-id='" + esc(state.id) + "'>" + esc(state.state_name) + "</div>";
+                }).join("");
+
+                stateList.querySelectorAll(".state-row").forEach(function (row) {
+                    row.addEventListener("click", function () {
+                        selectRow(this);   // ?? ALWAYS use selectRow
+                    });
+                });
+                // ?? ALWAYS re-sync highlight after render
+                syncSelectionHighlight();
+            }
+
+            function syncSelectionHighlight() {
+
+                const rows = Array.from(
+                    stateList.querySelectorAll(".state-row")
+                ).filter(r => r.dataset.id);
+
+                rows.forEach(r => r.classList.remove("active"));
+
+                const activeRow = rows.find(r =>
+                    Number(r.dataset.id) === Number(activeStateId)
+                );
+
+                if (activeRow) {
+                    activeRow.classList.add("active");
+
+                    // keep it visible
+                    activeRow.scrollIntoView({
+                        block: "nearest"
+                    });
+                }
+            }
+
+            async function loadStates() {
+                const res = await fetch("../../../api/state/get_states.php");
+                allStates = await res.json();
+
+                if (allStates.length) {
+
+                    activeStateId = Number(allStates[0].id); // ?? set FIRST
+
+                    renderStates(); // now highlight works
+
+                    fillFormWithoutRender(allStates[0]); // fill form
+
+                    document.querySelector(".list-wrap").scrollTop = 0;
+                } else {
+                    renderStates();
+                    setMode("display");
+                    setFormEditable(false);
+                    syncActionMode();
+                }
+            }
+
+            async function saveState(isModify) {
+
+                // ?? Sync visible ? hidden  hiddenTypeInput.value = typeInput.value.trim();  
+                const fd = new FormData(stateForm);
+                const id = fd.get("id");
+
+                const name = (fd.get("state_name") || "").trim();
+                if (checkDuplicateStateName()) {
+                    stateNameInput.focus();
+                    stateNameInput.select();
+                    return;
+                }
+                if (checkTypeRequired()) {
+                    typeInput.focus();
+                    return;
+                }
+                const type = hiddenTypeInput.value.trim();
+                if (!name) {
+                    showStateNameError("Required");
+                    setTimeout(() => {
+                        setMode("add");
+                        stateNameInput.focus();
+                        stateNameInput.select();
+                    }, 50);
+                    return;
+                }
+
+                if (!type) {
+                    alert("Type (S/I) is required");
+                    setTimeout(() => {
+                        document.getElementById("state_type_input").focus();
+                    }, 50);
+                    return;
+                }
+
+                // Continue with your existing confirm and save logic below
+
+
+                /* ===============================
+                   CONFIRM BEFORE ADD
+                =============================== */
+
+                if (!isModify) {
+
+                    const confirmAdd = await window.confirmAdd(
+                        "Are you sure you want to add this state?\n\n" + name
+                    );
+
+                    if (!confirmAdd) return;   // If user presses No ? stop
+
+                }
+
+                let url = "../../../api/state/state.php";
+
+
+                if (isModify) {
+                    if (!id) {
+                        alert("Select a state to modify");
+                        return;
+                    }
+                    url = "../../../api/state/update_state.php";
+                }
+
+                const res = await fetch(url, { method: "POST", body: fd });
+                const data = await res.json();
+                if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+                if (data.status === "success") {
+
+                    await loadStates();
+
+                    // ==========================
+                    // MODIFY MODE ? behave normal
+                    // ==========================
+                    if (isModify && id) {
+                        const updated = allStates.find(s => Number(s.id) === Number(id));
+                        if (updated) fillForm(updated);
+                        return;
+                    }
+
+                    // ==========================
+                    // ADD MODE ? STAY IN ADD MODE
+                    // ==========================
+
+                    resetForm();               // clear everything
+                    clearStateNameError();
+                    clearTypeError();
+
+                    setMode("add");            // force add mode
+                    setFormEditable(true);
+                    syncActionMode();
+
+                    stateNameInput.focus();    // focus first field
+
+                    return;
+                }
+            }
+
+            function handleAddAction() {
+                preEditStateId = activeStateId;
+                resetForm();
+                document.getElementById("state_name").focus();
+            }
+
+            function handleModifyAction() {
+                const id = document.getElementById("stateId").value;
+                if (!id) {
+                    alert("Select a state to modify");
+                    return;
+                }
+                preEditStateId = Number(id);
+                setMode("modify");
+                setFormEditable(true);
+                syncActionMode();
+            }
+
+            function cancelEditMode() {
+                if (preEditStateId) {
+                    const previous = allStates.find(function (s) { return Number(s.id) === Number(preEditStateId); });
+                    if (previous) {
+                        fillForm(previous);
+                        preEditStateId = null;
+                        return;
+                    }
+                }
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                renderStates();
+            }
+
+
+            async function deleteState() {
+
+                const id = document.getElementById("stateId").value;
+
+                if (!id) {
+                    alert("Select a state to delete");
+                    return;
+                }
+
+                customConfirm("Delete this state?", async function () {
+
+                    const body = new URLSearchParams();
+                    body.set("id", id);
+
+                    const res = await fetch("../../../api/state/delete_state.php", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: body.toString()
+                    });
+
+                    const data = await res.json();
+
+                    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+                    if (data.status === "success") {
+
+                        await loadStates();   // reload list
+
+                        if (allStates.length) {
+                            setMode("display");
+                            setFormEditable(false);
+                            syncActionMode();
+                        } else {
+                            resetForm(); // only if table empty
+                        }
+                    }
+
+                });
+            }
+            const stateTypeError = document.getElementById("stateTypeError");
+
+            function checkTypeRequired() {
+
+                // ?? Only validate in Add / Modify
+                if (currentMode !== "add" && currentMode !== "modify") {
+                    clearTypeError();
+                    return false;
+                }
+
+                const typeValue = hiddenTypeInput.value.trim();
+
+                if (!typeValue) {
+                    showTypeError("Required");
+                    return true;
+                }
+
+                clearTypeError();
+                return false;
+            }
+
+            function showTypeError(message) {
+                typeInput.classList.add("field-error");
+                stateTypeError.textContent = message;
+                stateTypeError.style.display = "inline";
+            }
+
+            function clearTypeError() {
+                typeInput.classList.remove("field-error");
+                stateTypeError.textContent = "";
+                stateTypeError.style.display = "none";
+            }
+
+            document.getElementById("addBtn").addEventListener("click", handleAddAction);
+            document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+            document.getElementById("deleteBtn").addEventListener("click", deleteState);
+            document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+            document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../../index.html"; });
+            document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+            document.getElementById("saveBtn").addEventListener("click", function () {
+                if (currentMode === "modify") saveState(true);
+                else saveState(false);
+            });
+            // If user clicks outside form in Add/Modify mode ? refocus state name
+            document.addEventListener("mousedown", function (e) {
+                if (currentMode === "add" || currentMode === "modify") {
+                    if (!stateForm.contains(e.target)) {
+                        keepStateNameActive();
+                    }
+                }
+            });// ?? capture phase (important)
+            setMode("display");
+            setFormEditable(false);
+            syncActionMode();
+            loadStates();
+        </script>
+
+</body>
+
+</html>
+

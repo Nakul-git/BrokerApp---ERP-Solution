@@ -1,0 +1,1671 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Transport Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../style.css?v=8">
+<link rel="stylesheet" href="../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../add-mode.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 28px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 52px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 10px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel .label {
+    font-size: 18px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 34px;
+    padding: 6px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 8px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 64px);
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.transport-row {
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.transport-row:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.transport-row.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.transport-row-sub {
+    font-weight: 400;
+    font-size: 12px;
+}
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 4px;
+    padding: 2px 8px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+#transportForm {
+    border: 1px solid #d7d7d7;
+    padding: 6px;
+    background: #efefef;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 6px;
+    align-items: start;
+}
+
+
+.form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px 8px;
+    align-content: start;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-row-2 {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px 8px;
+}
+
+.form-group label {
+    font-size: 12px;
+    line-height: 1;
+    font-family: "Times New Roman", serif;
+    color: #2d2d2d;
+}
+
+.form-group input {
+    width: 100%;
+    max-width: 100%;
+    height: 22px;
+    padding: 2px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.dropdown-wrapper {
+    position: relative;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #969696;
+    display: none;
+    z-index: 40;
+}
+
+.dropdown-list div {
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+}
+
+.dropdown-list div:hover,
+.dropdown-list div.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.read-only-input {
+    background: #e6e6e6 !important;
+    border-color: #c2c2c2 !important;
+    color: #444 !important;
+}
+
+.division-box {
+    border: 1px solid #bcbcbc;
+    background: #f3f3f3;
+    height: 120px;
+    overflow: auto;
+}
+
+
+.division-head {
+    position: sticky;
+    top: 0;
+    padding: 3px 6px;
+    border-bottom: 1px solid #d0d0d0;
+    background: #fff;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.division-list {
+    padding: 4px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.division-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.division-option input {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+}
+
+.right-panel.display-mode input {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    cursor: default;
+    pointer-events: none;
+    user-select: none;
+}
+
+.right-panel.display-mode input[type="checkbox"] {
+    pointer-events: none;
+}
+
+.table-box {
+    border: 1px solid #7b7b7b;
+    background: #fff;
+    margin-bottom: 6px;
+    height: 170px;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-box.small {
+    height: 140px;
+}
+
+.grid-head {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr);
+    background: #e3b07d;
+    border-bottom: 1px solid #7b7b7b;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.grid-head.line-head {
+    grid-template-columns: 48px minmax(0, 1fr);
+}
+
+.grid-head div {
+    padding: 3px 4px;
+    border-right: 1px solid #7b7b7b;
+}
+
+.grid-head div:last-child {
+    border-right: none;
+}
+
+.grid-body {
+    flex: 1;
+    overflow-y: auto;
+    background: #bffcff;
+}
+
+.grid-row {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+}
+
+.grid-row.line-row {
+    grid-template-columns: 48px minmax(0, 1fr);
+}
+
+.grid-row div {
+    padding: 3px 4px;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.grid-row div:last-child {
+    border-right: none;
+}
+
+.action-row {
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+}
+
+#transportButtons {
+    width: 100%;
+    align-items: flex-start;
+}
+
+.btn {
+    min-width: 72px;
+    padding: 2px 5px;
+    height: 22px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.btn[hidden] {
+    display: none !important;
+}
+
+.btn:hover { filter: brightness(0.98); }
+
+.btn.primary, .btn.danger {
+    background: #ea7ce8;
+    color: #000;
+    border-color: #efc9f0;
+}
+
+
+.popup-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.popup-box {
+    width: 520px;
+    background: #f3d7ac;
+    border: 2px solid #c9b08d;
+    padding: 12px 14px;
+    font-family: "Times New Roman", serif;
+}
+
+.popup-box.wide {
+    width: 720px;
+}
+
+.popup-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.popup-subtitle {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.popup-subtitle-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.popup-table {
+    border: 2px solid #7b7b7b;
+    background: #bffcff;
+    height: 260px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.popup-head {
+    background: #fff;
+    border-bottom: 1px solid #7b7b7b;
+    padding: 4px 6px;
+    font-weight: 700;
+}
+
+.popup-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 6px;
+}
+
+.popup-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    padding: 2px 0;
+}
+
+.city-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.popup-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.popup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.popup-actions button {
+    padding: 4px 10px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .form-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .list-wrap { height: 260px; }
+    .table-box { height: 220px; }
+}
+</style>
+
+<script>
+(async function () {
+    const res = await fetch("../../api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace("../../login.html");
+})();
+</script>
+<script src="../../global-nav.js" defer></script>
+<script src="../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../selection-mode.js" defer></script>
+<script src="../../add-mode.js" defer></script>
+<script src="../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Transport Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search transport...">
+<div class="list-wrap">
+<div class="list-head">Name</div>
+<div id="transportList"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Add Mode</span>
+<form id="transportForm" autocomplete="off">
+<input type="hidden" id="transport_id" name="transport_id">
+<input type="hidden" id="city_id" name="city_id">
+<input type="hidden" id="station" name="station">
+<input type="hidden" id="applicable_divisions" name="applicable_divisions">
+
+<div class="form-layout">
+<div class="form-left">
+<div class="form-grid">
+<div class="form-group full">
+<label for="transport_name" class="label-with-error"><span>Transport</span><span id="transportNameError" class="error-text" style="display:none;"></span></label>
+<input id="transport_name" name="transport_name" required data-add-first>
+</div>
+<div class="form-group full"><label for="address">Address</label><input id="address" name="address"></div>
+<div class="form-group full"><label for="address1">Address1</label><input id="address1" name="address1"></div>
+<div class="form-row-2">
+<div class="form-group">
+<label for="stationInput">Station</label>
+<div class="dropdown-wrapper">
+<input id="stationInput" autocomplete="off" placeholder="Type station..." data-enter-next>
+<div id="stationDropdown" class="dropdown-list"></div>
+</div>
+</div>
+<div class="form-group"><label for="stateInputView">State</label><input id="stateInputView" class="read-only-input" readonly></div>
+</div>
+<div class="form-group"><label for="pin_code">Pin Code</label><input id="pin_code" name="pin_code"></div>
+<div class="form-group"><label for="contact_person">Contact Per</label><input id="contact_person" name="contact_person"></div>
+<div class="form-group"><label for="phone_office">Phone (O)</label><input id="phone_office" name="phone_office"></div>
+<div class="form-group"><label for="mobile">Phone (Mob)</label><input id="mobile" name="mobile"></div>
+<div class="form-group"><label for="email">Email</label><input id="email" name="email"></div>
+<div class="form-group"><label for="pan">PAN</label><input id="pan" name="pan"></div>
+<div class="form-group full"><label for="other_info">Other Info</label><input id="other_info" name="other_info"></div>
+</div>
+</div>
+
+<div class="form-right">
+<div class="table-box">
+<div class="grid-head">
+<div>SNC</div>
+<div>STATION</div>
+<div>STATE</div>
+</div>
+<div id="stationTable" class="grid-body"></div>
+</div>
+<div class="table-box small">
+<div class="grid-head line-head">
+<div>SNC</div>
+<div>LINE</div>
+</div>
+<div id="lineTable" class="grid-body"></div>
+</div>
+<div class="form-group full">
+<label>Applicable Divisions</label>
+<div class="division-box">
+<div class="division-head">DivName</div>
+<div id="divisionOptions" class="division-list"></div>
+</div>
+</div>
+</div>
+</div>
+</form>
+<input type="hidden" id="line_name" name="line_name" form="transportForm">
+<input type="hidden" id="state_name" name="state_name" form="transportForm">
+
+<div id="transportButtons" class="action-row">
+<div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                
+<div id="addModeButtons" class="action-row" style="display:none;">
+<button class="btn" type="button" id="lineBtn">📊 F7 - Line</button>
+<button class="btn" type="button" id="cityBtn">📊 F8 - City</button>
+<button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="lineModal" class="popup-modal" aria-hidden="true">
+<div class="popup-box">
+<div class="popup-title">ADD LINE</div>
+<div class="popup-subtitle">Line Selection</div>
+<div class="popup-table">
+<div class="popup-head">Line Name</div>
+<div id="lineOptions" class="popup-list"></div>
+</div>
+<div class="popup-footer">
+<div>ESC - Exit</div>
+<div class="popup-actions">
+<button type="button" id="lineSelectAllBtn">F3 - Select All</button>
+<button type="button" id="lineDeselectAllBtn">F4 - Deselect All</button>
+<button type="button" id="lineProceedBtn">F6 - Proceed</button>
+</div>
+</div>
+</div>
+</div>
+
+<div id="cityModal" class="popup-modal" aria-hidden="true">
+<div class="popup-box wide">
+<div class="popup-title">ADD STATION</div>
+<div class="popup-subtitle-row">
+<div>State Selection</div>
+<div>City Selection</div>
+</div>
+<div class="city-columns">
+<div class="popup-table">
+<div class="popup-head">State Name</div>
+<div id="stateOptions" class="popup-list"></div>
+</div>
+<div class="popup-table">
+<div class="popup-head">Station Name</div>
+<div id="cityOptions" class="popup-list"></div>
+</div>
+</div>
+<div class="popup-footer">
+<div>ESC - Exit</div>
+<div class="popup-actions">
+<button type="button" id="citySelectAllBtn">F3 - Select All</button>
+<button type="button" id="cityDeselectAllBtn">F4 - Deselect All</button>
+<button type="button" id="cityProceedBtn">F6 - Proceed</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+let allTransports = [];
+let allDivisions = [];
+let allLines = [];
+let allStates = [];
+let allCities = [];
+let activeTransportId = null;
+
+let selectedLineNames = new Set();
+let legacyLineNames = [];
+
+let selectedCityIds = new Set();
+let legacyCityEntries = [];
+let stateFilterIds = new Set();
+
+let workingLineNames = null;
+let workingLegacyLineNames = null;
+let workingCityIds = null;
+let workingLegacyCityEntries = null;
+let workingStateFilterIds = null;
+
+const filterInput = document.getElementById("filterInput");
+const transportList = document.getElementById("transportList");
+const transportForm = document.getElementById("transportForm");
+const modeTag = document.getElementById("modeTag");
+const divisionOptions = document.getElementById("divisionOptions");
+const stationInput = document.getElementById("stationInput");
+const stationDropdown = document.getElementById("stationDropdown");
+const stateInputView = document.getElementById("stateInputView");
+const pinCodeInput = document.getElementById("pin_code");
+const stationTable = document.getElementById("stationTable");
+const lineTable = document.getElementById("lineTable");
+const lineModal = document.getElementById("lineModal");
+const cityModal = document.getElementById("cityModal");
+const lineOptions = document.getElementById("lineOptions");
+const stateOptions = document.getElementById("stateOptions");
+const cityOptions = document.getElementById("cityOptions");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const rightPanel = document.querySelector(".right-panel");
+const transportNameInput = document.getElementById("transport_name");
+const transportNameError = document.getElementById("transportNameError");
+
+let currentMode = "display";
+let preEditTransportId = null;
+let stationIndex = -1;
+let stationFilter = "";
+
+function esc(v) {
+    return (v ?? "").toString().replace(/[&<>"']/g, function (m) {
+        return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m];
+    });
+}
+
+function splitCsv(raw) {
+    return (raw || "").split(",").map(function (v) { return v.trim(); }).filter(Boolean);
+}
+
+function normalizeName(name) {
+    return (name || "").toString().trim().toLowerCase();
+}
+
+function parseStoredDivisionValues(raw) {
+    if (!raw) return [];
+    return raw.split(",").map(function (v) { return v.trim(); }).filter(Boolean);
+}
+
+function getSelectedDivisionIds() {
+    return Array.from(divisionOptions.querySelectorAll("input[type='checkbox']:checked")).map(function (cb) { return cb.value; });
+}
+
+function syncApplicableDivisionsHidden() {
+    document.getElementById("applicable_divisions").value = getSelectedDivisionIds().join(",");
+}
+
+function renderDivisionOptions(selectedValues) {
+    const selectedSet = new Set((selectedValues || []).map(function (v) { return v.toString().toLowerCase(); }));
+    if (!allDivisions.length) {
+        divisionOptions.innerHTML = "<div style='font-size:14px;font-family:\"Times New Roman\",serif;'>No divisions found</div>";
+        document.getElementById("applicable_divisions").value = "";
+        return;
+    }
+    divisionOptions.innerHTML = allDivisions.map(function (d) {
+        const id = String(d.division_id ?? "");
+        const name = String(d.div_name ?? "");
+        const checked = selectedSet.has(id.toLowerCase()) || selectedSet.has(name.toLowerCase()) ? "checked" : "";
+        return "<label class='division-option'><input type='checkbox' value='" + esc(id) + "' data-name='" + esc(name) + "' " + checked + "> " + esc(name) + "</label>";
+    }).join("");
+    divisionOptions.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+        cb.addEventListener("change", syncApplicableDivisionsHidden);
+    });
+    syncApplicableDivisionsHidden();
+}
+
+function filterCities(term) {
+    const q = (term || "").trim().toLowerCase();
+    return allCities.filter(function (c) {
+        return (c.city_name || "").toLowerCase().includes(q);
+    });
+}
+
+function renderStationDropdown(cities) {
+    stationDropdown.innerHTML = "";
+    if (!cities.length) {
+        stationDropdown.style.display = "none";
+        return;
+    }
+    if (cities.length === 1) {
+        stationIndex = 0;
+    }
+    cities.forEach(function (city, idx) {
+        const row = document.createElement("div");
+        row.textContent = (city.city_name || "") + " (" + (city.state_name || "") + ")";
+        if (idx === stationIndex) row.classList.add("active");
+        row.addEventListener("click", function () { selectCityFromInput(city); });
+        stationDropdown.appendChild(row);
+    });
+    stationDropdown.style.display = "block";
+    const activeEl = stationDropdown.querySelector(".active");
+    if (activeEl && typeof activeEl.scrollIntoView === "function") {
+        activeEl.scrollIntoView({ block: "nearest" });
+    }
+}
+
+function selectCityFromInput(city) {
+    if (!city) return;
+    stationInput.value = city.city_name || "";
+    stateInputView.value = city.state_name || "";
+    setField("city_id", city.city_id || "");
+    stationDropdown.style.display = "none";
+    stationIndex = -1;
+    stationFilter = "";
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    stationDropdown.style.display = "none";
+    stationIndex = -1;
+    syncActionMode();
+}
+
+function showTransportNameError() {
+    transportNameInput.classList.add("field-error");
+    transportNameError.textContent = "Required";
+    transportNameError.style.display = "inline";
+}
+
+function clearTransportNameError() {
+    transportNameInput.classList.remove("field-error");
+    transportNameError.textContent = "";
+    transportNameError.style.display = "none";
+}
+
+function showTransportNameErrorMessage(message) {
+    transportNameInput.classList.add("field-error");
+    transportNameError.textContent = message || "Required";
+    transportNameError.style.display = "inline";
+}
+
+function checkDuplicateTransportName() {
+    const name = (transportNameInput.value || "").trim().toLowerCase();
+    if (!name) { clearTransportNameError(); return false; }
+    const currentId = Number(document.getElementById("transport_id").value || 0);
+    const duplicate = allTransports.some(function (t) {
+        const sameName = (t.transport_name || "").trim().toLowerCase() === name;
+        const sameId = Number(t.transport_id) === currentId;
+        return sameName && !sameId;
+    });
+    if (duplicate) {
+        showTransportNameErrorMessage("Already exists");
+        return true;
+    }
+    clearTransportNameError();
+    return false;
+}
+
+function hasAnyOtherFieldValue() {
+    const inputs = transportForm.querySelectorAll("input");
+    for (let i = 0; i < inputs.length; i += 1) {
+        const field = inputs[i];
+        if (field.id === "transport_name") continue;
+        if (field.type === "hidden") continue;
+        if (field.readOnly) {
+            if ((field.value || "").trim()) return true;
+            continue;
+        }
+        if ((field.value || "").trim()) return true;
+    }
+    const anyDivision = divisionOptions.querySelector("input[type='checkbox']:checked");
+    if (anyDivision) return true;
+    return false;
+}
+
+function syncActionMode() {
+    const isDisplay = currentMode === "display";
+    displayButtons.style.display = isDisplay ? "flex" : "none";
+    addModeButtons.style.display = "flex";
+    const printBtn = document.getElementById("printBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    if (printBtn) printBtn.hidden = isDisplay;
+    if (cancelBtn) cancelBtn.hidden = isDisplay;
+    if (saveBtn) saveBtn.hidden = isDisplay;
+}
+
+function setFormEditable(editable) {
+    const fields = transportForm.querySelectorAll("input");
+    fields.forEach(function (field) {
+        if (field.type === "hidden") return;
+        field.readOnly = !editable;
+        if (!editable) field.setAttribute("tabindex", "-1");
+        else field.removeAttribute("tabindex");
+    });
+    divisionOptions.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+        cb.disabled = !editable;
+        cb.tabIndex = editable ? 0 : -1;
+    });
+    document.getElementById("printBtn").disabled = false;
+    document.getElementById("cityBtn").disabled = false;
+    document.getElementById("printBtn").setAttribute("aria-disabled", "false");
+    document.getElementById("cityBtn").setAttribute("aria-disabled", "false");
+}
+
+function setField(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value ?? "";
+}
+
+function renderTransports() {
+    const keyword = filterInput.value.trim().toLowerCase();
+    const rows = allTransports.filter(function (t) {
+        const name = (t.transport_name || "").toLowerCase();
+        const station = (t.station || "").toLowerCase();
+        return !keyword || name.includes(keyword) || station.includes(keyword);
+    });
+
+    if (!rows.length) {
+        transportList.innerHTML = "<div class='transport-row'>No transports found</div>";
+        return;
+    }
+
+    transportList.innerHTML = rows.map(function (t) {
+        const active = Number(t.transport_id) === activeTransportId ? "active" : "";
+        return "<div class='transport-row " + active + "' data-id='" + esc(t.transport_id) + "'>"
+            + esc(t.transport_name || "")
+            + "</div>";
+    }).join("");
+
+    transportList.querySelectorAll(".transport-row").forEach(function (row) {
+        row.addEventListener("click", function () {
+            const id = Number(this.dataset.id || 0);
+            const t = allTransports.find(function (x) { return Number(x.transport_id) === id; });
+            if (t) fillForm(t);
+        });
+    });
+}
+
+function selectTransportRow(row) {
+    if (!row) return;
+    const id = Number(row.dataset.id || 0);
+    const t = allTransports.find(function (x) { return Number(x.transport_id) === id; });
+    if (t) fillForm(t);
+}
+
+function resetSelections() {
+    selectedLineNames = new Set();
+    legacyLineNames = [];
+    selectedCityIds = new Set();
+    legacyCityEntries = [];
+    stateFilterIds = new Set();
+    renderLineTable();
+    renderCityTable();
+    syncLineHidden();
+    syncCityHidden();
+}
+
+function resetForm() {
+    transportForm.reset();
+    setField("transport_id", "");
+    setField("city_id", "");
+    activeTransportId = null;
+    renderDivisionOptions([]);
+    resetSelections();
+    setMode("add");
+    setFormEditable(true);
+    renderTransports();
+}
+
+function buildLineNameValue() {
+    const selected = [];
+    allLines.forEach(function (line) {
+        const name = String(line.line_name || "");
+        if (selectedLineNames.has(normalizeName(name))) {
+            selected.push(name);
+        }
+    });
+    legacyLineNames.forEach(function (name) {
+        if (!selected.some(function (n) { return normalizeName(n) === normalizeName(name); })) {
+            selected.push(name);
+        }
+    });
+    return selected;
+}
+
+function syncLineHidden() {
+    setField("line_name", buildLineNameValue().join(", "));
+}
+
+function renderLineTable() {
+    const names = buildLineNameValue();
+    if (!names.length) {
+        lineTable.innerHTML = "";
+        return;
+    }
+    lineTable.innerHTML = names.map(function (name, index) {
+        return "<div class='grid-row line-row'>"
+            + "<div>" + (index + 1) + "</div>"
+            + "<div>" + esc(name) + "</div>"
+            + "</div>";
+    }).join("");
+}
+
+function buildCityRows(ids, legacyEntries) {
+    const rows = [];
+    ids.forEach(function (id) {
+        const city = allCities.find(function (c) { return String(c.city_id) === String(id); });
+        if (city) {
+            rows.push({
+                city_name: city.city_name || "",
+                state_name: city.state_name || ""
+            });
+        }
+    });
+    legacyEntries.forEach(function (entry) {
+        if (!rows.some(function (r) { return normalizeName(r.city_name) === normalizeName(entry.city_name); })) {
+            rows.push({ city_name: entry.city_name || "", state_name: entry.state_name || "" });
+        }
+    });
+    rows.sort(function (a, b) {
+        return String(a.city_name || "").localeCompare(String(b.city_name || ""));
+    });
+    return rows;
+}
+
+function syncCityHidden() {
+    const rows = buildCityRows(selectedCityIds, legacyCityEntries);
+    const stations = rows.map(function (r) { return r.city_name; }).filter(Boolean);
+    const states = [];
+    rows.forEach(function (r) {
+        if (r.state_name && !states.some(function (s) { return normalizeName(s) === normalizeName(r.state_name); })) {
+            states.push(r.state_name);
+        }
+    });
+    setField("station", stations.join(", "));
+    setField("state_name", states.join(", "));
+}
+
+function renderCityTable() {
+    const rows = buildCityRows(selectedCityIds, legacyCityEntries);
+    if (!rows.length) {
+        stationTable.innerHTML = "";
+        return;
+    }
+    stationTable.innerHTML = rows.map(function (row, index) {
+        return "<div class='grid-row'>"
+            + "<div>" + (index + 1) + "</div>"
+            + "<div>" + esc(row.city_name || "") + "</div>"
+            + "<div>" + esc(row.state_name || "") + "</div>"
+            + "</div>";
+    }).join("");
+}
+
+function fillForm(t) {
+    setField("transport_id", t.transport_id);
+    setField("city_id", t.city_id || "");
+    setField("transport_name", t.transport_name);
+    setField("address", t.address);
+    setField("address1", t.address1);
+    setField("pin_code", t.pin_code);
+    setField("contact_person", t.contact_person);
+    setField("phone_office", t.phone_office);
+    setField("mobile", t.mobile);
+    setField("email", t.email);
+    setField("pan", t.pan);
+    setField("other_info", t.other_info);
+    renderDivisionOptions(parseStoredDivisionValues(t.applicable_divisions || ""));
+
+    selectedLineNames = new Set();
+    legacyLineNames = [];
+    splitCsv(t.line_name).forEach(function (name) {
+        const match = allLines.find(function (l) { return normalizeName(l.line_name) === normalizeName(name); });
+        if (match) selectedLineNames.add(normalizeName(match.line_name));
+        else legacyLineNames.push(name);
+    });
+
+    selectedCityIds = new Set();
+    legacyCityEntries = [];
+    const cityNames = splitCsv(t.station);
+    const stateNames = splitCsv(t.state_name);
+    const defaultState = stateNames.length === 1 ? stateNames[0] : "";
+
+    cityNames.forEach(function (name) {
+        const city = allCities.find(function (c) { return normalizeName(c.city_name) === normalizeName(name); });
+        if (city) selectedCityIds.add(String(city.city_id));
+        else legacyCityEntries.push({ city_name: name, state_name: defaultState });
+    });
+
+    renderLineTable();
+    renderCityTable();
+    syncLineHidden();
+    syncCityHidden();
+
+    if (t.city_id) {
+        stationInput.value = t.city_name || "";
+        stateInputView.value = t.city_state_name || "";
+    } else {
+        stationInput.value = "";
+        stateInputView.value = "";
+    }
+
+    activeTransportId = Number(t.transport_id);
+    setMode("display");
+    setFormEditable(false);
+    renderTransports();
+}
+
+async function loadDivisions() {
+    const res = await fetch("../../api/division/get_division.php");
+    allDivisions = await res.json();
+    renderDivisionOptions(parseStoredDivisionValues(document.getElementById("applicable_divisions").value || ""));
+}
+
+async function loadLines() {
+    const res = await fetch("../../api/line/get_line.php");
+    allLines = await res.json();
+}
+
+async function loadStates() {
+    const res = await fetch("../../api/state/get_states.php");
+    allStates = await res.json();
+}
+
+async function loadCities() {
+    const res = await fetch("../../api/city/get_city.php");
+    allCities = await res.json();
+}
+
+async function loadTransports() {
+    const res = await fetch("../../api/transport/get_transport.php");
+    allTransports = await res.json();
+    renderTransports();
+}
+
+function handleAddAction() {
+    preEditTransportId = activeTransportId;
+    resetForm();
+    setMode("add");
+    setFormEditable(true);
+    setTimeout(function () {
+        document.getElementById("transport_name").focus();
+    }, 0);
+}
+
+function handleModifyAction() {
+    const transportId = document.getElementById("transport_id").value;
+    if (!transportId) {
+        alert("Select a transport to modify");
+        return;
+    }
+    preEditTransportId = Number(transportId);
+    setMode("modify");
+    setFormEditable(true);
+    setTimeout(function () {
+        document.getElementById("transport_name").focus();
+    }, 0);
+}
+
+function cancelEditMode() {
+    if (preEditTransportId) {
+        const prev = allTransports.find(function (t) { return Number(t.transport_id) === Number(preEditTransportId); });
+        if (prev) {
+            fillForm(prev);
+            preEditTransportId = null;
+            return;
+        }
+    }
+    if (allTransports.length) {
+        fillForm(allTransports[0]);
+        return;
+    }
+    resetForm();
+}
+
+async function saveTransport(isModify) {
+    try {
+        syncApplicableDivisionsHidden();
+        syncLineHidden();
+        syncCityHidden();
+
+        const fd = new FormData(transportForm);
+        const transportId = fd.get("transport_id");
+        const transportName = (fd.get("transport_name") || "").trim();
+
+        if (checkDuplicateTransportName()) {
+            transportNameInput.focus();
+            transportNameInput.select();
+            return;
+        }
+
+        if (!transportName) {
+            if (hasAnyOtherFieldValue()) {
+                showTransportNameErrorMessage("Required");
+                transportNameInput.focus();
+            }
+            return;
+        }
+        clearTransportNameError();
+
+        let url = "../../api/transport/add_transport.php";
+        if (isModify) {
+            if (!transportId) {
+                alert("Select a transport to modify");
+                return;
+            }
+            url = "../../api/transport/update_transport.php";
+        } else if (typeof window.confirmAdd === "function") {
+            const ok = await window.confirmAdd("Are you sure you want to add this transport?\n\n" + transportName);
+            if (!ok) return;
+        }
+
+        const res = await fetch(url, { method: "POST", body: fd });
+        let data = null;
+        let rawText = "";
+        try {
+            rawText = await res.text();
+            data = JSON.parse(rawText);
+        } catch (e) {
+            data = null;
+        }
+        if (!data || data.status !== "success") {
+            const msg = (data && data.message)
+                ? data.message
+                : (rawText && rawText.trim() ? rawText.trim() : "Request failed");
+            alert(msg);
+        }
+
+        if (data && data.status === "success") {
+            await loadTransports();
+            if (isModify && transportId) {
+                const updated = allTransports.find(function (t) { return Number(t.transport_id) === Number(transportId); });
+                if (updated) fillForm(updated);
+                return;
+            }
+            // After add, show the new record in display mode so it is visible in the list.
+            filterInput.value = "";
+            const added = allTransports.find(function (t) {
+                return normalizeName(t.transport_name) === normalizeName(transportName);
+            });
+            if (added) {
+                fillForm(added);
+            } else if (allTransports.length) {
+                fillForm(allTransports[0]);
+            } else {
+                resetForm();
+                setMode("display");
+                setFormEditable(false);
+            }
+        }
+    } catch (err) {
+        alert("Request failed");
+    } finally {
+        if (window.clearAddModeSaveInFlight) window.clearAddModeSaveInFlight();
+    }
+}
+
+async function deleteTransport() {
+    const transportId = document.getElementById("transport_id").value;
+    if (!transportId) {
+        alert("Select a transport to delete");
+        return;
+    }
+    const ok = await window.confirmDelete("Delete this transport?");
+    if (!ok) return;
+
+    const body = new URLSearchParams();
+    body.set("transport_id", transportId);
+
+    const res = await fetch("../../api/transport/delete_transport.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+    const data = await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+    if (data.status === "success") {
+        await loadTransports();
+        if (allTransports.length) {
+            fillForm(allTransports[0]);
+        } else {
+            transportForm.reset();
+            setField("transport_id", "");
+            setField("city_id", "");
+            activeTransportId = null;
+            renderDivisionOptions([]);
+            resetSelections();
+            setMode("display");
+            setFormEditable(false);
+            renderTransports();
+        }
+    }
+}
+
+function openLineModal() {
+    workingLineNames = new Set(selectedLineNames);
+    workingLegacyLineNames = legacyLineNames.slice();
+    renderLineOptions();
+    lineModal.style.display = "flex";
+}
+
+function closeLineModal() {
+    lineModal.style.display = "none";
+    workingLineNames = null;
+    workingLegacyLineNames = null;
+}
+
+function renderLineOptions() {
+    if (!allLines.length) {
+        lineOptions.innerHTML = "<div class='popup-item'>No lines found</div>";
+        return;
+    }
+    lineOptions.innerHTML = allLines.map(function (line) {
+        const name = String(line.line_name || "");
+        const checked = workingLineNames.has(normalizeName(name)) ? "checked" : "";
+        return "<label class='popup-item'><input type='checkbox' value='" + esc(name) + "' " + checked + "> " + esc(name) + "</label>";
+    }).join("");
+
+    lineOptions.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+        cb.addEventListener("change", function () {
+            const name = cb.value || "";
+            if (cb.checked) workingLineNames.add(normalizeName(name));
+            else workingLineNames.delete(normalizeName(name));
+        });
+    });
+}
+
+function commitLineModal() {
+    selectedLineNames = new Set(workingLineNames || []);
+    legacyLineNames = (workingLegacyLineNames || []).slice();
+    renderLineTable();
+    syncLineHidden();
+    closeLineModal();
+}
+
+function selectAllLines() {
+    allLines.forEach(function (line) {
+        const name = String(line.line_name || "");
+        workingLineNames.add(normalizeName(name));
+    });
+    renderLineOptions();
+}
+
+function deselectAllLines() {
+    workingLineNames = new Set();
+    renderLineOptions();
+}
+
+function openCityModal() {
+    workingCityIds = new Set(selectedCityIds);
+    workingLegacyCityEntries = legacyCityEntries.slice();
+    workingStateFilterIds = new Set(stateFilterIds);
+    renderStateOptions();
+    renderCityOptions();
+    cityModal.style.display = "flex";
+}
+
+function closeCityModal() {
+    cityModal.style.display = "none";
+    workingCityIds = null;
+    workingLegacyCityEntries = null;
+    workingStateFilterIds = null;
+}
+
+function getVisibleCities() {
+    if (workingStateFilterIds.size === 0) return allCities;
+    return allCities.filter(function (c) { return workingStateFilterIds.has(String(c.state_id)); });
+}
+
+function renderStateOptions() {
+    if (!allStates.length) {
+        stateOptions.innerHTML = "<div class='popup-item'>No states found</div>";
+        return;
+    }
+    stateOptions.innerHTML = allStates.map(function (state) {
+        const id = String(state.id);
+        const checked = workingStateFilterIds.has(id) ? "checked" : "";
+        return "<label class='popup-item'><input type='checkbox' value='" + esc(id) + "' " + checked + "> " + esc(state.state_name || "") + "</label>";
+    }).join("");
+
+    stateOptions.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+        cb.addEventListener("change", function () {
+            const stateId = cb.value;
+            if (cb.checked) {
+                workingStateFilterIds.add(stateId);
+                allCities.forEach(function (city) {
+                    if (String(city.state_id) === String(stateId)) {
+                        workingCityIds.add(String(city.city_id));
+                    }
+                });
+            } else {
+                workingStateFilterIds.delete(stateId);
+                allCities.forEach(function (city) {
+                    if (String(city.state_id) === String(stateId)) {
+                        workingCityIds.delete(String(city.city_id));
+                    }
+                });
+            }
+            renderStateOptions();
+            renderCityOptions();
+        });
+    });
+}
+
+function renderCityOptions() {
+    const visibleCities = getVisibleCities();
+    if (!visibleCities.length) {
+        cityOptions.innerHTML = "<div class='popup-item'>No cities found</div>";
+        return;
+    }
+    cityOptions.innerHTML = visibleCities.map(function (city) {
+        const id = String(city.city_id);
+        const checked = workingCityIds.has(id) ? "checked" : "";
+        return "<label class='popup-item'><input type='checkbox' value='" + esc(id) + "' " + checked + "> " + esc(city.city_name || "") + "</label>";
+    }).join("");
+
+    cityOptions.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+        cb.addEventListener("change", function () {
+            const cityId = cb.value;
+            const city = allCities.find(function (c) { return String(c.city_id) === String(cityId); });
+            if (cb.checked) {
+                workingCityIds.add(cityId);
+            } else {
+                workingCityIds.delete(cityId);
+                if (city && workingStateFilterIds.has(String(city.state_id))) {
+                    workingStateFilterIds.delete(String(city.state_id));
+                }
+            }
+            renderStateOptions();
+            renderCityOptions();
+        });
+    });
+}
+
+function commitCityModal() {
+    selectedCityIds = new Set(workingCityIds || []);
+    legacyCityEntries = (workingLegacyCityEntries || []).slice();
+    stateFilterIds = new Set(workingStateFilterIds || []);
+    renderCityTable();
+    syncCityHidden();
+    closeCityModal();
+}
+
+function selectAllCities() {
+    const visibleCities = getVisibleCities();
+    visibleCities.forEach(function (city) {
+        workingCityIds.add(String(city.city_id));
+    });
+    renderStateOptions();
+    renderCityOptions();
+}
+
+function deselectAllCities() {
+    const visibleCities = getVisibleCities();
+    visibleCities.forEach(function (city) {
+        workingCityIds.delete(String(city.city_id));
+    });
+    if (workingStateFilterIds.size > 0) {
+        workingStateFilterIds = new Set();
+    }
+    renderStateOptions();
+    renderCityOptions();
+}
+
+function handleModalKeys(e) {
+    const lineOpen = lineModal.style.display === "flex";
+    const cityOpen = cityModal.style.display === "flex";
+    if (!lineOpen && !cityOpen) {
+        if (e.key === "F7") {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            openLineModal();
+            return;
+        }
+        if (e.key === "F8") {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            openCityModal();
+        }
+        return;
+    }
+
+    if (lineOpen) {
+        if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); closeLineModal(); return; }
+        if (e.key === "F3") { e.preventDefault(); e.stopImmediatePropagation(); selectAllLines(); return; }
+        if (e.key === "F4") { e.preventDefault(); e.stopImmediatePropagation(); deselectAllLines(); return; }
+        if (e.key === "F6") { e.preventDefault(); e.stopImmediatePropagation(); commitLineModal(); return; }
+    }
+
+    if (cityOpen) {
+        if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); closeCityModal(); return; }
+        if (e.key === "F3") { e.preventDefault(); e.stopImmediatePropagation(); selectAllCities(); return; }
+        if (e.key === "F4") { e.preventDefault(); e.stopImmediatePropagation(); deselectAllCities(); return; }
+        if (e.key === "F6") { e.preventDefault(); e.stopImmediatePropagation(); commitCityModal(); return; }
+    }
+}
+
+stationInput.addEventListener("focus", function () {
+    if (currentMode === "display") return;
+    stationIndex = -1;
+    stationFilter = "";
+    renderStationDropdown(filterCities(stationFilter));
+});
+
+stationInput.addEventListener("input", function () {
+    setField("city_id", "");
+    stateInputView.value = "";
+    stationIndex = -1;
+    stationFilter = stationInput.value || "";
+    renderStationDropdown(filterCities(stationFilter));
+});
+
+transportNameInput.addEventListener("input", function () {
+    if ((transportNameInput.value || "").trim()) {
+        checkDuplicateTransportName();
+    } else {
+        clearTransportNameError();
+    }
+});
+
+stationInput.addEventListener("keydown", function (e) {
+    const items = Array.from(stationDropdown.children);
+    if (stationDropdown.style.display !== "block" || !items.length) return;
+
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        stationIndex = (stationIndex + 1) % items.length;
+        renderStationDropdown(filterCities(stationFilter));
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        stationIndex = (stationIndex - 1 + items.length) % items.length;
+        renderStationDropdown(filterCities(stationFilter));
+    } else if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        const filtered = filterCities(stationFilter);
+        if (stationIndex < 0 && filtered.length === 1) stationIndex = 0;
+        if (filtered[stationIndex]) {
+            selectCityFromInput(filtered[stationIndex]);
+        } else {
+            stationDropdown.style.display = "none";
+            stationIndex = -1;
+        }
+        if (pinCodeInput) {
+            setTimeout(function () { pinCodeInput.focus(); }, 0);
+        }
+    } else if (e.key === "Escape") {
+        stationDropdown.style.display = "none";
+        stationIndex = -1;
+    }
+});
+
+stationInput.addEventListener("blur", function () {
+    setTimeout(function () {
+        if (!stationDropdown.contains(document.activeElement)) {
+            stationDropdown.style.display = "none";
+            stationIndex = -1;
+        }
+    }, 120);
+});
+
+document.addEventListener("click", function (e) {
+    if (!e.target.closest(".dropdown-wrapper")) {
+        stationDropdown.style.display = "none";
+        stationIndex = -1;
+    }
+});
+
+document.getElementById("addBtn").addEventListener("click", handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click", deleteTransport);
+document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+document.getElementById("lineBtn").addEventListener("click", openLineModal);
+document.getElementById("cityBtn").addEventListener("click", openCityModal);
+document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../index.html"; });
+filterInput.addEventListener("input", renderTransports);
+document.getElementById("saveBtn").addEventListener("click", function () {
+    if (currentMode === "modify") saveTransport(true);
+    else saveTransport(false);
+});
+document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+
+document.getElementById("lineSelectAllBtn").addEventListener("click", selectAllLines);
+document.getElementById("lineDeselectAllBtn").addEventListener("click", deselectAllLines);
+document.getElementById("lineProceedBtn").addEventListener("click", commitLineModal);
+
+document.getElementById("citySelectAllBtn").addEventListener("click", selectAllCities);
+document.getElementById("cityDeselectAllBtn").addEventListener("click", deselectAllCities);
+document.getElementById("cityProceedBtn").addEventListener("click", commitCityModal);
+
+document.addEventListener("keydown", handleModalKeys, true);
+
+document.addEventListener("keydown", function (e) {
+    if (currentMode !== "display") return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const rows = Array.from(transportList.querySelectorAll(".transport-row")).filter(function (r) { return r.dataset.id; });
+    if (!rows.length) return;
+    let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeTransportId); });
+    if (currentIndex === -1) currentIndex = 0;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentIndex < rows.length - 1) currentIndex += 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        selectTransportRow(rows[currentIndex]);
+    }
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentIndex > 0) currentIndex -= 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        selectTransportRow(rows[currentIndex]);
+    }
+});
+
+lineModal.addEventListener("click", function (e) {
+    if (e.target === lineModal) closeLineModal();
+});
+
+cityModal.addEventListener("click", function (e) {
+    if (e.target === cityModal) closeCityModal();
+});
+
+resetForm();
+(async function init() {
+    await loadDivisions();
+    await loadLines();
+    await loadStates();
+    await loadCities();
+    await loadTransports();
+    if (allTransports.length) {
+        const first = allTransports[0];
+        if (first) fillForm(first);
+    }
+})();
+</script>
+</body>
+</html>
+
+

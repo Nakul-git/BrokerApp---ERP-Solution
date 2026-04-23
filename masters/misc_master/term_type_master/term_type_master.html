@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Term Type Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../../../style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <link rel="stylesheet" href="./style.css?v=8">
+
+    <script>
+        const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () {
+            const res = await fetch(appRoot + "api/check_auth.php");
+            const data = await res.json();
+            if (!data.logged_in) window.location.replace(appRoot + "login.html");
+        })();
+    </script>
+    <script src="../../../global-nav.js" defer></script>
+    <script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+    <link rel="stylesheet" href="../../../selection-mode.css?v=1">
+    <link rel="stylesheet" href="../../../add-mode.css?v=1">
+    <script src="../../../add-mode.js" defer></script>
+    <script src="../../../permissions-catalog.js"></script>
+    <script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">Term Type Master</h2>
+
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div>
+                    <input id="filterInput" type="text" autocomplete="off" placeholder="Search term type...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="termList"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <span id="modeTag" class="mode-tag">Display Mode</span>
+                    <form id="termForm" autocomplete="off">
+                        <input type="hidden" id="term_type_id" name="term_type_id">
+                        <div class="form-grid">
+                            <div class="form-group full">
+                                <label for="description" class="label-with-error">
+                                    <span>Description</span>
+                                    <span id="descriptionError" class="error-text" style="display:none;"></span>
+                                </label>
+                                <input id="description" name="description" required data-add-first
+                                    data-duplicate-check="checkDuplicateDescription">
+                            </div>
+
+                            <div class="form-group">
+                                <div class="check-wrap">
+                                    <input id="is_default" name="is_default" type="checkbox">
+                                    <label for="is_default">Default</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let allTermTypes = [];
+            let activeTermTypeId = null;
+            let currentMode = "display";
+            let preEditTermTypeId = null;
+
+            const filterInput = document.getElementById("filterInput");
+            const termList = document.getElementById("termList");
+            const termForm = document.getElementById("termForm");
+            const modeTag = document.getElementById("modeTag");
+            const displayButtons = document.getElementById("displayButtons");
+            const addModeButtons = document.getElementById("addModeButtons");
+            const descriptionInput = document.getElementById("description");
+            const descriptionError = document.getElementById("descriptionError");
+            const defaultCheckbox = document.getElementById("is_default");
+            function esc(v) { return (v ?? "").toString().replace(/[&<>\"']/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[m]; }); }
+            function termDescriptionOf(t) { return (t?.description ?? "").toString(); }
+
+            function showDescriptionError(message) { descriptionInput.classList.add("field-error"); descriptionError.textContent = message; descriptionError.style.display = "inline"; }
+            function clearDescriptionError() { descriptionInput.classList.remove("field-error"); descriptionError.textContent = ""; descriptionError.style.display = "none"; }
+
+            function checkDuplicateDescription() {
+                const name = descriptionInput.value.trim().toLowerCase();
+                if (!name) { clearDescriptionError(); return false; }
+                const currentId = Number(document.getElementById("term_type_id").value || 0);
+                const duplicate = allTermTypes.some(function (t) {
+                    const sameName = termDescriptionOf(t).trim().toLowerCase() === name;
+                    const sameId = Number(t.term_type_id) === currentId;
+                    return sameName && !sameId;
+                });
+                if (duplicate) { showDescriptionError("Already exists"); return true; }
+                clearDescriptionError();
+                return false;
+            }
+
+            function setFormEditable(editable) {
+                const fields = termForm.querySelectorAll("input, select");
+                fields.forEach(function (field) {
+                    if (field.id === "term_type_id") return;
+                    if (field.type === "checkbox") {
+                        field.disabled = !editable;
+                        if (!editable) field.setAttribute("tabindex", "-1");
+                        else field.removeAttribute("tabindex");
+                        return;
+                    }
+                    if (!editable) field.setAttribute("tabindex", "-1");
+                    else field.removeAttribute("tabindex");
+                    if (field.tagName === "SELECT") field.disabled = !editable;
+                    else field.readOnly = !editable;
+                });
+            }
+
+            function syncActionMode() {
+                const isDisplay = currentMode === "display";
+                displayButtons.classList.toggle("hidden", !isDisplay);
+                addModeButtons.classList.toggle("hidden", isDisplay);
+                displayButtons.style.display = isDisplay ? "flex" : "none";
+                addModeButtons.style.display = isDisplay ? "none" : "flex";
+            }
+
+            function setMode(mode) {
+                currentMode = mode;
+                const rightPanel = document.querySelector(".right-panel");
+                rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+
+                if (mode === "add") {
+                    modeTag.textContent = "Add Mode";
+                    rightPanel.classList.add("add-mode");
+                    setTimeout(function () { descriptionInput.focus(); }, 0);
+                }
+                if (mode === "modify") {
+                    modeTag.textContent = "Edit Mode";
+                    rightPanel.classList.add("modify-mode");
+                    setTimeout(function () { descriptionInput.focus(); }, 0);
+                }
+                if (mode === "display") {
+                    modeTag.textContent = "Display Mode";
+                    rightPanel.classList.add("display-mode");
+                    preEditTermTypeId = null;
+                    clearDescriptionError();
+                    syncSelectionHighlight();
+                }
+                syncActionMode();
+            }
+
+            function ensureActiveTermSelection() {
+                if (!allTermTypes.length) {
+                    activeTermTypeId = null;
+                    return null;
+                }
+                let active = allTermTypes.find(function (t) { return Number(t.term_type_id) === Number(activeTermTypeId); });
+                if (!active) {
+                    active = allTermTypes[0];
+                    activeTermTypeId = Number(active.term_type_id);
+                }
+                return active;
+            }
+
+            function resetForm() {
+                termForm.reset();
+                document.getElementById("term_type_id").value = "";
+                activeTermTypeId = null;
+                clearDescriptionError();
+                setMode("add");
+                setFormEditable(true);
+                syncActionMode();
+                renderTerms();
+            }
+
+            function fillForm(t) {
+                document.getElementById("term_type_id").value = t.term_type_id || "";
+                document.getElementById("description").value = termDescriptionOf(t);
+                defaultCheckbox.checked = Number(t.is_default) === 1;
+                activeTermTypeId = Number(t.term_type_id);
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                clearDescriptionError();
+            }
+
+            function fillFormWithoutRender(t) {
+                document.getElementById("term_type_id").value = t.term_type_id || "";
+                document.getElementById("description").value = termDescriptionOf(t);
+                defaultCheckbox.checked = Number(t.is_default) === 1;
+                activeTermTypeId = Number(t.term_type_id);
+            }
+
+            function renderTerms() {
+                ensureActiveTermSelection();
+                const keyword = "";
+                const rows = allTermTypes.filter(function (t) {
+                    return !keyword || termDescriptionOf(t).toLowerCase().includes(keyword);
+                });
+
+                if (!rows.length) {
+                    termList.innerHTML = "<div class='term-row'>No term types found</div>";
+                    return;
+                }
+
+                termList.innerHTML = rows.map(function (t) {
+                    const active = Number(t.term_type_id) === activeTermTypeId ? "active" : "";
+                    return "<div class='term-row " + active + "' data-id='" + esc(t.term_type_id) + "'>" + esc(termDescriptionOf(t)) + "</div>";
+                }).join("");
+
+                termList.querySelectorAll(".term-row").forEach(function (row) {
+                    row.addEventListener("click", function () { selectRow(this); });
+                });
+
+                syncSelectionHighlight();
+            }
+
+            function syncSelectionHighlight() {
+                const rows = Array.from(termList.querySelectorAll(".term-row")).filter(function (r) { return r.dataset.id; });
+                rows.forEach(function (r) { r.classList.remove("active"); });
+                const activeRow = rows.find(function (r) { return Number(r.dataset.id) === Number(activeTermTypeId); });
+                if (activeRow) {
+                    activeRow.classList.add("active");
+                    activeRow.scrollIntoView({ block: "nearest" });
+                }
+            }
+
+            function selectRow(row) {
+                termList.querySelectorAll(".term-row").forEach(function (r) { r.classList.remove("active"); });
+                row.classList.add("active");
+                const id = Number(row.dataset.id);
+                activeTermTypeId = id;
+                const t = allTermTypes.find(function (x) { return Number(x.term_type_id) === id; });
+                if (!t) return;
+                fillFormWithoutRender(t);
+                row.scrollIntoView({ block: "center" });
+            }
+
+            async function loadTerms() {
+                const res = await fetch("../../../api/term_type/get_term_type.php");
+                allTermTypes = await res.json();
+
+                if (allTermTypes.length) {
+                    ensureActiveTermSelection();
+                    renderTerms();
+                    const selected = ensureActiveTermSelection();
+                    if (selected) fillFormWithoutRender(selected);
+                    document.querySelector(".list-wrap").scrollTop = 0;
+                } else {
+                    renderTerms();
+                    setMode("display");
+                    setFormEditable(false);
+                    syncActionMode();
+                }
+            }
+
+            function customConfirm(message, callback) {
+                if (window.deleteModeConfirm) {
+                    window.deleteModeConfirm(message, callback);
+                    return;
+                }
+            }
+
+            async function saveTermType(isModify) {
+                const fd = new FormData(termForm);
+                const termTypeId = fd.get("term_type_id");
+                const description = (fd.get("description") || "").trim();
+
+                if (checkDuplicateDescription()) {
+                    descriptionInput.focus();
+                    descriptionInput.select();
+                    return;
+                }
+                if (!description) {
+                    showDescriptionError("Required");
+                    setTimeout(function () { descriptionInput.focus(); descriptionInput.select(); }, 50);
+                    return;
+                }
+
+                if (!isModify) {
+                    const confirmAdd = await window.confirmAdd("Are you sure you want to add this term type?\n\n" + description);
+                    if (!confirmAdd) return;
+                }
+
+                let url = "../../../api/term_type/add_term_type.php";
+                if (isModify) {
+                    if (!termTypeId) { alert("Select a term type to modify"); return; }
+                    url = "../../../api/term_type/update_term_type.php";
+                }
+
+                const res = await fetch(url, { method: "POST", body: fd });
+                const data = await res.json();
+                if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+                if (data.status === "success") {
+                    await loadTerms();
+                    if (isModify && termTypeId) {
+                        const updated = allTermTypes.find(function (t) { return Number(t.term_type_id) === Number(termTypeId); });
+                        if (updated) fillForm(updated);
+                        return;
+                    }
+                    resetForm();
+                    setMode("add");
+                    setFormEditable(true);
+                    syncActionMode();
+                    descriptionInput.focus();
+                }
+            }
+
+            async function deleteTermType() {
+                const termTypeId = document.getElementById("term_type_id").value;
+                if (!termTypeId) { alert("Select a term type to delete"); return; }
+
+                customConfirm("Delete this term type?", async function () {
+                    const body = new URLSearchParams();
+                    body.set("term_type_id", termTypeId);
+
+                    const res = await fetch("../../../api/term_type/delete_term_type.php", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: body.toString()
+                    });
+                    const data = await res.json();
+                    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+                    if (data.status === "success") {
+                        await loadTerms();
+                        if (allTermTypes.length) {
+                            setMode("display");
+                            setFormEditable(false);
+                            syncActionMode();
+                        } else {
+                            resetForm();
+                        }
+                    }
+                });
+            }
+
+            function handleAddAction() { preEditTermTypeId = activeTermTypeId; resetForm(); descriptionInput.focus(); }
+            function handleModifyAction() {
+                const termTypeId = document.getElementById("term_type_id").value;
+                if (!termTypeId) { alert("Select a term type to modify"); return; }
+                preEditTermTypeId = Number(termTypeId);
+                setMode("modify");
+                setFormEditable(true);
+                syncActionMode();
+            }
+            function cancelEditMode() {
+                if (preEditTermTypeId) {
+                    const previous = allTermTypes.find(function (t) { return Number(t.term_type_id) === Number(preEditTermTypeId); });
+                    if (previous) { fillForm(previous); preEditTermTypeId = null; return; }
+                }
+                const fallback = ensureActiveTermSelection();
+                if (fallback) { fillForm(fallback); return; }
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                renderTerms();
+            }
+
+            function keepDescriptionActive() {
+                if (currentMode === "add" || currentMode === "modify") {
+                    setTimeout(function () { if (!termForm.contains(document.activeElement)) descriptionInput.focus(); }, 0);
+                }
+            }
+
+            descriptionInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkDuplicateDescription(); });
+            termForm.addEventListener("focusin", function (e) {
+                if (currentMode !== "modify") return;
+                const field = e.target;
+                if (field.tagName === "INPUT" && field.type === "text" && !field.readOnly) { setTimeout(function () { field.select(); }, 0); }
+            });
+
+            document.getElementById("addBtn").addEventListener("click", handleAddAction);
+            document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+            document.getElementById("deleteBtn").addEventListener("click", deleteTermType);
+            document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+            document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../../index.html"; });
+            document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+            document.getElementById("saveBtn").addEventListener("click", function () { if (currentMode === "modify") saveTermType(true); else saveTermType(false); });
+            let typeBuffer = "", typeTimer = null, lastMatchedIndex = -1;
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+                const rows = Array.from(termList.querySelectorAll(".term-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                const isSearchBox = document.activeElement.id === "filterInput";
+                if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+                    if (isSearchBox) return;
+                    e.preventDefault();
+                    const letter = e.key.toLowerCase();
+                    if (typeTimer) clearTimeout(typeTimer);
+                    typeBuffer += letter;
+                    typeTimer = setTimeout(function () { typeBuffer = ""; lastMatchedIndex = -1; }, 700);
+
+                    let matchIndex = -1;
+                    if (typeBuffer.length === 1) {
+                        const startIndex = lastMatchedIndex + 1;
+                        matchIndex = rows.findIndex(function (row, index) { return index >= startIndex && row.textContent.trim().toLowerCase().startsWith(letter); });
+                        if (matchIndex === -1) matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(letter); });
+                    } else {
+                        matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(typeBuffer); });
+                    }
+                    if (matchIndex !== -1) { lastMatchedIndex = matchIndex; selectRow(rows[matchIndex]); }
+                }
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                const rows = Array.from(termList.querySelectorAll(".term-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeTermTypeId); });
+                if (currentIndex === -1) currentIndex = 0;
+
+                if (e.key === "ArrowDown") { e.preventDefault(); if (currentIndex < rows.length - 1) currentIndex++; selectRow(rows[currentIndex]); }
+                if (e.key === "ArrowUp") { e.preventDefault(); if (currentIndex > 0) currentIndex--; selectRow(rows[currentIndex]); }
+            });
+
+            document.addEventListener("mousedown", function (e) { if (currentMode === "add" || currentMode === "modify") { if (!termForm.contains(e.target)) keepDescriptionActive(); } });(function () {
+                let navMode = false, mainIndex = 0, subIndex = -1;
+                const topNavItems = function () { return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function (li) { return li.offsetParent !== null; }); };
+                function getSubItems(li) { return Array.from(li.querySelectorAll("ul li")).filter(function (item) { return item.offsetParent !== null; }); }
+                function highlightMain(index) { const items = topNavItems(); items.forEach(function (i) { i.classList.remove("nav-active"); }); if (!items[index]) return; items[index].classList.add("nav-active"); if (items[index].focus) items[index].focus(); }
+                function highlightSub(subItems, index) { subItems.forEach(function (i) { i.classList.remove("nav-sub-active"); }); if (!subItems[index]) return; subItems[index].classList.add("nav-sub-active"); subItems[index].scrollIntoView({ block: "nearest" }); }
+                function resetNav() { navMode = false; mainIndex = 0; subIndex = -1; document.querySelectorAll(".nav-active").forEach(function (el) { el.classList.remove("nav-active"); }); document.querySelectorAll(".nav-sub-active").forEach(function (el) { el.classList.remove("nav-sub-active"); }); }
+
+                document.addEventListener("keydown", function (e) {
+                    if (e.key === "Alt" && !navMode) { e.preventDefault(); navMode = true; mainIndex = 0; subIndex = -1; highlightMain(mainIndex); return; }
+                    if (!navMode) return;
+                    const items = topNavItems();
+                    const currentMain = items[mainIndex];
+                    const subItems = currentMain ? getSubItems(currentMain) : [];
+
+                    if (e.key === "Escape") { e.preventDefault(); resetNav(); return; }
+                    if (e.key === "ArrowRight") { e.preventDefault(); mainIndex = (mainIndex + 1) % items.length; subIndex = -1; highlightMain(mainIndex); }
+                    if (e.key === "ArrowLeft") { e.preventDefault(); mainIndex = (mainIndex - 1 + items.length) % items.length; subIndex = -1; highlightMain(mainIndex); }
+                    if (e.key === "ArrowDown") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = 0; else subIndex = (subIndex + 1) % subItems.length; highlightSub(subItems, subIndex); }
+                    if (e.key === "ArrowUp") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = subItems.length - 1; else subIndex = (subIndex - 1 + subItems.length) % subItems.length; highlightSub(subItems, subIndex); }
+                    if (e.key === "Enter") { e.preventDefault(); if (subIndex >= 0 && subItems[subIndex]) subItems[subIndex].click(); else if (currentMain) currentMain.click(); resetNav(); }
+                });
+            })();
+
+            setMode("display");
+            setFormEditable(false);
+            syncActionMode();
+
+            (async function init() {
+                await loadTerms();
+                if (allTermTypes.length) {
+                    const first = ensureActiveTermSelection();
+                    if (first) fillFormWithoutRender(first);
+                    renderTerms();
+                }
+            })();
+        </script>
+
+</body>
+
+</html>
+

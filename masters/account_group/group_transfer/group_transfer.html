@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Group Transfer Utility | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+
+<script>
+const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () {
+    const res = await fetch(appRoot + "api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 8px;
+    text-align: center;
+    font-size: 24px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 40px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 8px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel .label {
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 30px;
+    padding: 4px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 6px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 56px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.group-row {
+    padding: 3px 8px;
+    font-size: 13px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.group-row:hover { background: rgba(0, 0, 0, 0.08); }
+.group-row.active { background: #0074d9; color: #fff; }
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 6px;
+    padding: 2px 6px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.transfer-form {
+    border: 1px solid #d7d7d7;
+    background: #efefef;
+    padding: 8px;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 132px 1fr 72px 1fr;
+    gap: 6px 8px;
+    align-items: center;
+}
+
+.form-grid label {
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #2d2d2d;
+}
+
+.form-grid input,
+.form-grid select {
+    width: 100%;
+    height: 24px;
+    padding: 2px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+}
+
+.panel-box {
+    border: 1px solid #bcbcbc;
+    background: #fff;
+    padding: 6px;
+    margin-top: 6px;
+}
+
+.panel-title {
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #2d2d2d;
+    margin-bottom: 4px;
+}
+
+.transfer-grid {
+    display: grid;
+    grid-template-columns: 1fr 60px 1fr;
+    gap: 6px;
+    align-items: center;
+}
+
+.list-box {
+    border: 1px solid #c9c9c9;
+    background: #fff;
+    min-height: 300px;
+    max-height: 300px;
+    overflow: auto;
+}
+
+.list-head-row {
+    background: #e3b07d;
+    border-bottom: 1px solid #7b7b7b;
+    padding: 3px 6px;
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.list-row {
+    padding: 3px 6px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.list-row.active { background: #bffcff; }
+
+.row-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    border: 1px solid #7b7b7b;
+    background: #f6f6f6;
+    font-size: 11px;
+    font-weight: 700;
+    color: #333;
+    padding: 0 4px;
+    border-radius: 2px;
+}
+
+.transfer-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.transfer-btn {
+    width: 44px;
+    height: 28px;
+    border: 1px solid #969696;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.list-footer {
+    margin-top: 4px;
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.btn-xs {
+    padding: 3px 8px;
+    height: 24px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.action-row {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.btn {
+    min-width: 96px;
+    padding: 3px 8px;
+    height: 28px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+}
+
+.btn.primary, .btn.danger {
+    background: #ea7ce8;
+    color: #000;
+    border-color: #efc9f0;
+}
+
+.action-row.hidden { display: none; }
+
+.right-panel.display-mode input,
+.right-panel.display-mode select,
+.right-panel.display-mode textarea {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    pointer-events: none;
+    user-select: none;
+}
+
+@media (max-width: 1220px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 120px 1fr; }
+    .transfer-grid { grid-template-columns: 1fr; }
+    .transfer-actions { flex-direction: row; justify-content: center; }
+}
+</style>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Group Transfer Utility</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search group...">
+<div class="list-wrap">
+<div class="list-head">Name</div>
+<div id="groupList"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="transferForm" autocomplete="off" class="transfer-form">
+<div class="form-grid">
+<label for="source_group">Source Group</label>
+<input id="source_group" type="text" readonly>
+<label for="target_group">Target</label>
+<select id="target_group"></select>
+</div>
+
+<div class="panel-box">
+<div class="panel-title">Account Under Selected Group</div>
+<div style="font-size:11px;margin:0 0 4px;font-family:'Times New Roman',serif;">All Accounts</div>
+<div class="transfer-grid">
+<div>
+<div class="list-box" id="allAccountList">
+<div class="list-head-row">Account Name</div>
+</div>
+<div class="list-footer">
+<button type="button" class="btn-xs" id="allSelectBtn">Select All</button>
+<button type="button" class="btn-xs" id="allDeselectBtn">De-Select All</button>
+</div>
+</div>
+
+<div class="transfer-actions">
+<button type="button" class="transfer-btn" id="moveRightBtn">&gt;</button>
+<button type="button" class="transfer-btn" id="moveLeftBtn">&lt;</button>
+</div>
+
+<div>
+<div class="list-box" id="selectedAccountList">
+<div class="list-head-row">Selection</div>
+</div>
+<div class="list-footer">
+<button type="button" class="btn-xs" id="selSelectBtn">Select All</button>
+<button type="button" class="btn-xs" id="selDeselectBtn">De-Select All</button>
+</div>
+</div>
+</div>
+</div>
+</form>
+
+<div id="displayButtons" class="action-row">
+<button class="btn" type="button" id="modifyBtn">&#128221; F3-Modify</button>
+<button class="btn" type="button" id="exitBtn">&#10060; Esc-Exit</button>
+</div>
+
+<div id="addModeButtons" class="action-row hidden">
+<button class="btn danger" type="button" id="cancelBtn">&#10060; Esc-Cancel</button>
+<button class="btn primary" type="button" id="saveBtn">&#128190; F6-Save</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let allGroups = [];
+let allAccounts = [];
+let allParties = [];
+let activeGroupId = null;
+let currentMode = "display";
+let sourceItems = [];
+let selectedItems = [];
+let targetGroupId = null;
+let sourceGroupName = "";
+let targetGroupName = "";
+
+const filterInput = document.getElementById("filterInput");
+const groupList = document.getElementById("groupList");
+const transferForm = document.getElementById("transferForm");
+const modeTag = document.getElementById("modeTag");
+const rightPanel = document.querySelector(".right-panel");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const sourceGroup = document.getElementById("source_group");
+const targetGroup = document.getElementById("target_group");
+const allAccountList = document.getElementById("allAccountList");
+const selectedAccountList = document.getElementById("selectedAccountList");
+
+function esc(v) {
+    return (v ?? "").toString().replace(/[&<>"']/g, function (m) {
+        return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m];
+    });
+}
+
+function isPrimaryGroup(g) {
+    const val = g && g.group_primary;
+    return String(val || "").toUpperCase() === "Y" || Number(val) === 1;
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    const isDisplay = mode === "display";
+    displayButtons.classList.toggle("hidden", !isDisplay);
+    addModeButtons.classList.toggle("hidden", isDisplay);
+}
+
+function setFormEditable(editable) {
+    const fields = transferForm.querySelectorAll("input, select, textarea, button");
+    fields.forEach(function (field) {
+        if (field.id === "moveRightBtn" || field.id === "moveLeftBtn") return;
+        if (editable) {
+            field.removeAttribute("tabindex");
+        } else {
+            field.setAttribute("tabindex", "-1");
+        }
+    });
+}
+
+function renderGroups() {
+    const keyword = (filterInput.value || "").trim().toLowerCase();
+    const rows = allGroups.filter(function (g) {
+        if (isPrimaryGroup(g)) return false;
+        const name = (g.group_name || "").toLowerCase();
+        const main = (g.main_group_name || "").toLowerCase();
+        return !keyword || name.includes(keyword) || main.includes(keyword);
+    });
+    let selectedId = Number(activeGroupId || 0);
+    if (!selectedId || !rows.some(function (g) { return Number(g.group_id) === selectedId; })) {
+        if (rows.length) {
+            selectedId = Number(rows[0].group_id);
+            activeGroupId = selectedId;
+            sourceGroup.value = rows[0].group_name || "";
+        }
+    }
+    groupList.innerHTML = rows.map(function (g) {
+        const active = Number(g.group_id) === selectedId ? "active" : "";
+        return "<div class='group-row " + active + "' data-id='" + esc(g.group_id) + "'>" + esc(g.group_name || "") + "</div>";
+    }).join("");
+    groupList.querySelectorAll(".group-row").forEach(function (row) {
+        row.addEventListener("click", function () {
+            const id = Number(this.dataset.id);
+            const g = allGroups.find(function (x) { return Number(x.group_id) === id; });
+            if (!g) return;
+            activeGroupId = id;
+            sourceGroupName = g.group_name || "";
+            sourceGroup.value = sourceGroupName;
+            renderGroups();
+            refreshGroupItems();
+            renderTargetOptions();
+        });
+    });
+    if (selectedId) {
+        renderTargetOptions();
+    }
+}
+
+function renderTargetOptions() {
+    const options = ["<option value=''>Select target</option>"];
+    options.push(allGroups.filter(function (g) {
+        if (isPrimaryGroup(g)) return false;
+        return Number(g.group_id) !== Number(activeGroupId);
+    }).map(function (g) {
+        return "<option value='" + esc(g.group_id) + "'>" + esc(g.group_name || "") + "</option>";
+    }).join(""));
+    targetGroup.innerHTML = options.join("");
+    if (targetGroupId) {
+        targetGroup.value = String(targetGroupId);
+    }
+}
+
+function renderAccountLists() {
+    const allHtml = ["<div class='list-head-row'>Account / Party Name</div>"];
+    if (!sourceItems.length) allHtml.push("<div class='list-row'>No records available</div>");
+    sourceItems.forEach(function (r) {
+        const tag = r.type === "party" ? "P" : "A";
+        allHtml.push("<div class='list-row' data-id='" + esc(r.id) + "' data-type='" + esc(r.type) + "'><span>" + esc(r.name) + "</span><span class='row-tag'>" + tag + "</span></div>");
+    });
+    allAccountList.innerHTML = allHtml.join("");
+
+    const selHtml = ["<div class='list-head-row'>Selection</div>"];
+    if (!selectedItems.length) selHtml.push("<div class='list-row'>No records selected</div>");
+    selectedItems.forEach(function (r) {
+        const tag = r.type === "party" ? "P" : "A";
+        selHtml.push("<div class='list-row' data-id='" + esc(r.id) + "' data-type='" + esc(r.type) + "'><span>" + esc(r.name) + "</span><span class='row-tag'>" + tag + "</span></div>");
+    });
+    selectedAccountList.innerHTML = selHtml.join("");
+
+    wireListClicks(allAccountList);
+    wireListClicks(selectedAccountList);
+}
+
+function loadGroups() {
+    return fetch(appRoot + "api/group/get_group.php")
+        .then(res => res.json())
+        .then(data => { allGroups = Array.isArray(data) ? data : []; });
+}
+
+function loadAccounts() {
+    return fetch(appRoot + "api/account_master/get_accounts.php")
+        .then(res => res.json())
+        .then(data => { allAccounts = Array.isArray(data) ? data : []; });
+}
+
+function loadParties() {
+    return fetch(appRoot + "api/party/get_party.php")
+        .then(res => res.json())
+        .then(data => { allParties = Array.isArray(data) ? data : []; });
+}
+
+filterInput.addEventListener("input", renderGroups);
+
+function handleAddAction() {
+    activeGroupId = null;
+    targetGroupId = null;
+    sourceGroupName = "";
+    targetGroupName = "";
+    sourceGroup.value = "";
+    targetGroup.value = "";
+    renderGroups();
+    sourceItems = [];
+    selectedItems = [];
+    renderAccountLists();
+    setMode("add");
+    setFormEditable(true);
+}
+
+function handleModifyAction() {
+    if (!activeGroupId) {
+        alert("Select a source group first");
+        return;
+    }
+    refreshGroupItems();
+    setMode("modify");
+    setFormEditable(true);
+}
+
+function cancelEditMode() {
+    setMode("display");
+    setFormEditable(false);
+}
+
+async function saveTransfer() {
+    const targetId = Number(targetGroup.value || 0);
+    if (!activeGroupId) { alert("Select a source group"); return; }
+    if (!targetId) { alert("Select a target group"); return; }
+    if (!selectedItems.length && !sourceItems.length) { alert("No records to save"); return; }
+    const target = allGroups.find(function (g) { return Number(g.group_id) === targetId; });
+    if (!target) { alert("Invalid target group"); return; }
+    const source = allGroups.find(function (g) { return Number(g.group_id) === Number(activeGroupId); });
+    if (!source) { alert("Invalid source group"); return; }
+    if (typeof window.confirmAdd === "function") {
+        const ok = await window.confirmAdd("Are you sure you want to save this transfer?");
+        if (!ok) return;
+    }
+    const payload = {
+        source_group_name: source.group_name || "",
+        target_group_name: target.group_name || "",
+        source_items: sourceItems.map(function (i) { return { id: i.id, type: i.type }; }),
+        target_items: selectedItems.map(function (i) { return { id: i.id, type: i.type }; })
+    };
+    const res = await fetch(appRoot + "api/group/transfer_group_items.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(function () { return null; });
+    if (!data || data.status !== "success") {
+        alert((data && data.message) || "Transfer failed");
+        return;
+    }
+    await loadAccounts();
+    await loadParties();
+    refreshGroupItems();
+    setMode("display");
+    setFormEditable(false);
+}
+
+const addBtn = document.getElementById("addBtn");
+const modifyBtn = document.getElementById("modifyBtn");
+const deleteBtn = document.getElementById("deleteBtn");
+const printBtn = document.getElementById("printBtn");
+const exitBtn = document.getElementById("exitBtn");
+const saveBtn = document.getElementById("saveBtn");
+const cancelBtn = document.getElementById("cancelBtn");
+
+if (addBtn) addBtn.addEventListener("click", handleAddAction);
+if (modifyBtn) modifyBtn.addEventListener("click", handleModifyAction);
+if (deleteBtn) deleteBtn.addEventListener("click", function () {
+    alert("Delete not supported for group transfer");
+});
+if (printBtn) printBtn.addEventListener("click", function () { window.print(); });
+if (exitBtn) exitBtn.addEventListener("click", function () { window.location.href = appRoot + "index.html"; });
+if (saveBtn) saveBtn.addEventListener("click", saveTransfer);
+if (cancelBtn) cancelBtn.addEventListener("click", cancelEditMode);
+
+document.addEventListener("keydown", function (e) {
+    if (!rightPanel.classList.contains("display-mode")) return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const rows = Array.from(groupList.querySelectorAll(".group-row")).filter(function (r) {
+        if (!r.dataset || !r.dataset.id) return false;
+        if (r.offsetParent === null) return false;
+        return true;
+    });
+    if (!rows.length) return;
+    let currentIndex = rows.findIndex(function (row) {
+        return Number(row.dataset.id) === Number(activeGroupId);
+    });
+    if (currentIndex === -1) currentIndex = 0;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentIndex < rows.length - 1) currentIndex += 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentIndex > 0) currentIndex -= 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+});
+
+(async function init() {
+    await loadGroups();
+    await loadAccounts();
+    await loadParties();
+    renderGroups();
+    renderTargetOptions();
+    refreshGroupItems();
+    setMode("display");
+    setFormEditable(false);
+})();
+
+function refreshGroupItems() {
+    const group = allGroups.find(function (g) { return Number(g.group_id) === Number(activeGroupId); });
+    sourceGroupName = group ? (group.group_name || "") : "";
+    sourceGroup.value = sourceGroupName;
+    sourceItems = buildItemsForGroup(sourceGroupName);
+    if (targetGroupId) {
+        const target = allGroups.find(function (g) { return Number(g.group_id) === Number(targetGroupId); });
+        targetGroupName = target ? (target.group_name || "") : "";
+        selectedItems = buildItemsForGroup(targetGroupName);
+    } else {
+        selectedItems = [];
+    }
+    renderAccountLists();
+}
+
+function buildItemsForGroup(groupName) {
+    const name = String(groupName || "");
+    const acc = allAccounts
+        .filter(function (a) { return String(a.group_name || "") === name; })
+        .map(function (a) { return { id: Number(a.account_id), name: a.account_name || "", type: "account" }; });
+    const parties = allParties
+        .filter(function (p) { return String(p.group_name || "") === name; })
+        .map(function (p) { return { id: Number(p.party_id), name: p.party_name || "", type: "party" }; });
+    return acc.concat(parties).sort(function (a, b) {
+        return String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" });
+    });
+}
+
+function wireListClicks(container) {
+    container.querySelectorAll(".list-row[data-id]").forEach(function (row) {
+        row.addEventListener("click", function () {
+            row.classList.toggle("active");
+        });
+    });
+}
+
+function getSelectedFrom(container) {
+    return Array.from(container.querySelectorAll(".list-row.active[data-id]")).map(function (row) {
+        return {
+            id: Number(row.dataset.id),
+            type: row.dataset.type,
+            name: (row.querySelector("span") ? row.querySelector("span").textContent : row.textContent || "").trim()
+        };
+    });
+}
+
+function uniqueKey(item) {
+    return item.type + ":" + String(item.id);
+}
+
+function moveItems(source, target, items) {
+    const targetKeys = new Set(target.map(uniqueKey));
+    items.forEach(function (item) {
+        const key = uniqueKey(item);
+        if (!targetKeys.has(key)) {
+            target.push(item);
+            targetKeys.add(key);
+        }
+    });
+    const removeKeys = new Set(items.map(uniqueKey));
+    return source.filter(function (item) { return !removeKeys.has(uniqueKey(item)); });
+}
+
+document.getElementById("moveRightBtn").addEventListener("click", function () {
+    if (currentMode === "display") return;
+    const items = getSelectedFrom(allAccountList);
+    if (!items.length) return;
+    sourceItems = moveItems(sourceItems, selectedItems, items);
+    renderAccountLists();
+});
+
+document.getElementById("moveLeftBtn").addEventListener("click", function () {
+    if (currentMode === "display") return;
+    const items = getSelectedFrom(selectedAccountList);
+    if (!items.length) return;
+    selectedItems = moveItems(selectedItems, sourceItems, items);
+    renderAccountLists();
+});
+
+targetGroup.addEventListener("change", function () {
+    targetGroupId = Number(targetGroup.value || 0);
+    if (!targetGroupId) {
+        targetGroupName = "";
+        selectedItems = [];
+        renderAccountLists();
+        return;
+    }
+    if (Number(targetGroupId) === Number(activeGroupId)) {
+        alert("Target group cannot be same as source group");
+        targetGroup.value = "";
+        targetGroupId = null;
+        targetGroupName = "";
+        selectedItems = [];
+        renderAccountLists();
+        return;
+    }
+    const target = allGroups.find(function (g) { return Number(g.group_id) === Number(targetGroupId); });
+    targetGroupName = target ? (target.group_name || "") : "";
+    selectedItems = buildItemsForGroup(targetGroupName);
+    sourceItems = buildItemsForGroup(sourceGroupName);
+    renderAccountLists();
+});
+
+document.getElementById("allSelectBtn").addEventListener("click", function () {
+    allAccountList.querySelectorAll(".list-row[data-id]").forEach(function (r) { r.classList.add("active"); });
+});
+document.getElementById("allDeselectBtn").addEventListener("click", function () {
+    allAccountList.querySelectorAll(".list-row.active").forEach(function (r) { r.classList.remove("active"); });
+});
+document.getElementById("selSelectBtn").addEventListener("click", function () {
+    selectedAccountList.querySelectorAll(".list-row[data-id]").forEach(function (r) { r.classList.add("active"); });
+});
+document.getElementById("selDeselectBtn").addEventListener("click", function () {
+    selectedAccountList.querySelectorAll(".list-row.active").forEach(function (r) { r.classList.remove("active"); });
+});
+</script>
+</body>
+</html>

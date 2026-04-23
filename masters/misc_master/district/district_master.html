@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>District Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../../style.css?v=8">
+    <link rel="stylesheet" href="./style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <script>
+        const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () { const res = await fetch(appRoot + "api/check_auth.php"); const data = await res.json(); if (!data.logged_in) window.location.replace(appRoot + "login.html"); })();
+    </script>
+    <script src="../../../global-nav.js" defer></script>
+    <script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+    <link rel="stylesheet" href="../../../selection-mode.css?v=1">
+    <link rel="stylesheet" href="../../../add-mode.css?v=1">
+    <script src="../../../add-mode.js" defer></script>
+    <script src="../../../permissions-catalog.js"></script>
+    <script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">District Master</h2>
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div><input id="filterInput" type="text" autocomplete="off"
+                        placeholder="Search district...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="districtList"></div>
+                    </div>
+                </div>
+                <div class="right-panel"><span id="modeTag" class="mode-tag">Display Mode</span>
+                    <form id="districtForm" autocomplete="off"><input type="hidden" id="district_id" name="district_id">
+                        <div class="form-grid">
+                            <div class="form-group full"><label for="district_name"
+                                    class="label-with-error"><span>District Name</span><span id="districtNameError"
+                                        class="error-text" style="display:none;"></span></label><input
+                                    id="district_name" name="district_name" required data-add-first
+                                    data-duplicate-check="checkDuplicateDistrictName"></div>
+                            <div class="form-group"><label for="population">Population</label><input id="population"
+                                    name="population" type="number" min="0" value="0"></div>
+                            <div class="form-group"><label for="area_sq_kms">Area (Sq. Kms)</label><input
+                                    id="area_sq_kms" name="area_sq_kms" type="number" step="0.01" min="0" value="0.00">
+                            </div>
+                            <div class="form-group full"><label class="label-with-error"><span>State Name</span><span
+                                        id="stateNameError" class="error-text" style="display:none;"></span></label>
+                                <div class="dropdown-wrapper"><input id="state_name_input" type="text"
+                                        placeholder="Select State" autocomplete="off" required
+                                        data-required-check="checkStateRequired">
+                                    <div class="dropdown-list" id="stateDropdown"></div>
+                                </div><input type="hidden" id="state_id" name="state_id" required>
+                            </div>
+                            <div class="form-group full"><label for="headquarters">Headquarters</label><input
+                                    id="headquarters" name="headquarters"></div>
+                        </div>
+                    </form>
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            const districtList = document.getElementById("districtList");
+            const filterInput = document.getElementById("filterInput");
+            const districtForm = document.getElementById("districtForm");
+            const modeTag = document.getElementById("modeTag");
+            const displayButtons = document.getElementById("displayButtons");
+            const addModeButtons = document.getElementById("addModeButtons");
+            const districtNameInput = document.getElementById("district_name");
+            const districtNameError = document.getElementById("districtNameError");
+            const stateInput = document.getElementById("state_name_input");
+            const stateDropdown = document.getElementById("stateDropdown");
+            const hiddenStateInput = document.getElementById("state_id");
+            const stateNameError = document.getElementById("stateNameError");
+            let allDistricts = [], allStates = [];
+            let activeDistrictId = null, currentMode = "display", preEditDistrictId = null, stateIndex = -1;
+            function esc(v) { return (v ?? "").toString().replace(/[&<>\"']/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[m]; }); }
+            function showDistrictNameError(message) { districtNameInput.classList.add("field-error"); districtNameError.textContent = message; districtNameError.style.display = "inline"; }
+            function clearDistrictNameError() { districtNameInput.classList.remove("field-error"); districtNameError.textContent = ""; districtNameError.style.display = "none"; }
+            function showStateError(message) { stateInput.classList.add("field-error"); stateNameError.textContent = message; stateNameError.style.display = "inline"; }
+            function clearStateError() { stateInput.classList.remove("field-error"); stateNameError.textContent = ""; stateNameError.style.display = "none"; }
+            function checkDuplicateDistrictName() { const name = districtNameInput.value.trim().toLowerCase(); if (!name) { clearDistrictNameError(); return false; } const currentId = Number(document.getElementById("district_id").value || 0); const duplicate = allDistricts.some(function (d) { if (!d || !d.district_name) return false; const sameName = d.district_name.trim().toLowerCase() === name; const sameId = Number(d.district_id) === currentId; return sameName && !sameId; }); if (duplicate) { showDistrictNameError("Already exists"); return true; } clearDistrictNameError(); return false; }
+            function checkStateRequired() { if (currentMode !== "add" && currentMode !== "modify") { clearStateError(); return false; } if (!hiddenStateInput.value.trim()) { showStateError("Required"); return true; } clearStateError(); return false; }
+            function renderStateDropdown(list) { stateDropdown.innerHTML = ""; if (!list.length) { stateDropdown.style.display = "none"; return; } const currentValue = hiddenStateInput.value; list.forEach(function (s, index) { const div = document.createElement("div"); div.textContent = s.state_name; div.dataset.id = s.state_id; if (String(s.state_id) === String(currentValue)) { div.classList.add("active"); stateIndex = index; } div.onclick = function () { selectState(s); }; stateDropdown.appendChild(div); }); stateDropdown.style.display = "block"; if (stateIndex >= 0 && stateDropdown.children[stateIndex]) stateDropdown.children[stateIndex].scrollIntoView({ block: "nearest" }); }
+            function selectState(s) { stateInput.value = s.state_name || ""; hiddenStateInput.value = s.state_id || ""; stateDropdown.style.display = "none"; stateIndex = -1; clearStateError(); }
+            function closeStateDropdown() { stateDropdown.style.display = "none"; stateIndex = -1; }
+            function highlightItems(items, index) { items.forEach(function (item, i) { item.classList.toggle("active", i === index); if (i === index) item.scrollIntoView({ block: "nearest" }); }); }
+            stateInput.addEventListener("focus", function () { if (currentMode === "add" || currentMode === "modify") { stateIndex = -1; renderStateDropdown(allStates); } });
+            stateInput.addEventListener("input", function () { hiddenStateInput.value = ""; clearStateError(); const term = this.value.toLowerCase(); const filtered = allStates.filter(function (opt) { return (opt.state_name || "").toLowerCase().includes(term); }); renderStateDropdown(filtered); if (filtered.length === 1) { stateIndex = 0; const items = Array.from(stateDropdown.children); if (items.length) highlightItems(items, stateIndex); } else { stateIndex = -1; } });
+            stateInput.addEventListener("keydown", function (e) { const items = Array.from(stateDropdown.children); if (stateDropdown.style.display !== "block" || !items.length) return; if (e.key === "ArrowDown") { e.preventDefault(); stateIndex = (stateIndex + 1) % items.length; highlightItems(items, stateIndex); } else if (e.key === "ArrowUp") { e.preventDefault(); stateIndex = (stateIndex - 1 + items.length) % items.length; highlightItems(items, stateIndex); } else if (e.key === "Enter") { e.preventDefault(); if (stateIndex >= 0) { const item = allStates.find(function (s) { return String(s.state_id) === String(items[stateIndex].dataset.id); }); if (item) selectState(item); } } else if (e.key === "Escape") { closeStateDropdown(); } });
+            stateInput.addEventListener("blur", function () { setTimeout(closeStateDropdown, 150); });
+            document.addEventListener("click", function (e) { if (!e.target.closest(".dropdown-wrapper")) closeStateDropdown(); });
+
+            function setFormEditable(editable) { const fields = districtForm.querySelectorAll("input, select, textarea"); fields.forEach(function (field) { if (field.id === "district_id") return; if (!editable) field.setAttribute("tabindex", "-1"); else field.removeAttribute("tabindex"); if (field.tagName === "SELECT") field.disabled = !editable; else field.readOnly = !editable; }); }
+            function syncActionMode() { const isDisplay = currentMode === "display"; displayButtons.classList.toggle("hidden", !isDisplay); addModeButtons.classList.toggle("hidden", isDisplay); displayButtons.style.display = isDisplay ? "flex" : "none"; addModeButtons.style.display = isDisplay ? "none" : "flex"; }
+            function setMode(mode) {
+                currentMode = mode;
+                const panel = document.querySelector(".right-panel");
+                panel.classList.remove("display-mode", "add-mode", "modify-mode");
+
+                if (mode === "display") {
+                    panel.classList.add("display-mode");
+                    modeTag.textContent = "Display Mode";
+                    preEditDistrictId = null;
+                    clearDistrictNameError();
+                    clearStateError();
+                    syncSelectionHighlight();
+                }
+
+                if (mode === "add") {
+                    panel.classList.add("add-mode");
+                    modeTag.textContent = "Add Mode";
+                    setTimeout(function () { districtNameInput.focus(); }, 0);
+                }
+
+                if (mode === "modify") {
+                    panel.classList.add("modify-mode");
+                    modeTag.textContent = "Edit Mode";
+                    setTimeout(function () { districtNameInput.focus(); }, 0);
+                }
+
+                closeStateDropdown();
+                syncActionMode();
+            }
+
+            function resetForm() { districtForm.reset(); document.getElementById("district_id").value = ""; document.getElementById("population").value = "0"; document.getElementById("area_sq_kms").value = "0.00"; document.getElementById("state_id").value = ""; document.getElementById("state_name_input").value = ""; activeDistrictId = null; clearDistrictNameError(); clearStateError(); setMode("add"); setFormEditable(true); syncActionMode(); renderDistricts(); }
+            function fillForm(d) { document.getElementById("district_id").value = d.district_id || ""; document.getElementById("district_name").value = d.district_name || ""; document.getElementById("population").value = d.population || "0"; document.getElementById("area_sq_kms").value = d.area_sq_kms || "0.00"; document.getElementById("headquarters").value = d.headquarters || ""; document.getElementById("state_id").value = d.state_id || ""; document.getElementById("state_name_input").value = d.state_name || ""; activeDistrictId = Number(d.district_id); setMode("display"); setFormEditable(false); syncActionMode(); clearDistrictNameError(); clearStateError(); }
+            function fillFormWithoutRender(d) { document.getElementById("district_id").value = d.district_id || ""; document.getElementById("district_name").value = d.district_name || ""; document.getElementById("population").value = d.population || "0"; document.getElementById("area_sq_kms").value = d.area_sq_kms || "0.00"; document.getElementById("headquarters").value = d.headquarters || ""; document.getElementById("state_id").value = d.state_id || ""; document.getElementById("state_name_input").value = d.state_name || ""; activeDistrictId = Number(d.district_id); }
+
+            function renderDistricts() { const keyword = ""; const rows = allDistricts.filter(function (d) { return !keyword || (d.district_name || "").toLowerCase().includes(keyword); }); if (!rows.length) { districtList.innerHTML = "<div class='district-row'>No districts found</div>"; return; } districtList.innerHTML = rows.map(function (d) { const active = Number(d.district_id) === activeDistrictId ? "active" : ""; return "<div class='district-row " + active + "' data-id='" + esc(d.district_id) + "'>" + esc(d.district_name) + "</div>"; }).join(""); districtList.querySelectorAll(".district-row").forEach(function (row) { row.addEventListener("click", function () { selectRow(this); }); }); syncSelectionHighlight(); }
+            function syncSelectionHighlight() { const rows = Array.from(districtList.querySelectorAll(".district-row")).filter(function (r) { return r.dataset.id; }); rows.forEach(function (r) { r.classList.remove("active"); }); const activeRow = rows.find(function (r) { return Number(r.dataset.id) === Number(activeDistrictId); }); if (activeRow) { activeRow.classList.add("active"); activeRow.scrollIntoView({ block: "nearest" }); } }
+            function selectRow(row) { districtList.querySelectorAll(".district-row").forEach(function (r) { r.classList.remove("active"); }); row.classList.add("active"); const id = Number(row.dataset.id); activeDistrictId = id; const d = allDistricts.find(function (x) { return Number(x.district_id) === id; }); if (!d) return; fillFormWithoutRender(d); row.scrollIntoView({ block: "center" }); }
+
+            async function loadStates() { const res = await fetch("../../../api/district/get_states.php"); allStates = await res.json(); }
+            async function loadDistricts() { const res = await fetch("../../../api/district/get_district.php"); allDistricts = await res.json(); if (allDistricts.length) { activeDistrictId = Number(allDistricts[0].district_id); renderDistricts(); fillFormWithoutRender(allDistricts[0]); document.querySelector(".list-wrap").scrollTop = 0; } else { renderDistricts(); setMode("display"); setFormEditable(false); syncActionMode(); } }
+
+            function customConfirm(message, callback) { if (window.deleteModeConfirm) { window.deleteModeConfirm(message, callback); return; } }
+            async function saveDistrict(isModify) { const fd = new FormData(districtForm); const id = fd.get("district_id"); const name = (fd.get("district_name") || "").trim(); const stateId = (fd.get("state_id") || "").trim(); if (checkDuplicateDistrictName()) { districtNameInput.focus(); districtNameInput.select(); return; } if (checkStateRequired()) { stateInput.focus(); return; } if (!name) { showDistrictNameError("Required"); setTimeout(function () { setMode("add"); districtNameInput.focus(); districtNameInput.select(); }, 50); return; } if (!stateId) { alert("State is required"); setTimeout(function () { stateInput.focus(); }, 50); return; } if (!isModify) { const confirmAdd = await window.confirmAdd("Are you sure you want to add this district?\n\n" + name); if (!confirmAdd) return; } let url = "../../../api/district/add_district.php"; if (isModify) { if (!id) { alert("Select a district to modify"); return; } url = "../../../api/district/update_district.php"; } const res = await fetch(url, { method: "POST", body: fd }); const data = await res.json(); if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); } if (data.status === "success") { await loadDistricts(); if (isModify && id) { const updated = allDistricts.find(function (d) { return Number(d.district_id) === Number(id); }); if (updated) fillForm(updated); return; } resetForm(); setMode("add"); setFormEditable(true); syncActionMode(); districtNameInput.focus(); } }
+            async function deleteDistrict() { const id = document.getElementById("district_id").value; if (!id) { alert("Select a district to delete"); return; } customConfirm("Delete this district?", async function () { const body = new URLSearchParams(); body.set("district_id", id); const res = await fetch("../../../api/district/delete_district.php", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() }); const data = await res.json(); if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); } if (data.status === "success") { await loadDistricts(); if (allDistricts.length) { setMode("display"); setFormEditable(false); syncActionMode(); } else resetForm(); } }); }
+            function handleAddAction() { preEditDistrictId = activeDistrictId; resetForm(); districtNameInput.focus(); }
+            function handleModifyAction() { const id = document.getElementById("district_id").value; if (!id) { alert("Select a district to modify"); return; } preEditDistrictId = Number(id); setMode("modify"); setFormEditable(true); syncActionMode(); }
+            function cancelEditMode() { if (preEditDistrictId) { const previous = allDistricts.find(function (d) { return Number(d.district_id) === Number(preEditDistrictId); }); if (previous) { fillForm(previous); preEditDistrictId = null; return; } } setMode("display"); setFormEditable(false); syncActionMode(); renderDistricts(); }
+            function keepDistrictNameActive() { if (currentMode === "add" || currentMode === "modify") { setTimeout(function () { if (!districtForm.contains(document.activeElement)) districtNameInput.focus(); }, 0); } }
+
+            districtNameInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkDuplicateDistrictName(); });
+            stateInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkStateRequired(); });
+
+            districtForm.addEventListener("focusin", function (e) { if (currentMode !== "modify") return; const field = e.target; if (field.tagName === "INPUT" && field.type !== "hidden" && !field.readOnly) { setTimeout(function () { field.select(); }, 0); } });
+
+            let typeBuffer = "", typeTimer = null, lastMatchedIndex = -1;
+            document.addEventListener("keydown", function (e) { if (currentMode !== "display") return; if (e.ctrlKey || e.altKey || e.metaKey) return; const rows = Array.from(districtList.querySelectorAll(".district-row")).filter(function (r) { return r.dataset.id; }); if (!rows.length) return; const isSearchBox = document.activeElement.id === "filterInput"; if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) { if (isSearchBox) return; e.preventDefault(); const letter = e.key.toLowerCase(); if (typeTimer) clearTimeout(typeTimer); typeBuffer += letter; typeTimer = setTimeout(function () { typeBuffer = ""; lastMatchedIndex = -1; }, 700); let matchIndex = -1; if (typeBuffer.length === 1) { const startIndex = lastMatchedIndex + 1; matchIndex = rows.findIndex(function (row, index) { return index >= startIndex && row.textContent.trim().toLowerCase().startsWith(letter); }); if (matchIndex === -1) { matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(letter); }); } } else { matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(typeBuffer); }); } if (matchIndex !== -1) { lastMatchedIndex = matchIndex; selectRow(rows[matchIndex]); } } });
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return; const rows = Array.from(districtList.querySelectorAll(".district-row")).filter(function (r) { return r.dataset.id; }); if (!rows.length) return; let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeDistrictId); }); if (currentIndex === -1) currentIndex = 0; if (e.key === "ArrowDown") {
+                    e.preventDefault(); // activate keyboard visual state
+                    if (currentIndex < rows.length - 1) currentIndex++; selectRow(rows[currentIndex]);
+                } if (e.key === "ArrowUp") {
+                    e.preventDefault(); // activate keyboard visual state
+                    if (currentIndex > 0) currentIndex--; selectRow(rows[currentIndex]);
+                }
+            });
+
+            document.getElementById("addBtn").addEventListener("click", handleAddAction);
+            document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+            document.getElementById("deleteBtn").addEventListener("click", deleteDistrict);
+            document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+            document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../../index.html"; });
+            document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+            document.getElementById("saveBtn").addEventListener("click", function () { if (currentMode === "modify") saveDistrict(true); else saveDistrict(false); });
+            
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key !== "F11") return;
+                if ((currentMode === "add" || currentMode === "modify") && document.activeElement.id === "state_name_input") {
+                    e.preventDefault();
+                    window.location.href = "../state/state.html";
+                    return;
+                }
+            });
+            document.addEventListener("mousedown", function (e) { if (currentMode === "add" || currentMode === "modify") { if (!districtForm.contains(e.target)) keepDistrictNameActive(); } });
+
+            (function () {
+                let navMode = false, mainIndex = 0, subIndex = -1; const topNavItems = function () { return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function (li) { return li.offsetParent !== null; }); }; function getSubItems(li) { return Array.from(li.querySelectorAll("ul li")).filter(function (item) { return item.offsetParent !== null; }); } function highlightMain(index) { const items = topNavItems(); items.forEach(function (i) { i.classList.remove("nav-active"); }); if (!items[index]) return; items[index].classList.add("nav-active"); if (items[index].focus) items[index].focus(); } function highlightSub(subItems, index) { subItems.forEach(function (i) { i.classList.remove("nav-sub-active"); }); if (!subItems[index]) return; subItems[index].classList.add("nav-sub-active"); subItems[index].scrollIntoView({ block: "nearest" }); } function resetNav() { navMode = false; mainIndex = 0; subIndex = -1; document.querySelectorAll(".nav-active").forEach(function (el) { el.classList.remove("nav-active"); }); document.querySelectorAll(".nav-sub-active").forEach(function (el) { el.classList.remove("nav-sub-active"); }); }
+                document.addEventListener("keydown", function (e) { if (e.key === "Alt" && !navMode) { e.preventDefault(); navMode = true; mainIndex = 0; subIndex = -1; highlightMain(mainIndex); return; } if (!navMode) return; const items = topNavItems(); const currentMain = items[mainIndex]; const subItems = currentMain ? getSubItems(currentMain) : []; if (e.key === "Escape") { e.preventDefault(); resetNav(); return; } if (e.key === "ArrowRight") { e.preventDefault(); mainIndex = (mainIndex + 1) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowLeft") { e.preventDefault(); mainIndex = (mainIndex - 1 + items.length) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowDown") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = 0; else subIndex = (subIndex + 1) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "ArrowUp") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = subItems.length - 1; else subIndex = (subIndex - 1 + subItems.length) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "Enter") { e.preventDefault(); if (subIndex >= 0 && subItems[subIndex]) subItems[subIndex].click(); else if (currentMain) currentMain.click(); resetNav(); } });
+            })();setMode("display");
+            setFormEditable(false);
+            syncActionMode();
+            (async function init() { await loadStates(); await loadDistricts(); })();
+        </script>
+</body>
+
+</html>
+

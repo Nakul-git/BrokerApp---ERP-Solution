@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Party Type Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot=(function(){const path=String(location.pathname||'').replace(/\\\\/g,'/');const lower=path.toLowerCase();const marker='/brokerapp/';const idx=lower.indexOf(marker);if(idx!==-1){return location.origin+path.slice(0,idx+marker.length);}return location.origin+'/';})();
+(async function(){
+    const res=await fetch(appRoot + "api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Party Type Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search party type...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="typeList"></div></div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="partyTypeForm" autocomplete="off">
+<input type="hidden" id="party_type_id" name="party_type_id">
+<div class="form-grid">
+<div class="form-group full">
+<label for="party_type_name" class="label-with-error">
+<span>Description</span>
+<span id="typeNameError" class="error-text" style="display:none;"></span>
+</label>
+<input id="party_type_name" name="party_type_name" required data-add-first data-duplicate-check="checkDuplicateType">
+</div>
+<div class="form-group code">
+<label for="party_type_code" class="label-with-error">
+<span>Code</span>
+<span id="typeCodeError" class="error-text" style="display:none;"></span>
+</label>
+<input id="party_type_code" name="party_type_code" maxlength="10" required data-duplicate-check="checkDuplicateType">
+</div>
+</div>
+</form>
+
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+
+<script>
+let allTypes=[];
+let activeTypeId=null;
+let currentMode="display";
+let preEditTypeId=null;
+
+const filterInput=document.getElementById("filterInput");
+const typeList=document.getElementById("typeList");
+const partyTypeForm=document.getElementById("partyTypeForm");
+const modeTag=document.getElementById("modeTag");
+const displayButtons=document.getElementById("displayButtons");
+const addModeButtons=document.getElementById("addModeButtons");
+const typeNameInput=document.getElementById("party_type_name");
+const typeCodeInput=document.getElementById("party_type_code");
+const typeNameError=document.getElementById("typeNameError");
+const typeCodeError=document.getElementById("typeCodeError");
+
+function esc(v){return (v??"").toString().replace(/[&<>\"']/g,function(m){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m];});}
+function typeNameOf(row){return (row?.party_type_name??row?.description??"").toString();}
+function typeCodeOf(row){return (row?.party_type_code??row?.code??"").toString();}
+
+function showTypeNameError(message){typeNameInput.classList.add("field-error");typeNameError.textContent=message;typeNameError.style.display="inline";}
+function clearTypeNameError(){typeNameInput.classList.remove("field-error");typeNameError.textContent="";typeNameError.style.display="none";}
+function showTypeCodeError(message){typeCodeInput.classList.add("field-error");typeCodeError.textContent=message;typeCodeError.style.display="inline";}
+function clearTypeCodeError(){typeCodeInput.classList.remove("field-error");typeCodeError.textContent="";typeCodeError.style.display="none";}
+
+function clearFieldErrors(){clearTypeNameError();clearTypeCodeError();}
+
+function checkDuplicateType(){
+    const name=typeNameInput.value.trim().toLowerCase();
+    const code=typeCodeInput.value.trim().toLowerCase();
+    const currentId=Number(document.getElementById("party_type_id").value||0);
+    let hasError=false;
+
+    clearFieldErrors();
+
+    if(name){
+        const dupName=allTypes.some(function(row){
+            return typeNameOf(row).trim().toLowerCase()===name && Number(row.party_type_id)!==currentId;
+        });
+        if(dupName){showTypeNameError("Already exists");hasError=true;}
+    }
+
+    if(code){
+        const dupCode=allTypes.some(function(row){
+            return typeCodeOf(row).trim().toLowerCase()===code && Number(row.party_type_id)!==currentId;
+        });
+        if(dupCode){showTypeCodeError("Already exists");hasError=true;}
+    }
+
+    return hasError;
+}
+
+function setFormEditable(editable){
+    const fields=partyTypeForm.querySelectorAll("input");
+    fields.forEach(function(field){
+        if(field.id==="party_type_id")return;
+        if(!editable)field.setAttribute("tabindex","-1");
+        else field.removeAttribute("tabindex");
+        field.readOnly=!editable;
+    });
+}
+
+function syncActionMode(){
+    const isDisplay=currentMode==="display";
+    displayButtons.classList.toggle("hidden",!isDisplay);
+    addModeButtons.classList.toggle("hidden",isDisplay);
+    displayButtons.style.display=isDisplay?"flex":"none";
+    addModeButtons.style.display=isDisplay?"none":"flex";
+}
+
+function setMode(mode){
+    currentMode=mode;
+    const rightPanel=document.querySelector(".right-panel");
+    rightPanel.classList.remove("add-mode","modify-mode","display-mode");
+
+    if(mode==="add"){
+        modeTag.textContent="Add Mode";
+        rightPanel.classList.add("add-mode");
+        setTimeout(function(){typeNameInput.focus();},0);
+    }
+    if(mode==="modify"){
+        modeTag.textContent="Edit Mode";
+        rightPanel.classList.add("modify-mode");
+        setTimeout(function(){typeNameInput.focus();},0);
+    }
+    if(mode==="display"){
+        modeTag.textContent="Display Mode";
+        rightPanel.classList.add("display-mode");
+        preEditTypeId=null;
+        clearFieldErrors();
+        syncSelectionHighlight();
+    }
+    syncActionMode();
+}
+
+function ensureActiveSelection(){
+    if(!allTypes.length){activeTypeId=null;return null;}
+    let active=allTypes.find(function(row){return Number(row.party_type_id)===Number(activeTypeId);});
+    if(!active){active=allTypes[0];activeTypeId=Number(active.party_type_id);}
+    return active;
+}
+
+function fillFormWithoutRender(row){
+    document.getElementById("party_type_id").value=row.party_type_id||"";
+    document.getElementById("party_type_name").value=typeNameOf(row);
+    document.getElementById("party_type_code").value=typeCodeOf(row);
+    activeTypeId=Number(row.party_type_id);
+    clearFieldErrors();
+}
+
+function fillForm(row){
+    fillFormWithoutRender(row);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    renderTypes();
+}
+
+function resetForm(){
+    partyTypeForm.reset();
+    document.getElementById("party_type_id").value="";
+    clearFieldErrors();
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+    renderTypes();
+}
+
+function renderTypes(){
+    ensureActiveSelection();
+    const keyword = "";
+    const rows=allTypes.filter(function(row){
+        return !keyword || typeNameOf(row).toLowerCase().includes(keyword) || typeCodeOf(row).toLowerCase().includes(keyword);
+    });
+
+    if(!rows.length){typeList.innerHTML="<div class='type-row'>No records found</div>";return;}
+
+    typeList.innerHTML=rows.map(function(row){
+        const active=Number(row.party_type_id)===activeTypeId?"active":"";
+        return "<div class='type-row "+active+"' data-id='"+esc(row.party_type_id)+"'>"+esc(typeNameOf(row))+"</div>";
+    }).join("");
+
+    typeList.querySelectorAll(".type-row").forEach(function(item){item.addEventListener("click",function(){selectRow(this);});});
+    syncSelectionHighlight();
+}
+
+function syncSelectionHighlight(){
+    const rows=Array.from(typeList.querySelectorAll(".type-row")).filter(function(r){return r.dataset.id;});
+    rows.forEach(function(r){r.classList.remove("active");});
+    const activeRow=rows.find(function(r){return Number(r.dataset.id)===Number(activeTypeId);});
+    if(activeRow){activeRow.classList.add("active");activeRow.scrollIntoView({block:"nearest"});}
+}
+
+function selectRow(row){
+    typeList.querySelectorAll(".type-row").forEach(function(r){r.classList.remove("active");});
+    row.classList.add("active");
+    const id=Number(row.dataset.id);
+    activeTypeId=id;
+    const selected=allTypes.find(function(x){return Number(x.party_type_id)===id;});
+    if(!selected)return;
+    fillFormWithoutRender(selected);
+    row.scrollIntoView({block:"center"});
+}
+
+async function loadTypes(preferredId){
+    const res=await fetch("../../../api/party_type/get_party_type.php");
+    allTypes=await res.json();
+    if(!Array.isArray(allTypes))allTypes=[];
+
+    if(allTypes.length){
+        if(preferredId&&allTypes.some(function(row){return Number(row.party_type_id)===Number(preferredId);})){activeTypeId=Number(preferredId);}        
+        const selected=ensureActiveSelection();
+        renderTypes();
+        if(selected)fillFormWithoutRender(selected);
+        setMode("display");
+        setFormEditable(false);
+        syncActionMode();
+        document.querySelector(".list-wrap").scrollTop=0;
+    }else{
+        typeList.innerHTML="<div class='type-row'>No records found</div>";
+        resetForm();
+    }
+}
+
+function startAddMode(){
+    partyTypeForm.reset();
+    document.getElementById("party_type_id").value="";
+    clearFieldErrors();
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+}
+
+function startModifyMode(){
+    const selected=ensureActiveSelection();
+    if(!selected){alert("No party type selected");return;}
+    preEditTypeId=Number(selected.party_type_id);
+    fillFormWithoutRender(selected);
+    setMode("modify");
+    setFormEditable(true);
+    syncActionMode();
+}
+
+function cancelEditMode(){
+    if(currentMode==="add"){
+        const selected=ensureActiveSelection();
+        if(selected){fillForm(selected);}else{resetForm();}
+        return;
+    }
+    if(currentMode==="modify"){
+        const selected=allTypes.find(function(row){return Number(row.party_type_id)===Number(preEditTypeId);})||ensureActiveSelection();
+        if(selected){fillForm(selected);}else{resetForm();}
+        return;
+    }
+}
+
+function keepPrimaryFieldActive(){
+    if(currentMode==="add"||currentMode==="modify"){
+        setTimeout(function(){if(!partyTypeForm.contains(document.activeElement))typeNameInput.focus();},0);
+    }
+}
+
+function nextByName(name){
+    const n=(name||"").trim().toLowerCase();
+    if(!n)return null;
+    return allTypes.find(function(row){return typeNameOf(row).trim().toLowerCase()===n;})||null;
+}
+
+async function saveRecord(){
+    const formData=new FormData(partyTypeForm);
+    const typeName=(formData.get("party_type_name")||"").trim();
+    const typeCode=(formData.get("party_type_code")||"").trim().toUpperCase();
+
+    clearFieldErrors();
+    if(!typeName){showTypeNameError("Required");typeNameInput.focus();return;}
+    if(!typeCode){showTypeCodeError("Required");typeCodeInput.focus();return;}
+    if(checkDuplicateType()){if(typeNameError.textContent)typeNameInput.focus();else typeCodeInput.focus();return;}
+
+    formData.set("party_type_name",typeName);
+    formData.set("party_type_code",typeCode);
+
+    if(currentMode!=="modify"){
+        const confirmAdd=await window.confirmAdd("Are you sure you want to add this party type?\n\n"+typeName);
+        if(!confirmAdd)return;
+    }
+
+    let apiUrl="../../../api/party_type/add_party_type.php";
+    if(currentMode==="modify")apiUrl="../../../api/party_type/update_party_type.php";
+
+    const preserveId=currentMode==="modify"?Number(formData.get("party_type_id")||0):null;
+    const preserveName=typeName;
+
+    const response=await fetch(apiUrl,{method:"POST",body:formData});
+    const data=await response.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status!=="success")return;
+
+    await loadTypes(preserveId);
+    if(!preserveId){
+        const created=nextByName(preserveName);
+        if(created){activeTypeId=Number(created.party_type_id);fillForm(created);}
+    }
+    if(preserveId){
+        const updated=allTypes.find(function(row){return Number(row.party_type_id)===Number(preserveId);});
+        if(updated){fillForm(updated);}
+    }
+}
+
+async function deleteRecord(){
+    const selected=ensureActiveSelection();
+    if(!selected){alert("No party type selected");return;}
+    if(!(await confirmDelete("Delete this party type?")))return;
+
+    const body=new URLSearchParams();
+    body.set("party_type_id",selected.party_type_id);
+
+    const response=await fetch("../../../api/party_type/delete_party_type.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:body.toString()
+    });
+    const data=await response.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status!=="success")return;
+
+    const currentIdx=allTypes.findIndex(function(row){return Number(row.party_type_id)===Number(selected.party_type_id);});
+    await loadTypes();
+    if(!allTypes.length)return;
+
+    const fallback=allTypes[Math.min(Math.max(currentIdx,0),allTypes.length-1)] || allTypes[0];
+    activeTypeId=Number(fallback.party_type_id);
+    fillForm(fallback);
+}
+
+document.getElementById("addBtn").addEventListener("click",startAddMode);
+document.getElementById("modifyBtn").addEventListener("click",startModifyMode);
+document.getElementById("deleteBtn").addEventListener("click",deleteRecord);
+document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+document.getElementById("exitBtn").addEventListener("click",function(){window.location.href = appRoot + "index.html";});
+document.getElementById("cancelBtn").addEventListener("click",cancelEditMode);
+document.getElementById("saveBtn").addEventListener("click",saveRecord);
+
+typeNameInput.addEventListener("input",function(){if(currentMode!=="display")checkDuplicateType();});
+typeCodeInput.addEventListener("input",function(){if(currentMode!=="display")checkDuplicateType();});
+partyTypeForm.addEventListener("focusin",function(e){
+    if(currentMode!=="modify")return;
+    const field=e.target;
+    if(field.tagName==="INPUT"&&field.type!=="hidden"&&!field.readOnly){setTimeout(function(){field.select();},0);}
+});let typeBuffer="",typeTimer=null,lastMatchedIndex=-1;
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    if(e.ctrlKey||e.altKey||e.metaKey)return;
+    const rows=Array.from(typeList.querySelectorAll(".type-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    const isSearchBox=document.activeElement.id==="filterInput";
+
+    if(e.key.length===1&&/^[a-zA-Z]$/.test(e.key)){
+        if(isSearchBox)return;
+        e.preventDefault();
+        const letter=e.key.toLowerCase();
+        if(typeTimer)clearTimeout(typeTimer);
+        typeBuffer+=letter;
+        typeTimer=setTimeout(function(){typeBuffer="";lastMatchedIndex=-1;},700);
+
+        let matchIndex=-1;
+        if(typeBuffer.length===1){
+            const startIndex=lastMatchedIndex+1;
+            matchIndex=rows.findIndex(function(row,index){return index>=startIndex&&row.textContent.trim().toLowerCase().startsWith(letter);});
+            if(matchIndex===-1)matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(letter);});
+        }else{
+            matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(typeBuffer);});
+        }
+
+        if(matchIndex!==-1){
+            lastMatchedIndex=matchIndex;
+            selectRow(rows[matchIndex]);
+        }
+    }
+});
+
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    const rows=Array.from(typeList.querySelectorAll(".type-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    let currentIndex=rows.findIndex(function(row){return Number(row.dataset.id)===Number(activeTypeId);});
+    if(currentIndex===-1)currentIndex=0;
+
+    if(e.key==="ArrowDown"){e.preventDefault();if(currentIndex<rows.length-1)currentIndex++;selectRow(rows[currentIndex]);}
+    if(e.key==="ArrowUp"){e.preventDefault();if(currentIndex>0)currentIndex--;selectRow(rows[currentIndex]);}
+});
+
+document.addEventListener("mousedown",function(e){if(currentMode==="add"||currentMode==="modify"){if(!partyTypeForm.contains(e.target))keepPrimaryFieldActive();}});setMode("display");
+setFormEditable(false);
+syncActionMode();
+
+(async function init(){
+    await loadTypes();
+    if(allTypes.length){
+        const first=ensureActiveSelection();
+        if(first)fillFormWithoutRender(first);
+        renderTypes();
+    }
+})();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+

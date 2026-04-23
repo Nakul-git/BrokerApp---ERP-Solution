@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form Wise Book Setup | SoftBrokerage</title>
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="./style.css?v=1">
+<script>
+    const appRoot = (function(){
+        const path = String(location.pathname || "").replace(/\\/g, "/");
+        const lower = path.toLowerCase();
+        const marker = "/brokerapp/";
+        const idx = lower.indexOf(marker);
+        if (idx !== -1) {
+            return location.origin + path.slice(0, idx + marker.length);
+        }
+        return location.origin + "/";
+    })();
+    (async function () {
+        const res = await fetch(appRoot + "api/check_auth.php");
+        const data = await res.json();
+        if (!data.logged_in) window.location.replace(appRoot + "login.html");
+    })();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+    <div class="feature-box">
+        <h2 class="page-title">Form Wise Book Setup</h2>
+        <div class="master-layout">
+            <div class="left-panel">
+                <div class="label">Selection Mode</div>
+                <input id="filterInput" type="text" autocomplete="off" placeholder="Search module...">
+                <div class="list-wrap">
+                    <div class="list-head">Name</div>
+                    <div id="moduleList"></div>
+                </div>
+            </div>
+
+            <div class="right-panel display-mode">
+                <div class="mode-header"><span id="modeTag" class="mode-tag">Display Mode</span></div>
+                <form id="bookForm" class="book-form" autocomplete="off">
+                    <input type="hidden" id="module_id" name="module_id">
+                    <input type="hidden" id="row_id" name="row_id">
+
+                    <div class="entry-row">
+                        <label for="entryModule">Entry Module</label>
+                        <input id="entryModule" name="entryModule" readonly>
+                    </div>
+
+                    <div class="grid-scroll">
+                        <div class="book-grid" id="bookGrid">
+                            <div class="grid-head">
+                                <div>Sno</div>
+                                <div>Description</div>
+                                <div>Book</div>
+                                <div>Numbering Type</div>
+                                <div>Starting No.</div>
+                                <div>End No.</div>
+                                <div>Re-Start Numbering</div>
+                                <div>Lock Date</div>
+                                <div>Active</div>
+                                <div>Division Name</div>
+                                <div>Item List</div>
+                                <div>Cash / Credit</div>
+                            </div>
+                            <div id="gridBody" class="grid-body"></div>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="displayButtons" class="action-row">
+                    <button class="btn primary" type="button" id="addBtn">&#128194; F2-Add</button>
+                    <button class="btn" type="button" id="modifyBtn">&#128221; F3-Modify</button>
+                    <button class="btn danger" type="button" id="deleteBtn">&#10060; F5-Delete</button>
+                    <button class="btn" type="button" id="printBtn">&#128202; F7-Print</button>
+                    <button class="btn" type="button" id="exitBtn">&#10060; Esc-Exit</button>
+                </div>
+
+                <div id="addModeButtons" class="action-row hidden">
+                    <button class="btn danger" type="button" id="cancelBtn">&#10060; Esc-Cancel</button>
+                    <button class="btn primary" type="button" id="saveBtn">&#128190; F6-Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let modules = [];
+    let activeModuleId = null;
+    let activeRowId = null;
+    let preEditRowId = null;
+    let currentMode = "display";
+
+    const moduleList = document.getElementById("moduleList");
+    const entryModuleInput = document.getElementById("entryModule");
+    const modeTag = document.getElementById("modeTag");
+    const rightPanel = document.querySelector(".right-panel");
+    const displayButtons = document.getElementById("displayButtons");
+    const addModeButtons = document.getElementById("addModeButtons");
+    const moduleIdInput = document.getElementById("module_id");
+    const rowIdInput = document.getElementById("row_id");
+    const gridBody = document.getElementById("gridBody");
+
+    let descriptionInput = null;
+    let bookInput = null;
+    let numberingTypeInput = null;
+    let numberingTypeDropdown = null;
+    let numberingTypeHidden = null;
+    let startingNoInput = null;
+    let endNoInput = null;
+    let restartInput = null;
+    let restartDropdown = null;
+    let restartHidden = null;
+    let lockDateInput = null;
+    let activeInput = null;
+    let activeDropdown = null;
+    let activeHidden = null;
+    let divisionInput = null;
+    let itemListInput = null;
+    let cashCreditInput = null;
+    let cashCreditDropdown = null;
+    let cashCreditHidden = null;
+
+    const numberingTypeOptions = ["Auto", "Manual"];
+    const restartOptions = ["Yearly", "Monthly", "None"];
+    const activeOptions = ["Y", "N"];
+    const cashCreditOptions = ["Both", "Cash", "Credit"];
+
+    function syncEditRefs() {
+        descriptionInput = document.getElementById("descriptionInput");
+        bookInput = document.getElementById("bookInput");
+        numberingTypeInput = document.getElementById("numberingTypeInput");
+        numberingTypeDropdown = document.getElementById("numberingTypeDropdown");
+        numberingTypeHidden = document.getElementById("numberingTypeValue");
+        startingNoInput = document.getElementById("startingNoInput");
+        endNoInput = document.getElementById("endNoInput");
+        restartInput = document.getElementById("restartInput");
+        restartDropdown = document.getElementById("restartDropdown");
+        restartHidden = document.getElementById("restartValue");
+        lockDateInput = document.getElementById("lockDateInput");
+        activeInput = document.getElementById("activeInput");
+        activeDropdown = document.getElementById("activeDropdown");
+        activeHidden = document.getElementById("activeValue");
+        divisionInput = document.getElementById("divisionInput");
+        itemListInput = document.getElementById("itemListInput");
+        cashCreditInput = document.getElementById("cashCreditInput");
+        cashCreditDropdown = document.getElementById("cashCreditDropdown");
+        cashCreditHidden = document.getElementById("cashCreditValue");
+        if (descriptionInput && !descriptionInput.dataset.inlineReqBound) {
+            descriptionInput.dataset.inlineReqBound = "1";
+            descriptionInput.addEventListener("input", function () {
+                descriptionInput.classList.remove("field-error");
+                const inline = descriptionInput.parentElement
+                    ? descriptionInput.parentElement.querySelector("span[data-inline-required='1']")
+                    : null;
+                if (inline) inline.style.display = "none";
+            });
+        }
+
+        if (numberingTypeInput) {
+            bindInlineDropdown(numberingTypeInput, numberingTypeDropdown, numberingTypeHidden, numberingTypeOptions);
+        }
+        if (restartInput) {
+            bindInlineDropdown(restartInput, restartDropdown, restartHidden, restartOptions);
+        }
+        if (activeInput) {
+            bindInlineDropdown(activeInput, activeDropdown, activeHidden, activeOptions);
+        }
+        if (cashCreditInput) {
+            bindInlineDropdown(cashCreditInput, cashCreditDropdown, cashCreditHidden, cashCreditOptions);
+        }
+    }
+
+    function esc(value) {
+        return (value ?? "").toString().replace(/[&<>"']/g, function (m) {
+            return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+        });
+    }
+
+    function normalizeModule(row) {
+        return {
+            id: Number(row.module_id || 0),
+            name: row.module_name || "",
+            sort_order: Number(row.sort_order || 0),
+            active: row.active || "Y",
+            rows: null,
+            activeRowId: null,
+            loading: false
+        };
+    }
+
+    function normalizeRow(row) {
+        return {
+            id: Number(row.setup_id || 0),
+            description: row.description || "",
+            book: row.book || "",
+            numbering_type: row.numbering_type || "Auto",
+            starting_no: row.starting_no ?? "",
+            end_no: row.end_no ?? "",
+            restart_numbering: row.restart_numbering || "Yearly",
+            lock_date: row.lock_date || "",
+            active: row.active || "Y",
+            division_name: row.division_name || "",
+            item_list: row.item_list || "",
+            cash_credit: row.cash_credit || "Both"
+        };
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+        if (mode === "add") {
+            modeTag.textContent = "Add Mode";
+            rightPanel.classList.add("add-mode");
+            setTimeout(function () { if (descriptionInput) descriptionInput.focus(); }, 0);
+        } else if (mode === "modify") {
+            modeTag.textContent = "Edit Mode";
+            rightPanel.classList.add("modify-mode");
+            setTimeout(function () { if (descriptionInput) descriptionInput.focus(); }, 0);
+        } else {
+            modeTag.textContent = "Display Mode";
+            rightPanel.classList.add("display-mode");
+        }
+        closeInlineDropdowns();
+        syncActionMode();
+    }
+
+    function dropdownHtml(inputId, dropdownId, hiddenId, value, placeholder) {
+        return "<div class='dropdown-wrapper'>"
+            + "<input id='" + inputId + "' class='dropdown-input' type='text' autocomplete='off' value='" + esc(value || "") + "' placeholder='" + esc(placeholder || "Select...") + "'>"
+            + "<div id='" + dropdownId + "' class='dropdown-list'></div>"
+            + "<input id='" + hiddenId + "' type='hidden' value='" + esc(value || "") + "'>"
+            + "</div>";
+    }
+
+    function closeInlineDropdowns() {
+        [numberingTypeDropdown, restartDropdown, activeDropdown, cashCreditDropdown].forEach(function (dd) {
+            if (dd) dd.classList.remove("open");
+        });
+    }
+
+    function bindInlineDropdown(input, dropdown, hidden, options) {
+        if (!input || !dropdown || !hidden) return;
+        if (input.dataset.dropdownBound) return;
+        input.dataset.dropdownBound = "1";
+
+        let activeIndex = -1;
+        let filtered = options.slice();
+        let currentFilter = "";
+
+        function renderList(filterText) {
+            const q = (filterText || "").toLowerCase();
+            filtered = options.filter(function (opt) {
+                return opt.toLowerCase().includes(q);
+            });
+            if (!filtered.length) {
+                dropdown.innerHTML = "<div class='dropdown-empty'>No options</div>";
+                activeIndex = -1;
+                return;
+            }
+            dropdown.innerHTML = filtered.map(function (opt, idx) {
+                const active = idx === activeIndex ? " active" : "";
+                return "<div class='dropdown-item" + active + "' data-value='" + esc(opt) + "'>" + esc(opt) + "</div>";
+            }).join("");
+        }
+
+        function openDropdown() {
+            if (currentMode === "display") return;
+            dropdown.classList.add("open");
+            const current = hidden.value || input.value || "";
+            const currentIndex = options.findIndex(function (opt) { return opt === current; });
+            activeIndex = currentIndex >= 0 ? currentIndex : -1;
+            currentFilter = "";
+            renderList(currentFilter);
+        }
+
+        function closeDropdown() {
+            dropdown.classList.remove("open");
+            activeIndex = -1;
+        }
+
+        function selectValue(value) {
+            input.value = value;
+            hidden.value = value;
+            closeDropdown();
+        }
+
+        input.addEventListener("focus", function () {
+            openDropdown();
+        });
+
+        input.addEventListener("click", function () {
+            openDropdown();
+        });
+
+        input.addEventListener("input", function () {
+            if (!dropdown.classList.contains("open")) dropdown.classList.add("open");
+            activeIndex = -1;
+            currentFilter = input.value;
+            renderList(currentFilter);
+        });
+
+        input.addEventListener("keydown", function (e) {
+            if (!dropdown.classList.contains("open") && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+                openDropdown();
+            }
+            if (!dropdown.classList.contains("open")) return;
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!filtered.length) return;
+                activeIndex = activeIndex < 0 ? 0 : Math.min(filtered.length - 1, activeIndex + 1);
+                renderList(currentFilter);
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!filtered.length) return;
+                activeIndex = activeIndex < 0 ? filtered.length - 1 : Math.max(0, activeIndex - 1);
+                renderList(currentFilter);
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+                if (filtered.length && activeIndex >= 0) {
+                    selectValue(filtered[activeIndex]);
+                } else if (options.includes(input.value)) {
+                    selectValue(input.value);
+                } else {
+                    closeDropdown();
+                }
+            } else if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                closeDropdown();
+            }
+        });
+
+        input.addEventListener("blur", function () {
+            setTimeout(function () {
+                if (!dropdown.contains(document.activeElement)) {
+                    if (options.includes(input.value)) {
+                        hidden.value = input.value;
+                    } else if (hidden.value) {
+                        input.value = hidden.value;
+                    } else if (options.length) {
+                        input.value = options[0];
+                        hidden.value = options[0];
+                    }
+                    closeDropdown();
+                }
+            }, 120);
+        });
+
+        dropdown.addEventListener("mousedown", function (e) {
+            const item = e.target.closest(".dropdown-item");
+            if (!item) return;
+            e.preventDefault();
+            selectValue(item.dataset.value || "");
+            input.focus();
+        });
+
+        document.addEventListener("mousedown", function (e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+    }
+
+    function syncActionMode() {
+        const isDisplay = currentMode === "display";
+        displayButtons.classList.toggle("hidden", !isDisplay);
+        addModeButtons.classList.toggle("hidden", isDisplay);
+        displayButtons.style.display = isDisplay ? "flex" : "none";
+        addModeButtons.style.display = isDisplay ? "none" : "flex";
+    }
+
+    function getActiveModule() {
+        return modules.find(function (m) { return m.id === activeModuleId; }) || null;
+    }
+
+    function ensureActiveRow(module) {
+        if (!module) {
+            activeRowId = null;
+            return null;
+        }
+        if (!module.rows || !module.rows.length) {
+            activeRowId = null;
+            module.activeRowId = null;
+            return null;
+        }
+        const existing = module.rows.find(function (r) { return r.id === activeRowId; });
+        if (existing) {
+            module.activeRowId = activeRowId;
+            return existing;
+        }
+        const stored = module.rows.find(function (r) { return r.id === module.activeRowId; });
+        if (stored) {
+            activeRowId = stored.id;
+            return stored;
+        }
+        activeRowId = module.rows[0].id;
+        module.activeRowId = activeRowId;
+        return module.rows[0];
+    }
+
+    function renderModuleList() {
+        if (!modules.length) {
+            moduleList.innerHTML = "<div class='module-row'>No modules found</div>";
+            return;
+        }
+
+        moduleList.innerHTML = modules.map(function (m) {
+            const active = m.id === activeModuleId ? "active" : "";
+            return "<div class='module-row " + active + "' data-id='" + esc(m.id) + "'>" + esc(m.name) + "</div>";
+        }).join("");
+
+        moduleList.querySelectorAll(".module-row[data-id]").forEach(function (row) {
+            row.addEventListener("click", function () {
+                if (currentMode !== "display") return;
+                const id = Number(this.dataset.id || 0);
+                selectModule(id);
+            });
+        });
+    }
+
+    async function loadModules() {
+        const res = await fetch(appRoot + "api/form_wise_book_setup/get_modules.php", { cache: "no-store" });
+        const data = await res.json();
+        modules = Array.isArray(data) ? data.map(normalizeModule) : [];
+        renderModuleList();
+        if (modules.length) {
+            await selectModule(modules[0].id);
+        } else {
+            activeModuleId = null;
+            entryModuleInput.value = "";
+            renderGridRows();
+            setMode("display");
+        }
+    }
+
+    async function loadRowsForModule(module) {
+        if (!module) return;
+        module.loading = true;
+        renderGridRows();
+
+        const body = new URLSearchParams();
+        body.set("module_id", String(module.id));
+        const res = await fetch(appRoot + "api/form_wise_book_setup/get_rows.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+        const data = await res.json();
+        module.rows = Array.isArray(data) ? data.map(normalizeRow) : [];
+        module.loading = false;
+        if (module.id === activeModuleId) {
+            renderGridRows();
+        }
+    }
+
+    async function selectModule(id) {
+        const module = modules.find(function (m) { return m.id === id; });
+        if (!module) return;
+        activeModuleId = id;
+        moduleIdInput.value = String(id);
+        entryModuleInput.value = module.name || "";
+        if (module.rows === null) {
+            await loadRowsForModule(module);
+        }
+        activeRowId = module.activeRowId || null;
+        ensureActiveRow(module);
+        renderModuleList();
+        renderGridRows();
+        setMode("display");
+    }
+
+    function renderGridRows() {
+        const module = getActiveModule();
+        if (!module) {
+            gridBody.innerHTML = "<div class='grid-row empty'><div>No module selected</div></div>";
+            return;
+        }
+        if (module.loading) {
+            gridBody.innerHTML = "<div class='grid-row empty'><div>Loading...</div></div>";
+            return;
+        }
+
+        const rows = module.rows || [];
+        if (currentMode !== "add") {
+            ensureActiveRow(module);
+        }
+
+        function editRowHtml(row, index, isNew) {
+            const data = row || {
+                description: "",
+                book: "",
+                numbering_type: "Auto",
+                starting_no: "",
+                end_no: "",
+                restart_numbering: "Yearly",
+                lock_date: "",
+                active: "Y",
+                division_name: "",
+                item_list: "",
+                cash_credit: "Both"
+            };
+            return "<div class='grid-row editing' data-row-id='" + (isNew ? "" : esc(row.id)) + "'>"
+                + "<div>" + (isNew ? "" : (index + 1)) + "</div>"
+                + "<div><input id='descriptionInput' type='text' value='" + esc(data.description) + "' data-add-first></div>"
+                + "<div>"
+                + "<input id='bookInput' type='text' value='" + esc(data.book) + "'>"
+                + "<span id='bookError' class='error-text inline-error' style='display:none;'>Required</span>"
+                + "</div>"
+                + "<div>" + dropdownHtml("numberingTypeInput", "numberingTypeDropdown", "numberingTypeValue", data.numbering_type || "Auto", "Select type...") + "</div>"
+                + "<div><input id='startingNoInput' type='number' step='1' min='0' value='" + esc(data.starting_no ?? "") + "'></div>"
+                + "<div><input id='endNoInput' type='number' step='1' min='0' value='" + esc(data.end_no ?? "") + "'></div>"
+                + "<div>" + dropdownHtml("restartInput", "restartDropdown", "restartValue", data.restart_numbering || "Yearly", "Select...") + "</div>"
+                + "<div><input id='lockDateInput' type='date' value='" + esc(data.lock_date || "") + "'></div>"
+                + "<div>" + dropdownHtml("activeInput", "activeDropdown", "activeValue", data.active || "Y", "Select...") + "</div>"
+                + "<div><input id='divisionInput' type='text' value='" + esc(data.division_name || "") + "'></div>"
+                + "<div><input id='itemListInput' type='text' value='" + esc(data.item_list || "") + "'></div>"
+                + "<div>" + dropdownHtml("cashCreditInput", "cashCreditDropdown", "cashCreditValue", data.cash_credit || "Both", "Select...") + "</div>"
+                + "</div>";
+        }
+
+        let html = "";
+        if (currentMode === "add") {
+            html += editRowHtml(null, -1, true);
+        }
+
+        if (rows.length) {
+            html += rows.map(function (r, index) {
+                if (currentMode === "modify" && r.id === activeRowId) {
+                    return editRowHtml(r, index, false);
+                }
+                const active = r.id === activeRowId ? "active" : "";
+                return "<div class='grid-row " + active + "' data-row-id='" + esc(r.id) + "'>"
+                    + "<div>" + (index + 1) + "</div>"
+                    + "<div>" + esc(r.description || "") + "</div>"
+                    + "<div>" + esc(r.book || "") + "</div>"
+                    + "<div>" + esc(r.numbering_type || "") + "</div>"
+                    + "<div>" + esc(r.starting_no ?? "") + "</div>"
+                    + "<div>" + esc(r.end_no ?? "") + "</div>"
+                    + "<div>" + esc(r.restart_numbering || "") + "</div>"
+                    + "<div>" + esc(r.lock_date || "") + "</div>"
+                    + "<div>" + esc(r.active || "") + "</div>"
+                    + "<div>" + esc(r.division_name || "") + "</div>"
+                    + "<div>" + esc(r.item_list || "") + "</div>"
+                    + "<div>" + esc(r.cash_credit || "") + "</div>"
+                    + "</div>";
+            }).join("");
+        }
+
+        if (!html) {
+            gridBody.innerHTML = "<div class='grid-row empty'><div>No rows found</div></div>";
+            return;
+        }
+
+        gridBody.innerHTML = html;
+        syncEditRefs();
+
+        gridBody.querySelectorAll(".grid-row[data-row-id]").forEach(function (row) {
+            row.addEventListener("click", function () {
+                if (currentMode !== "display") return;
+                selectRow(Number(this.dataset.rowId || 0));
+            });
+        });
+
+        if (bookInput) {
+            bookInput.addEventListener("input", function () {
+                if (bookInput.value.trim()) clearBookError();
+            });
+        }
+    }
+
+    function selectRow(rowId) {
+        const module = getActiveModule();
+        if (!module) return;
+        const exists = module.rows.find(function (r) { return r.id === rowId; });
+        if (!exists) return;
+        activeRowId = rowId;
+        module.activeRowId = rowId;
+        renderGridRows();
+    }
+
+    function readEditorRow() {
+        if (!descriptionInput) return null;
+        return {
+            description: descriptionInput.value.trim(),
+            book: bookInput.value.trim(),
+            numbering_type: (numberingTypeHidden && numberingTypeHidden.value) || (numberingTypeInput ? numberingTypeInput.value : "") || "Auto",
+            starting_no: startingNoInput.value.trim(),
+            end_no: endNoInput.value.trim(),
+            restart_numbering: (restartHidden && restartHidden.value) || (restartInput ? restartInput.value : "") || "Yearly",
+            lock_date: lockDateInput.value || "",
+            active: (activeHidden && activeHidden.value) || (activeInput ? activeInput.value : "") || "Y",
+            division_name: divisionInput.value.trim(),
+            item_list: itemListInput.value.trim(),
+            cash_credit: (cashCreditHidden && cashCreditHidden.value) || (cashCreditInput ? cashCreditInput.value : "") || "Both"
+        };
+    }
+
+    function validateRow(row) {
+        if (!row) return false;
+        if (!row.description) {
+            if (window.showInlineRequired) { window.showInlineRequired(descriptionInput, "Required"); }
+            descriptionInput.focus();
+            return false;
+        }
+        if (!row.book) {
+            if (bookInput) bookInput.classList.add("field-error");
+            const bookError = document.getElementById("bookError");
+            if (bookError) bookError.style.display = "inline";
+            if (bookInput) bookInput.focus();
+            return false;
+        }
+        if (row.starting_no && isNaN(Number(row.starting_no))) {
+            alert("Starting No. must be numeric");
+            startingNoInput.focus();
+            return false;
+        }
+        if (row.end_no && isNaN(Number(row.end_no))) {
+            alert("End No. must be numeric");
+            endNoInput.focus();
+            return false;
+        }
+        if (row.starting_no && row.end_no) {
+            const s = Number(row.starting_no);
+            const e = Number(row.end_no);
+            if (e < s) {
+                alert("End No. cannot be less than Starting No.");
+                endNoInput.focus();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function clearBookError() {
+        if (bookInput) bookInput.classList.remove("field-error");
+        const bookError = document.getElementById("bookError");
+        if (bookError) bookError.style.display = "none";
+    }
+
+    function getEditFields() {
+        const row = gridBody.querySelector(".grid-row.editing");
+        if (!row) return [];
+        return Array.from(row.querySelectorAll("input, select")).filter(function (el) {
+            if (el.disabled) return false;
+            if (el.type === "hidden") return false;
+            if (el.offsetParent === null) return false;
+            return true;
+        });
+    }
+
+    function focusFieldAt(index) {
+        const fields = getEditFields();
+        if (!fields.length) return;
+        const target = fields[Math.max(0, Math.min(index, fields.length - 1))];
+        if (target) {
+            target.focus();
+            if (typeof target.select === "function" && target.value) target.select();
+        }
+    }
+
+    async function handleAddAction() {
+        const module = getActiveModule();
+        if (!module) return;
+        preEditRowId = activeRowId;
+        activeRowId = null;
+        module.activeRowId = null;
+        setMode("add");
+        renderGridRows();
+    }
+
+    function handleModifyAction() {
+        const module = getActiveModule();
+        if (!module) return;
+        if (!activeRowId) {
+            alert("Select a row to modify");
+            return;
+        }
+        preEditRowId = activeRowId;
+        setMode("modify");
+        renderGridRows();
+    }
+
+    async function saveRow() {
+        const module = getActiveModule();
+        if (!module) return;
+        clearBookError();
+        const data = readEditorRow();
+        if (!validateRow(data)) return;
+
+        const confirmFn = currentMode === "modify"
+            ? (window.confirmEdit || window.editModeConfirmPromise)
+            : (window.confirmAdd || window.addModeConfirmPromise);
+        const confirmMessage = currentMode === "modify"
+            ? "Do you want to edit this?"
+            : "Are you sure you want to add this?";
+        let ok = true;
+        if (typeof confirmFn === "function") {
+            ok = await Promise.resolve(confirmFn(confirmMessage));
+        } else {
+            ok = window.confirm(confirmMessage);
+        }
+        if (!ok) return;
+
+        const fd = new FormData();
+        fd.set("module_id", String(module.id));
+        fd.set("description", data.description);
+        fd.set("book", data.book);
+        fd.set("numbering_type", data.numbering_type);
+        fd.set("starting_no", data.starting_no);
+        fd.set("end_no", data.end_no);
+        fd.set("restart_numbering", data.restart_numbering);
+        fd.set("lock_date", data.lock_date);
+        fd.set("active", data.active);
+        fd.set("division_name", data.division_name);
+        fd.set("item_list", data.item_list);
+        fd.set("cash_credit", data.cash_credit);
+
+        let url = "add_row.php";
+        if (currentMode === "modify") {
+            url = "update_row.php";
+            fd.set("setup_id", String(activeRowId));
+        }
+
+        const res = await fetch(appRoot + "api/form_wise_book_setup/" + url, {
+            method: "POST",
+            body: fd
+        });
+        const result = await res.json();
+        if (!result || result.status !== "success") {
+            alert((result && result.message) || "Request failed");
+            return;
+        }
+
+        await loadRowsForModule(module);
+        if (currentMode === "add" && result.setup_id) {
+            activeRowId = Number(result.setup_id);
+            module.activeRowId = activeRowId;
+        }
+        if (currentMode === "modify") {
+            module.activeRowId = activeRowId;
+        }
+
+        setMode("display");
+        renderGridRows();
+    }
+
+    function cancelEditMode() {
+        setMode("display");
+        if (preEditRowId) {
+            activeRowId = preEditRowId;
+            const module = getActiveModule();
+            if (module) module.activeRowId = activeRowId;
+        }
+        preEditRowId = null;
+        renderGridRows();
+    }
+
+    async function deleteRow() {
+        const module = getActiveModule();
+        if (!module) return;
+        if (!activeRowId) {
+            alert("Select a row to delete");
+            return;
+        }
+        const row = module.rows.find(function (r) { return r.id === activeRowId; });
+        const rowLabel = row ? (row.description || row.book || ("Row " + activeRowId)) : ("Row " + activeRowId);
+        const deleteBtn = document.getElementById("deleteBtn");
+        if (deleteBtn) deleteBtn.dataset.label = rowLabel;
+        const moduleName = (module && module.name) ? module.name : (entryModuleInput.value || "");
+        const activeModuleEl = moduleList.querySelector(".module-row.active");
+        const prevLabel = activeModuleEl ? activeModuleEl.dataset.label : undefined;
+        if (activeModuleEl) activeModuleEl.dataset.label = rowLabel;
+        const confirmFn = window.confirmDelete || function (msg) { return Promise.resolve(window.confirm(msg)); };
+        const ok = await confirmFn("Delete selected row?\n\n" + moduleName);
+        if (activeModuleEl) {
+            if (prevLabel === undefined) delete activeModuleEl.dataset.label;
+            else activeModuleEl.dataset.label = prevLabel;
+        }
+        if (deleteBtn) deleteBtn.removeAttribute("data-label");
+        if (!ok) return;
+
+        const body = new URLSearchParams();
+        body.set("setup_id", String(activeRowId));
+        const res = await fetch(appRoot + "api/form_wise_book_setup/delete_row.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+        const result = await res.json();
+        if (!result || result.status !== "success") {
+            alert((result && result.message) || "Request failed");
+            return;
+        }
+
+        await loadRowsForModule(module);
+        activeRowId = null;
+        ensureActiveRow(module);
+        renderGridRows();
+    }
+
+    document.getElementById("addBtn").addEventListener("click", handleAddAction);
+    document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+    document.getElementById("deleteBtn").addEventListener("click", deleteRow);
+    document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+    document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = appRoot + "index.html"; });
+    document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+    document.getElementById("saveBtn").addEventListener("click", saveRow);
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter") return;
+        if (currentMode !== "add" && currentMode !== "modify") return;
+        const row = gridBody.querySelector(".grid-row.editing");
+        if (!row) return;
+        if (!row.contains(document.activeElement)) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const fields = getEditFields();
+        if (!fields.length) return;
+        const activeIndex = fields.indexOf(document.activeElement);
+        if (activeIndex === -1) return;
+
+        if (document.activeElement === bookInput) {
+            if (!bookInput.value.trim()) {
+                bookInput.classList.add("field-error");
+                const bookError = document.getElementById("bookError");
+                if (bookError) bookError.style.display = "inline";
+                bookInput.focus();
+                return;
+            }
+        }
+
+        if (e.shiftKey) {
+            focusFieldAt(activeIndex - 1);
+            return;
+        }
+
+        if (activeIndex < fields.length - 1) {
+            focusFieldAt(activeIndex + 1);
+            return;
+        }
+
+        saveRow();
+    }, true);
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "F6") return;
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        if (currentMode !== "add" && currentMode !== "modify") return;
+        const perms = window.__pagePermissions || null;
+        if (perms && !(perms.a === 1 || perms.e === 1)) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        saveRow();
+    }, true);
+
+    document.addEventListener("keydown", function (e) {
+        if (currentMode !== "display") return;
+        if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+        if (document.activeElement && document.activeElement.id === "filterInput") return;
+        const rows = Array.from(moduleList.querySelectorAll(".module-row")).filter(function (r) {
+            return r.dataset && r.dataset.id;
+        });
+        if (!rows.length) return;
+        let index = rows.findIndex(function (r) { return Number(r.dataset.id) === Number(activeModuleId); });
+        if (index === -1) index = 0;
+        if (e.key === "ArrowDown" && index < rows.length - 1) index += 1;
+        if (e.key === "ArrowUp" && index > 0) index -= 1;
+        const next = rows[index];
+        if (next) {
+            e.preventDefault();
+            selectModule(Number(next.dataset.id));
+            next.scrollIntoView({ block: "nearest" });
+        }
+    });
+
+    (async function init() {
+        await loadModules();
+    })();
+</script>
+</body>
+</html>
+

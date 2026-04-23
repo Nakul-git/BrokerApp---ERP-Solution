@@ -1,0 +1,1819 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Party Wise Brokerage Rate Setup | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../style.css?v=8">
+<link rel="stylesheet" href="../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../add-mode.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 6px 8px 8px;
+    height: calc(100vh - 108px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 6px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 8px;
+    text-align: center;
+    font-size: 24px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 6px;
+    align-items: start;
+    height: calc(100% - 44px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 8px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel .label {
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 28px;
+    padding: 4px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 6px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 54px);
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.party-row {
+    padding: 3px 6px;
+    font-size: 12px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.party-row:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.party-row.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 6px;
+    padding: 2px 6px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+#brokerageForm {
+    border: 1px solid #d7d7d7;
+    padding: 6px;
+    background: #efefef;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.form-top {
+    margin-bottom: 6px;
+}
+
+.form-top label {
+    font-size: 14px;
+    line-height: 1;
+    font-family: "Times New Roman", serif;
+    color: #2d2d2d;
+}
+
+.form-top input {
+    width: 100%;
+    height: 26px;
+    padding: 3px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.dropdown-wrapper {
+    position: relative;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #22e2e8;
+    border: 2px solid #18c7cf;
+    display: none;
+    z-index: 40;
+}
+
+.dropdown-item {
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 80px;
+    gap: 6px;
+}
+
+.dropdown-item:hover,
+.dropdown-item.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.prod-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #22e2e8;
+    border: 2px solid #18c7cf;
+    display: none;
+    z-index: 40;
+}
+
+.prod-option {
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+}
+
+.prod-option:hover,
+.prod-option.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.type-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #22e2e8;
+    border: 2px solid #18c7cf;
+    display: none;
+    z-index: 40;
+}
+
+.prod-input,
+.type-input {
+    width: 100%;
+    height: 28px;
+    padding: 2px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.prod-input:focus,
+.type-input:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.type-option {
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+}
+
+.type-option:hover,
+.type-option.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.field-error {
+    border-color: #c40000 !important;
+    background: #ffecec !important;
+}
+
+.table-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+}
+
+.table-box {
+    border: 1px solid #7b7b7b;
+    background: #fff;
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-box.small {
+    height: 260px;
+}
+
+.table-head {
+    display: grid;
+    background: #e3b07d;
+    border-bottom: 1px solid #7b7b7b;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.table-head.rate {
+    grid-template-columns: 54px minmax(0, 1fr) 110px 90px 110px 90px;
+}
+
+.table-head.pack {
+    grid-template-columns: 54px minmax(0, 1fr) 90px 90px;
+}
+
+.table-head div {
+    padding: 3px 5px;
+    border-right: 1px solid #7b7b7b;
+}
+
+.table-head div:last-child {
+    border-right: none;
+}
+
+.table-body {
+    flex: 1;
+    overflow-y: auto;
+    background: #bffcff;
+}
+
+.table-row {
+    display: grid;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.table-row.rate {
+    grid-template-columns: 54px minmax(0, 1fr) 110px 90px 110px 90px;
+}
+
+.table-row.pack {
+    grid-template-columns: 54px minmax(0, 1fr) 90px 90px;
+}
+
+.table-row > div {
+    padding: 3px 5px;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.table-row > div:last-child {
+    border-right: none;
+}
+
+.table-row .center {
+    text-align: center;
+    font-weight: 700;
+}
+
+.table-row input,
+.table-row select {
+    width: 100%;
+    height: 22px;
+    border: 1px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+}
+
+.row-delete {
+    width: 100%;
+    height: 22px;
+    border: 1px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.table-row.active-grid-row > div {
+    background: #0c78d3;
+    color: #fff;
+}
+
+.table-row.active-grid-row input,
+.table-row.active-grid-row select,
+.table-row.active-grid-row .prod-input,
+.table-row.active-grid-row .type-input {
+    background: #fff;
+    color: #000;
+}
+
+.table-tools {
+    margin: 4px 0 6px;
+    display: flex;
+    gap: 6px;
+}
+
+.grid-shortcuts {
+    flex: 1;
+    padding: 3px 8px;
+    border: 1px solid #37dbe7;
+    background: #1feaf1;
+    color: #000;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    text-align: center;
+}
+
+.tool-btn {
+    padding: 3px 8px;
+    height: 24px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.right-panel.display-mode input,
+.right-panel.display-mode select,
+.right-panel.display-mode .row-delete,
+.right-panel.display-mode .tool-btn {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    pointer-events: none;
+}
+
+.action-row {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.btn {
+    min-width: 92px;
+    padding: 3px 8px;
+    height: 26px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn:hover { filter: brightness(0.98); }
+
+.btn.primary, .btn.danger {
+    background: #ea7ce8;
+    color: #000;
+    border-color: #efc9f0;
+}
+
+@media (max-width: 1100px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .table-layout { grid-template-columns: 1fr; }
+    .list-wrap { height: 260px; }
+    .table-box { height: 320px; }
+}
+</style>
+
+<script>
+(async function () {
+    const res = await fetch("../../api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace("../../login.html");
+})();
+</script>
+<script src="../../global-nav.js" defer></script>
+<script src="../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../selection-mode.js" defer></script>
+<script src="../../add-mode.js" defer></script>
+<script src="../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Party Wise Brokerage Rate Setup</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search party...">
+<div class="list-wrap">
+<div class="list-head">Name</div>
+<div id="setupList"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="brokerageForm" autocomplete="off">
+<input type="hidden" id="party_id" name="party_id">
+
+<div class="form-top">
+<label for="partySearch" class="label-with-error"><span>Party</span><span id="partyError" class="error-text" style="display:none;"></span></label>
+<div class="dropdown-wrapper">
+<input id="partySearch" autocomplete="off" placeholder="Search party by name/city..." data-add-first>
+<div id="partyDropdown" class="dropdown-list"></div>
+</div>
+</div>
+
+<div class="table-layout">
+<div>
+<div class="table-tools">
+<div class="grid-shortcuts" id="rateShortcutBar">A - Add&nbsp;&nbsp;E - Edit&nbsp;&nbsp;D - Delete&nbsp;&nbsp;F1 - Move Back</div>
+<span id="dupNotice" class="error-text" style="display:none;margin-left:8px;">Already exists</span>
+<span id="rateRequiredNotice" class="error-text" style="display:none;margin-left:8px;">Required</span>
+</div>
+<div class="table-box">
+<div class="table-head rate">
+<div>Sno.</div><div>Prod-Name</div><div>Slr-Type</div><div>Slr-Rt</div><div>Byr-Type</div><div>Byr-Rt</div>
+</div>
+<div id="rateBody" class="table-body" tabindex="0"></div>
+</div>
+</div>
+
+<div>
+<div class="table-tools">
+<div class="grid-shortcuts" id="packShortcutBar">A - Add&nbsp;&nbsp;E - Edit&nbsp;&nbsp;D - Delete&nbsp;&nbsp;F1 - Move Back</div>
+<span id="packRequiredNotice" class="error-text" style="display:none;margin-left:8px;">Required</span>
+</div>
+<div class="table-box small">
+<div class="table-head pack">
+<div>Sno.</div><div>Packing</div><div>Slr-Rt</div><div>Byr-Rt</div>
+</div>
+<div id="packBody" class="table-body" tabindex="0"></div>
+</div>
+</div>
+</div>
+</form>
+
+<div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let allParties = [];
+let allProducts = [];
+let allSetups = [];
+let activePartyId = null;
+let currentMode = "display";
+let preEditPartyId = null;
+let dropIndex = -1;
+
+let currentRateRows = [];
+let currentPackRows = [];
+let activeRateRowIndex = 0;
+let activePackRowIndex = 0;
+const rateTypeOptions = [
+    { value: "PERCENT", label: "%" },
+    { value: "MANUAL", label: "Manual" },
+    { value: "PACK", label: "Pack" },
+    { value: "QUINTAL", label: "Quintal" }
+];
+
+const filterInput = document.getElementById("filterInput");
+const setupList = document.getElementById("setupList");
+const modeTag = document.getElementById("modeTag");
+const rightPanel = document.querySelector(".right-panel");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const partySearch = document.getElementById("partySearch");
+const partyIdInput = document.getElementById("party_id");
+const partyDropdown = document.getElementById("partyDropdown");
+const rateBody = document.getElementById("rateBody");
+const packBody = document.getElementById("packBody");
+const partyError = document.getElementById("partyError");
+const dupNotice = document.getElementById("dupNotice");
+const rateRequiredNotice = document.getElementById("rateRequiredNotice");
+const packRequiredNotice = document.getElementById("packRequiredNotice");
+
+function esc(v) {
+    return (v ?? "").toString().replace(/[&<>"]/g, function (m) {
+        return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;" })[m];
+    });
+}
+
+function escapeApostrophe(v) {
+    return String(v ?? "").replace(/'/g, "&#39;");
+}
+
+function escAll(v) {
+    return esc(escapeApostrophe(v));
+}
+
+function normalizeText(v) {
+    return (v || "").toString().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    syncActionMode();
+}
+
+function syncActionMode() {
+    const isDisplay = currentMode === "display";
+    displayButtons.style.display = isDisplay ? "flex" : "none";
+    addModeButtons.style.display = isDisplay ? "none" : "flex";
+}
+
+function setFormEditable(editable) {
+    partySearch.readOnly = !editable;
+    if (!editable) partySearch.setAttribute("tabindex", "-1");
+    else partySearch.removeAttribute("tabindex");
+}
+
+function showPartyError() {
+    partySearch.classList.add("field-error");
+    partyError.textContent = "Required";
+    partyError.style.display = "inline";
+}
+
+function clearPartyError() {
+    partySearch.classList.remove("field-error");
+    partyError.textContent = "";
+    partyError.style.display = "none";
+}
+
+function hasAnyOtherFieldValue() {
+    const anyRate = readRatesFromGrid().some(function (r) { return Number(r.product_id) > 0 || r.slr_rt || r.byr_rt; });
+    const anyPack = readPackingFromGrid().some(function (r) { return (r.packing || r.slr_rt || r.byr_rt); });
+    return anyRate || anyPack;
+}
+
+function buildRateRow() {
+    return { product_id: 0, slr_type: "PERCENT", slr_rt: "", byr_type: "PERCENT", byr_rt: "" };
+}
+
+function buildPackRow() {
+    return { packing: "", slr_rt: "", byr_rt: "" };
+}
+
+function setActiveGridRow(container, selector, index, shouldFocus) {
+    const rows = Array.from(container.querySelectorAll(selector));
+    if (!rows.length) return null;
+    const nextIndex = Math.max(0, Math.min(rows.length - 1, Number(index) || 0));
+    rows.forEach(function (row, rowIndex) {
+        row.classList.toggle("active-grid-row", rowIndex === nextIndex);
+    });
+    const row = rows[nextIndex];
+    if (row) {
+        row.scrollIntoView({ block: "nearest" });
+        if (shouldFocus) row.focus();
+    }
+    return nextIndex;
+}
+
+function getProductNameById(id) {
+    const p = allProducts.find(function (item) { return Number(item.product_id) === Number(id); });
+    return p ? (p.product_name || "") : "";
+}
+
+function normalizeRateType(value) {
+    const v = String(value || "").trim().toUpperCase();
+    if (v === "%") return "PERCENT";
+    if (v === "AMOUNT") return "MANUAL";
+    if (rateTypeOptions.some(function (o) { return o.value === v; })) return v;
+    return "PERCENT";
+}
+
+function getRateTypeLabel(value) {
+    const key = normalizeRateType(value);
+    const opt = rateTypeOptions.find(function (o) { return o.value === key; });
+    return opt ? opt.label : "%";
+}
+
+function renderRateRows(rows) {
+    if (!rows.length) rows = [buildRateRow()];
+    activeRateRowIndex = Math.max(0, Math.min(rows.length - 1, activeRateRowIndex));
+    rateBody.innerHTML = rows.map(function (r, idx) {
+        const activeClass = idx === activeRateRowIndex ? " active-grid-row" : "";
+        return "<div class='table-row rate" + activeClass + "' data-rate-index='" + idx + "' tabindex='-1'>"
+            + "<div class='center'>" + (idx + 1) + "</div>"
+            + "<div><div class='dropdown-wrapper'>"
+            + "<input class='prod-input' placeholder='Select product...' data-product-id='" + escAll(r.product_id || "") + "' value='" + escAll(getProductNameById(r.product_id)) + "'>"
+            + "<div class='prod-dropdown'></div>"
+            + "</div></div>"
+            + "<div><div class='dropdown-wrapper'>"
+            + "<input class='type-input slr-type' readonly value='" + escAll(getRateTypeLabel(r.slr_type)) + "' data-type-value='" + escAll(normalizeRateType(r.slr_type)) + "'>"
+            + "<div class='type-dropdown'></div>"
+            + "</div></div>"
+            + "<div><input class='slr-rt' type='number' step='0.0001' value='" + escAll(r.slr_rt || "") + "'></div>"
+            + "<div><div class='dropdown-wrapper'>"
+            + "<input class='type-input byr-type' readonly value='" + escAll(getRateTypeLabel(r.byr_type)) + "' data-type-value='" + escAll(normalizeRateType(r.byr_type)) + "'>"
+            + "<div class='type-dropdown'></div>"
+            + "</div></div>"
+            + "<div><input class='byr-rt' type='number' step='0.0001' value='" + escAll(r.byr_rt || "") + "'></div>"
+            + "</div>";
+    }).join("");
+}
+
+function renderPackRows(rows) {
+    if (!rows.length) rows = [buildPackRow()];
+    activePackRowIndex = Math.max(0, Math.min(rows.length - 1, activePackRowIndex));
+    packBody.innerHTML = rows.map(function (r, idx) {
+        const activeClass = idx === activePackRowIndex ? " active-grid-row" : "";
+        return "<div class='table-row pack" + activeClass + "' data-pack-index='" + idx + "' tabindex='-1'>"
+            + "<div class='center'>" + (idx + 1) + "</div>"
+            + "<div><input class='pack-name' value='" + escAll(r.packing || "") + "'></div>"
+            + "<div><input class='pack-slr-rt' type='number' step='0.0001' value='" + escAll(r.slr_rt || "") + "'></div>"
+            + "<div><input class='pack-byr-rt' type='number' step='0.0001' value='" + escAll(r.byr_rt || "") + "'></div>"
+            + "</div>";
+    }).join("");
+}
+
+function readRatesFromGrid() {
+    const rows = [];
+    rateBody.querySelectorAll(".table-row.rate").forEach(function (row) {
+        const prodInput = row.querySelector(".prod-input");
+        const prodId = Number((prodInput && prodInput.dataset.productId) || 0);
+        const slrTypeInput = row.querySelector(".slr-type");
+        const byrTypeInput = row.querySelector(".byr-type");
+        rows.push({
+            product_id: prodId,
+            slr_type: normalizeRateType((slrTypeInput && slrTypeInput.dataset.typeValue) || "PERCENT"),
+            slr_rt: row.querySelector(".slr-rt").value.trim(),
+            byr_type: normalizeRateType((byrTypeInput && byrTypeInput.dataset.typeValue) || "PERCENT"),
+            byr_rt: row.querySelector(".byr-rt").value.trim()
+        });
+    });
+    return rows;
+}
+
+function readPackingFromGrid() {
+    const rows = [];
+    packBody.querySelectorAll(".table-row.pack").forEach(function (row) {
+        rows.push({
+            packing: row.querySelector(".pack-name").value.trim(),
+            slr_rt: row.querySelector(".pack-slr-rt").value.trim(),
+            byr_rt: row.querySelector(".pack-byr-rt").value.trim()
+        });
+    });
+    return rows;
+}
+
+function resetForm() {
+    document.getElementById("brokerageForm").reset();
+    partyIdInput.value = "";
+    partySearch.value = "";
+    activePartyId = null;
+    activeRateRowIndex = 0;
+    activePackRowIndex = 0;
+    clearPartyError();
+    currentRateRows = [buildRateRow()];
+    currentPackRows = [buildPackRow()];
+    renderRateRows(currentRateRows);
+    renderPackRows(currentPackRows);
+    partyDropdown.style.display = "none";
+    dropIndex = -1;
+    setMode("add");
+    setFormEditable(true);
+    renderSetupList();
+}
+
+function getPartyById(id) {
+    return allParties.find(function (p) { return Number(p.party_id) === Number(id); });
+}
+
+function renderSetupList() {
+    const keyword = filterInput.value.trim().toLowerCase();
+    const rows = allSetups.filter(function (s) {
+        const label = (s.party_name || "");
+        return !keyword || label.toLowerCase().includes(keyword);
+    });
+
+    if (!rows.length) {
+        setupList.innerHTML = "<div class='party-row'>No records found</div>";
+        return;
+    }
+
+    setupList.innerHTML = rows.map(function (s) {
+        const active = Number(s.party_id) === activePartyId ? "active" : "";
+        return "<div class='party-row " + active + "' data-id='" + escAll(s.party_id) + "'>" + escAll(s.party_name || "") + "</div>";
+    }).join("");
+
+    setupList.querySelectorAll(".party-row").forEach(function (row) {
+        row.addEventListener("click", function () {
+            const id = Number(this.dataset.id);
+            const party = getPartyById(id);
+            if (party) selectParty(party, true);
+        });
+    });
+}
+
+function filterParties(term) {
+    const q = normalizeText(term);
+    return allParties.filter(function (p) {
+        if (!q) return true;
+        const label = normalizeText((p.party_name || "") + " " + (p.city || ""));
+        return label.includes(q);
+    });
+}
+
+function renderPartyDropdown(rows) {
+    partyDropdown.innerHTML = "";
+    if (!rows.length) {
+        partyDropdown.innerHTML = "<div class='dropdown-item'><div>No party found</div><div>-</div><div>-</div></div>";
+        partyDropdown.style.display = "block";
+        return;
+    }
+    if (rows.length === 1) dropIndex = 0;
+    rows.forEach(function (p, idx) {
+        const item = document.createElement("div");
+        item.className = "dropdown-item" + (idx === dropIndex ? " active" : "");
+        item.innerHTML = "<div>" + escAll(p.party_name || "") + "</div><div>" + escAll(p.city || "") + "</div><div>" + escAll(p.party_id || "") + "</div>";
+        item.addEventListener("click", function () {
+            const keepEdit = currentMode === "add" || currentMode === "modify";
+            selectParty(p, !keepEdit, !keepEdit);
+            if (keepEdit) focusFirstRateField();
+        });
+        partyDropdown.appendChild(item);
+    });
+    partyDropdown.style.display = "block";
+}
+
+function findExactPartyByInput(rawText) {
+    const typed = normalizeText(rawText);
+    if (!typed) return null;
+    return allParties.find(function (p) {
+        const name = normalizeText(p.party_name || "");
+        const city = normalizeText(p.city || "");
+        const combo = normalizeText((p.party_name || "") + " " + (p.city || ""));
+        return typed === name || typed === combo || (city && typed === (name + " " + city).trim());
+    }) || null;
+}
+
+async function loadRatesForParty(partyId) {
+    const body = new URLSearchParams();
+    body.set("party_id", String(partyId));
+    const res = await fetch("../../api/party_brokerage/get_rates.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+    const data = await res.json();
+    currentRateRows = Array.isArray(data) ? data.map(function (r) {
+        return {
+            product_id: Number(r.product_id),
+            slr_type: normalizeRateType(r.slr_type || "PERCENT"),
+            slr_rt: r.slr_rt ?? "",
+            byr_type: normalizeRateType(r.byr_type || "PERCENT"),
+            byr_rt: r.byr_rt ?? ""
+        };
+    }) : [];
+    if (!currentRateRows.length) currentRateRows = [buildRateRow()];
+    activeRateRowIndex = 0;
+    renderRateRows(currentRateRows);
+}
+
+async function loadPackingsForParty(partyId) {
+    const body = new URLSearchParams();
+    body.set("party_id", String(partyId));
+    const res = await fetch("../../api/party_brokerage/get_packing_rates.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+    const data = await res.json();
+    currentPackRows = Array.isArray(data) ? data.map(function (r) {
+        return {
+            packing: r.packing || "",
+            slr_rt: r.slr_rt ?? "",
+            byr_rt: r.byr_rt ?? ""
+        };
+    }) : [];
+    if (!currentPackRows.length) currentPackRows = [buildPackRow()];
+    activePackRowIndex = 0;
+    renderPackRows(currentPackRows);
+}
+
+function focusFirstRateField() {
+    const first = rateBody.querySelector("select, input");
+    if (first) {
+        setTimeout(function () { first.focus(); }, 0);
+    }
+}
+
+function focusRateRowField() {
+    const row = rateBody.querySelector(".table-row.rate.active-grid-row") || rateBody.querySelector(".table-row.rate");
+    if (!row) return;
+    const field = row.querySelector(".prod-input, .slr-type, .slr-rt, .byr-type, .byr-rt");
+    if (field) field.focus();
+}
+
+function focusPackRowField() {
+    const row = packBody.querySelector(".table-row.pack.active-grid-row") || packBody.querySelector(".table-row.pack");
+    if (!row) return;
+    const field = row.querySelector(".pack-name, .pack-slr-rt, .pack-byr-rt");
+    if (field) field.focus();
+}
+
+async function selectParty(party, loadTables, forceDisplay) {
+    if (!party) return;
+    partyIdInput.value = party.party_id;
+    partySearch.value = party.party_name + (party.city ? "," + party.city : "");
+    activePartyId = Number(party.party_id);
+    clearPartyError();
+    partyDropdown.style.display = "none";
+    dropIndex = -1;
+
+    if (loadTables) {
+        await loadRatesForParty(activePartyId);
+        await loadPackingsForParty(activePartyId);
+        if (forceDisplay) {
+            setMode("display");
+            setFormEditable(false);
+        }
+    }
+    renderSetupList();
+}
+
+async function loadParties() {
+    const res = await fetch("../../api/party/get_party.php");
+    allParties = await res.json();
+}
+
+async function loadProducts() {
+    const res = await fetch("../../api/product/get_product.php");
+    allProducts = await res.json();
+}
+
+async function loadSetupList() {
+    const res = await fetch("../../api/party_brokerage/get_setup_list.php");
+    allSetups = await res.json();
+    renderSetupList();
+}
+function addProductRow() {
+    currentRateRows = readRatesFromGrid();
+    currentRateRows.push(buildRateRow());
+    activeRateRowIndex = currentRateRows.length - 1;
+    renderRateRows(currentRateRows);
+}
+
+function addPackingRow() {
+    currentPackRows = readPackingFromGrid();
+    currentPackRows.push(buildPackRow());
+    activePackRowIndex = currentPackRows.length - 1;
+    renderPackRows(currentPackRows);
+}
+
+function handleAddAction() {
+    preEditPartyId = activePartyId;
+    resetForm();
+    setMode("add");
+    setFormEditable(true);
+    setTimeout(function () { partySearch.focus(); }, 0);
+}
+
+async function handleModifyAction() {
+    const partyId = Number(partyIdInput.value || 0);
+    if (!partyId) {
+        alert("Select party first");
+        return;
+    }
+    preEditPartyId = partyId;
+    setMode("modify");
+    setFormEditable(true);
+    await loadRatesForParty(partyId);
+    await loadPackingsForParty(partyId);
+    setTimeout(function () { partySearch.focus(); }, 0);
+}
+
+function cancelEditMode() {
+    if (preEditPartyId) {
+        const prev = getPartyById(preEditPartyId);
+        if (prev) {
+            selectParty(prev, true, true);
+            preEditPartyId = null;
+            return;
+        }
+    }
+    if (allSetups.length) {
+        const first = getPartyById(allSetups[0].party_id);
+        if (first) {
+            selectParty(first, true, true);
+            return;
+        }
+    }
+    resetForm();
+}
+
+async function saveSetup(isModify) {
+    let partyId = Number(partyIdInput.value || 0);
+    if (!partyId) {
+        const matched = findExactPartyByInput(partySearch.value);
+        if (matched) {
+            partyId = Number(matched.party_id);
+            partyIdInput.value = partyId;
+            partySearch.value = matched.party_name + (matched.city ? "," + matched.city : "");
+        }
+    }
+
+    if (!partyId) {
+        if (hasAnyOtherFieldValue()) {
+            showPartyError();
+            partySearch.focus();
+        }
+        return;
+    }
+
+    clearPartyError();
+
+    const productRows = readRatesFromGrid().filter(function (r) { return Number(r.product_id) > 0; });
+    const packAllRows = readPackingFromGrid();
+    const packingRows = packAllRows.filter(function (r) { return r.packing || r.slr_rt || r.byr_rt; });
+
+    if (!productRows.length && !packingRows.length) {
+        const firstProd = rateBody.querySelector(".prod-input");
+        if (firstProd) {
+            firstProd.classList.add("field-error");
+            firstProd.focus();
+        }
+        showRateRequiredNotice();
+        return;
+    }
+
+    const missingPackName = packAllRows.find(function (r) {
+        return (r.slr_rt || r.byr_rt) && !r.packing;
+    });
+    if (missingPackName) {
+        const packInputs = Array.from(packBody.querySelectorAll(".pack-name"));
+        const target = packInputs.find(function (inp, idx) {
+            const row = packAllRows[idx];
+            return row && (row.slr_rt || row.byr_rt) && !row.packing;
+        });
+        if (target) {
+            target.classList.add("field-error");
+            target.focus();
+        }
+        showPackRequiredNotice();
+        return;
+    }
+
+    const seen = {};
+    for (let i = 0; i < productRows.length; i += 1) {
+        const pid = Number(productRows[i].product_id);
+        if (seen[pid]) {
+            alert("Duplicate product selected");
+            return;
+        }
+        seen[pid] = true;
+    }
+
+    if (!isModify && typeof window.confirmAdd === "function") {
+        const party = getPartyById(partyId);
+        const label = party ? (party.party_name + (party.city ? "," + party.city : "")) : String(partyId);
+        const ok = await window.confirmAdd("Are you sure you want to add this party setup?\n\n" + label);
+        if (!ok) return;
+    }
+
+    let okProduct = true;
+    let okPacking = true;
+
+    if (productRows.length) {
+        const fd = new FormData();
+        fd.set("party_id", String(partyId));
+        fd.set("rows_json", JSON.stringify(productRows));
+        const res = await fetch("../../api/party_brokerage/save_rates.php", { method: "POST", body: fd });
+        const data = await res.json();
+        okProduct = data && data.status === "success";
+        if (!okProduct) alert((data && data.message) || "Product save failed");
+    } else {
+        const body = new URLSearchParams();
+        body.set("party_id", String(partyId));
+        await fetch("../../api/party_brokerage/delete_rates.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+    }
+
+    if (packingRows.length) {
+        const fd = new FormData();
+        fd.set("party_id", String(partyId));
+        fd.set("rows_json", JSON.stringify(packingRows));
+        const res = await fetch("../../api/party_brokerage/save_packing_rates.php", { method: "POST", body: fd });
+        const data = await res.json();
+        okPacking = data && data.status === "success";
+        if (!okPacking) alert((data && data.message) || "Packing save failed");
+    } else {
+        const body = new URLSearchParams();
+        body.set("party_id", String(partyId));
+        await fetch("../../api/party_brokerage/delete_packing_rates.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString()
+        });
+    }
+
+    if (okProduct && okPacking) {
+        await loadSetupList();
+        if (isModify) {
+            const selectedParty = getPartyById(partyId);
+            if (selectedParty) await selectParty(selectedParty, true, true);
+        } else {
+            resetForm();
+        }
+    }
+}
+
+async function deleteSetup() {
+    const partyId = Number(partyIdInput.value || 0);
+    if (!partyId) {
+        alert("Select party setup to delete");
+        return;
+    }
+    const ok = await window.confirmDelete("Delete brokerage setup for this party?");
+    if (!ok) return;
+
+    const body = new URLSearchParams();
+    body.set("party_id", String(partyId));
+
+    await fetch("../../api/party_brokerage/delete_rates.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+
+    await fetch("../../api/party_brokerage/delete_packing_rates.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+    await loadSetupList();
+    if (allSetups.length) {
+        const first = getPartyById(allSetups[0].party_id);
+        if (first) {
+            await selectParty(first, true, true);
+            return;
+        }
+    }
+    setMode("display");
+    setFormEditable(false);
+    partyIdInput.value = "";
+    partySearch.value = "";
+    activePartyId = null;
+    clearPartyError();
+    activeRateRowIndex = 0;
+    activePackRowIndex = 0;
+    currentRateRows = [buildRateRow()];
+    currentPackRows = [buildPackRow()];
+    renderRateRows(currentRateRows);
+    renderPackRows(currentPackRows);
+}
+
+rateBody.addEventListener("click", function (e) {
+    const row = e.target.closest(".table-row.rate");
+    if (!row) return;
+    const nextIndex = setActiveGridRow(rateBody, ".table-row.rate", Number(row.dataset.rateIndex || 0), false);
+    if (nextIndex !== null) activeRateRowIndex = nextIndex;
+});
+
+function filterProducts(term) {
+    const q = normalizeText(term);
+    return allProducts.filter(function (p) {
+        if (!q) return true;
+        return normalizeText(p.product_name || "").includes(q);
+    });
+}
+
+function renderProductDropdown(input, rows, activeIndex) {
+    const wrapper = input.closest(".dropdown-wrapper");
+    const drop = wrapper ? wrapper.querySelector(".prod-dropdown") : null;
+    if (!drop) return;
+    drop.innerHTML = "";
+    if (!rows.length) {
+        drop.innerHTML = "<div class='prod-option'>No product found</div>";
+        drop.style.display = "block";
+        return;
+    }
+    rows.forEach(function (p, idx) {
+        const opt = document.createElement("div");
+        opt.className = "prod-option" + (idx === activeIndex ? " active" : "");
+        opt.textContent = p.product_name || "";
+        opt.dataset.productId = p.product_id;
+        opt.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+        });
+        opt.addEventListener("click", function () {
+            input.value = p.product_name || "";
+            input.dataset.productId = String(p.product_id);
+            drop.style.display = "none";
+            if (isDuplicateProduct(p.product_id, input)) {
+                input.value = "";
+                input.dataset.productId = "";
+                input.classList.add("field-error");
+                showDuplicateNotice();
+                input.focus();
+                return;
+            }
+            input.classList.remove("field-error");
+        });
+        drop.appendChild(opt);
+    });
+    drop.style.display = "block";
+    const activeEl = drop.querySelector(".prod-option.active");
+    if (activeEl && typeof activeEl.scrollIntoView === "function") {
+        activeEl.scrollIntoView({ block: "nearest" });
+    }
+}
+
+function closeAllProductDropdowns() {
+    rateBody.querySelectorAll(".prod-dropdown").forEach(function (d) { d.style.display = "none"; });
+}
+
+function renderTypeDropdown(input, activeIndex) {
+    const wrapper = input.closest(".dropdown-wrapper");
+    const drop = wrapper ? wrapper.querySelector(".type-dropdown") : null;
+    if (!drop) return;
+    drop.innerHTML = "";
+    rateTypeOptions.forEach(function (opt, idx) {
+        const row = document.createElement("div");
+        row.className = "type-option" + (idx === activeIndex ? " active" : "");
+        row.textContent = opt.label;
+        row.dataset.typeValue = opt.value;
+        row.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+        });
+        row.addEventListener("click", function () {
+            input.value = opt.label;
+            input.dataset.typeValue = opt.value;
+            drop.style.display = "none";
+        });
+        drop.appendChild(row);
+    });
+    drop.style.display = "block";
+    const activeEl = drop.querySelector(".type-option.active");
+    if (activeEl && typeof activeEl.scrollIntoView === "function") {
+        activeEl.scrollIntoView({ block: "nearest" });
+    }
+}
+
+function closeAllTypeDropdowns() {
+    rateBody.querySelectorAll(".type-dropdown").forEach(function (d) { d.style.display = "none"; });
+}
+
+function closeAllRateDropdowns() {
+    closeAllProductDropdowns();
+    closeAllTypeDropdowns();
+}
+
+function showDuplicateNotice() {
+    if (!dupNotice) return;
+    dupNotice.style.display = "inline";
+    clearTimeout(showDuplicateNotice._t);
+    showDuplicateNotice._t = setTimeout(function () {
+        dupNotice.style.display = "none";
+    }, 1600);
+}
+
+function showRateRequiredNotice() {
+    if (!rateRequiredNotice) return;
+    rateRequiredNotice.style.display = "inline";
+    clearTimeout(showRateRequiredNotice._t);
+    showRateRequiredNotice._t = setTimeout(function () {
+        rateRequiredNotice.style.display = "none";
+    }, 1600);
+}
+
+function showPackRequiredNotice() {
+    if (!packRequiredNotice) return;
+    packRequiredNotice.style.display = "inline";
+    clearTimeout(showPackRequiredNotice._t);
+    showPackRequiredNotice._t = setTimeout(function () {
+        packRequiredNotice.style.display = "none";
+    }, 1600);
+}
+
+function isDuplicateProduct(productId, currentInput) {
+    if (!productId) return false;
+    const inputs = Array.from(rateBody.querySelectorAll(".prod-input"));
+    return inputs.some(function (inp) {
+        if (inp === currentInput) return false;
+        return String(inp.dataset.productId || "") === String(productId);
+    });
+}
+
+rateBody.addEventListener("focusin", function (e) {
+    const input = e.target.closest(".prod-input");
+    if (!input) return;
+    if (currentMode === "display") return;
+    closeAllTypeDropdowns();
+    input.dataset.activeIndex = "-1";
+    input.dataset.filterText = "";
+    renderProductDropdown(input, filterProducts(""), -1);
+});
+
+rateBody.addEventListener("click", function (e) {
+    const input = e.target.closest(".prod-input");
+    if (!input) return;
+    if (currentMode === "display") return;
+    closeAllTypeDropdowns();
+    input.dataset.activeIndex = "-1";
+    input.dataset.filterText = "";
+    renderProductDropdown(input, filterProducts(""), -1);
+});
+
+rateBody.addEventListener("input", function (e) {
+    const input = e.target.closest(".prod-input");
+    if (!input) return;
+    if (currentMode === "display") return;
+    closeAllTypeDropdowns();
+    input.dataset.productId = "";
+    input.classList.remove("field-error");
+    if (rateRequiredNotice) rateRequiredNotice.style.display = "none";
+    input.dataset.activeIndex = "-1";
+    input.dataset.filterText = input.value || "";
+    renderProductDropdown(input, filterProducts(input.dataset.filterText), -1);
+});
+
+rateBody.addEventListener("keydown", function (e) {
+    const input = e.target.closest(".prod-input");
+    if (!input) return;
+    if (currentMode === "display") return;
+    const rows = filterProducts(input.dataset.filterText || "");
+    let idx = Number(input.dataset.activeIndex || -1);
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        idx = rows.length ? (idx + 1) % rows.length : -1;
+        input.dataset.activeIndex = String(idx);
+        renderProductDropdown(input, rows, idx);
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        idx = rows.length ? (idx - 1 + rows.length) % rows.length : -1;
+        input.dataset.activeIndex = String(idx);
+        renderProductDropdown(input, rows, idx);
+    } else if (e.key === "Enter") {
+        if (rows.length && idx >= 0 && rows[idx]) {
+            e.preventDefault();
+            e.__addModeHandled = true;
+            if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+            input.value = rows[idx].product_name || "";
+            input.dataset.productId = String(rows[idx].product_id);
+            closeAllProductDropdowns();
+            if (isDuplicateProduct(rows[idx].product_id, input)) {
+                input.value = "";
+                input.dataset.productId = "";
+                input.classList.add("field-error");
+                showDuplicateNotice();
+                input.focus();
+                return;
+            }
+            input.classList.remove("field-error");
+        }
+    } else if (e.key === "Escape") {
+        closeAllProductDropdowns();
+    }
+});
+
+rateBody.addEventListener("blur", function (e) {
+    const input = e.target.closest(".type-input");
+    if (!input) return;
+    setTimeout(function () {
+        if (!rateBody.contains(document.activeElement)) {
+            closeAllTypeDropdowns();
+        }
+    }, 0);
+}, true);
+
+rateBody.addEventListener("blur", function (e) {
+    const input = e.target.closest(".prod-input");
+    if (!input) return;
+    const name = (input.value || "").trim().toLowerCase();
+    const match = allProducts.find(function (p) {
+        return (p.product_name || "").toLowerCase() === name;
+    });
+    input.dataset.productId = match ? String(match.product_id) : "";
+    if (input.dataset.productId && isDuplicateProduct(input.dataset.productId, input)) {
+        input.value = "";
+        input.dataset.productId = "";
+        input.classList.add("field-error");
+        showDuplicateNotice();
+    } else {
+        input.classList.remove("field-error");
+        if (rateRequiredNotice) rateRequiredNotice.style.display = "none";
+    }
+    setTimeout(function () {
+        if (!rateBody.contains(document.activeElement)) {
+            closeAllProductDropdowns();
+        }
+    }, 0);
+}, true);
+
+rateBody.addEventListener("focusin", function (e) {
+    const row = e.target.closest(".table-row.rate");
+    if (row) {
+        const nextIndex = setActiveGridRow(rateBody, ".table-row.rate", Number(row.dataset.rateIndex || 0), false);
+        if (nextIndex !== null) activeRateRowIndex = nextIndex;
+    }
+    const input = e.target.closest(".type-input");
+    if (!input) return;
+    if (currentMode === "display") return;
+    closeAllProductDropdowns();
+    input.dataset.activeIndex = "-1";
+    renderTypeDropdown(input, -1);
+});
+
+rateBody.addEventListener("click", function (e) {
+    const input = e.target.closest(".type-input");
+    if (!input) return;
+    if (currentMode === "display") return;
+    closeAllProductDropdowns();
+    input.dataset.activeIndex = "-1";
+    renderTypeDropdown(input, -1);
+});
+
+rateBody.addEventListener("keydown", function (e) {
+    const input = e.target.closest(".type-input");
+    if (!input) return;
+    if (currentMode === "display") return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        closeAllProductDropdowns();
+    }
+    let idx = Number(input.dataset.activeIndex || -1);
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        idx = (idx + 1) % rateTypeOptions.length;
+        input.dataset.activeIndex = String(idx);
+        renderTypeDropdown(input, idx);
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        idx = (idx - 1 + rateTypeOptions.length) % rateTypeOptions.length;
+        input.dataset.activeIndex = String(idx);
+        renderTypeDropdown(input, idx);
+    } else if (e.key === "Enter") {
+        if (rateTypeOptions[idx]) {
+            e.preventDefault();
+            e.__addModeHandled = true;
+            if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+            input.value = rateTypeOptions[idx].label;
+            input.dataset.typeValue = rateTypeOptions[idx].value;
+            closeAllTypeDropdowns();
+        }
+    } else if (e.key === "Escape") {
+        closeAllTypeDropdowns();
+    }
+});
+
+packBody.addEventListener("click", function (e) {
+    const row = e.target.closest(".table-row.pack");
+    if (!row) return;
+    const nextIndex = setActiveGridRow(packBody, ".table-row.pack", Number(row.dataset.packIndex || 0), false);
+    if (nextIndex !== null) activePackRowIndex = nextIndex;
+});
+
+packBody.addEventListener("input", function (e) {
+    const input = e.target.closest(".pack-name, .pack-slr-rt, .pack-byr-rt");
+    if (!input) return;
+    const row = input.closest(".table-row");
+    if (row) {
+        const nameInput = row.querySelector(".pack-name");
+        if (nameInput) nameInput.classList.remove("field-error");
+    }
+    if (packRequiredNotice) packRequiredNotice.style.display = "none";
+});
+
+partySearch.addEventListener("input", function () {
+    if (currentMode === "display") return;
+    partyIdInput.value = "";
+    activePartyId = null;
+    setMode("add");
+    setFormEditable(true);
+    renderSetupList();
+    dropIndex = -1;
+    renderPartyDropdown(filterParties(partySearch.value));
+});
+
+partySearch.addEventListener("focus", function () {
+    if (currentMode === "display") return;
+    dropIndex = -1;
+    renderPartyDropdown(filterParties(partySearch.value));
+});
+
+partySearch.addEventListener("click", function () {
+    if (currentMode === "display") return;
+    dropIndex = -1;
+    renderPartyDropdown(filterParties(partySearch.value));
+});
+
+partySearch.addEventListener("keydown", function (e) {
+    if (currentMode === "display") return;
+    const rows = filterParties(partySearch.value);
+    if (!rows.length && e.key !== "Escape") return;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        dropIndex = (dropIndex + 1) % rows.length;
+        renderPartyDropdown(rows);
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        dropIndex = (dropIndex - 1 + rows.length) % rows.length;
+        renderPartyDropdown(rows);
+    } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (dropIndex < 0 && rows.length === 1) dropIndex = 0;
+        if (dropIndex >= 0 && rows[dropIndex]) {
+            const keepEdit = currentMode === "add" || currentMode === "modify";
+            selectParty(rows[dropIndex], !keepEdit, !keepEdit);
+            if (keepEdit) focusFirstRateField();
+            return;
+        }
+        const exact = findExactPartyByInput(partySearch.value);
+        if (exact) {
+            const keepEdit = currentMode === "add" || currentMode === "modify";
+            selectParty(exact, !keepEdit, !keepEdit);
+            if (keepEdit) focusFirstRateField();
+        }
+    } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        partyDropdown.style.display = "none";
+        dropIndex = -1;
+    }
+});
+
+packBody.addEventListener("focusin", function (e) {
+    const row = e.target.closest(".table-row.pack");
+    if (!row) return;
+    const nextIndex = setActiveGridRow(packBody, ".table-row.pack", Number(row.dataset.packIndex || 0), false);
+    if (nextIndex !== null) activePackRowIndex = nextIndex;
+});
+
+partySearch.addEventListener("input", function () {
+    if ((partySearch.value || "").trim()) clearPartyError();
+});
+
+filterInput.addEventListener("input", renderSetupList);
+
+setupList.addEventListener("click", function (e) {
+    const row = e.target.closest(".party-row");
+    if (!row || !row.dataset.id) return;
+    const party = getPartyById(Number(row.dataset.id));
+    if (party) selectParty(party, true, true);
+});
+
+partyDropdown.addEventListener("mousedown", function (e) {
+    e.preventDefault();
+});
+
+document.addEventListener("click", function (e) {
+    if (!e.target.closest(".dropdown-wrapper")) {
+        partyDropdown.style.display = "none";
+        dropIndex = -1;
+    }
+    if (!e.target.closest(".prod-dropdown") && !e.target.closest(".prod-input")) {
+        closeAllProductDropdowns();
+    }
+    if (!e.target.closest(".type-dropdown") && !e.target.closest(".type-input")) {
+        closeAllTypeDropdowns();
+    }
+});
+
+document.addEventListener("focusin", function (e) {
+    const target = e.target;
+    if (!target) return;
+    if (target.closest(".prod-dropdown") || target.closest(".prod-input")) return;
+    if (target.closest(".type-dropdown") || target.closest(".type-input")) return;
+    closeAllRateDropdowns();
+});
+
+document.getElementById("addBtn").addEventListener("click", handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click", deleteSetup);
+document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../index.html"; });
+document.getElementById("saveBtn").addEventListener("click", function () {
+    if (currentMode === "modify") saveSetup(true);
+    else saveSetup(false);
+});
+document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+
+document.addEventListener("keydown", function (e) {
+    if (currentMode === "display") return;
+    const target = e.target;
+    if (!target || !target.closest) return;
+
+    const inRateGrid = !!target.closest("#rateBody, #rateShortcutBar");
+    const inPackGrid = !!target.closest("#packBody, #packShortcutBar");
+    if (!inRateGrid && !inPackGrid) return;
+
+    const isTypingField = target.matches("input:not([type='checkbox']):not([type='radio']), textarea");
+    if ((e.key === "a" || e.key === "A" || e.key === "e" || e.key === "E" || e.key === "d" || e.key === "D") && isTypingField) {
+        return;
+    }
+
+    if (inRateGrid) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            const nextIndex = setActiveGridRow(rateBody, ".table-row.rate", activeRateRowIndex + (e.key === "ArrowDown" ? 1 : -1), true);
+            if (nextIndex !== null) activeRateRowIndex = nextIndex;
+            return;
+        }
+        if (e.key === "A" || e.key === "a") {
+            e.preventDefault();
+            addProductRow();
+            focusRateRowField();
+            return;
+        }
+        if (e.key === "E" || e.key === "e") {
+            e.preventDefault();
+            focusRateRowField();
+            return;
+        }
+        if (e.key === "D" || e.key === "d") {
+            e.preventDefault();
+            const rows = readRatesFromGrid();
+            const removeIndex = Math.max(0, Math.min((rows.length ? rows.length : 1) - 1, activeRateRowIndex));
+            const nextRows = (rows.length ? rows.slice() : [buildRateRow()]);
+            nextRows.splice(removeIndex, 1);
+            currentRateRows = nextRows.length ? nextRows : [buildRateRow()];
+            activeRateRowIndex = Math.max(0, Math.min(currentRateRows.length - 1, removeIndex));
+            renderRateRows(currentRateRows);
+            focusRateRowField();
+            return;
+        }
+        if (e.key === "F1") {
+            e.preventDefault();
+            partySearch.focus();
+            return;
+        }
+    }
+
+    if (inPackGrid) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            const nextIndex = setActiveGridRow(packBody, ".table-row.pack", activePackRowIndex + (e.key === "ArrowDown" ? 1 : -1), true);
+            if (nextIndex !== null) activePackRowIndex = nextIndex;
+            return;
+        }
+        if (e.key === "A" || e.key === "a") {
+            e.preventDefault();
+            addPackingRow();
+            focusPackRowField();
+            return;
+        }
+        if (e.key === "E" || e.key === "e") {
+            e.preventDefault();
+            focusPackRowField();
+            return;
+        }
+        if (e.key === "D" || e.key === "d") {
+            e.preventDefault();
+            const rows = readPackingFromGrid();
+            const removeIndex = Math.max(0, Math.min((rows.length ? rows.length : 1) - 1, activePackRowIndex));
+            const nextRows = (rows.length ? rows.slice() : [buildPackRow()]);
+            nextRows.splice(removeIndex, 1);
+            currentPackRows = nextRows.length ? nextRows : [buildPackRow()];
+            activePackRowIndex = Math.max(0, Math.min(currentPackRows.length - 1, removeIndex));
+            renderPackRows(currentPackRows);
+            focusPackRowField();
+            return;
+        }
+        if (e.key === "F1") {
+            e.preventDefault();
+            focusFirstRateField();
+        }
+    }
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    if (currentMode !== "add" && currentMode !== "modify") return;
+    const active = document.activeElement;
+    if (!active) return;
+    if (active.classList && (active.classList.contains("prod-input") || active.classList.contains("type-input"))) {
+        const wrapper = active.closest(".dropdown-wrapper");
+        const prodOpen = wrapper && wrapper.querySelector(".prod-dropdown") && wrapper.querySelector(".prod-dropdown").style.display === "block";
+        const typeOpen = wrapper && wrapper.querySelector(".type-dropdown") && wrapper.querySelector(".type-dropdown").style.display === "block";
+        if (prodOpen || typeOpen) return;
+    }
+    const container = active.closest("#rateBody, #packBody");
+    if (!container) return;
+    const fields = Array.from(container.querySelectorAll("input, select")).filter(function (el) {
+        return !el.disabled;
+    });
+    const idx = fields.indexOf(active);
+    if (idx === -1) return;
+    e.preventDefault();
+    e.__addModeHandled = true;
+    if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+
+    const forward = !e.shiftKey;
+    const nextIndex = forward ? idx + 1 : idx - 1;
+
+    if (nextIndex >= 0 && nextIndex < fields.length) {
+        fields[nextIndex].focus();
+        return;
+    }
+
+    if (forward) {
+        if (container.id === "rateBody") {
+            const next = packBody.querySelector("input, select");
+            if (next) { next.focus(); return; }
+        } else {
+            const saveBtn = document.getElementById("saveBtn");
+            if (saveBtn) { saveBtn.focus(); return; }
+        }
+    } else {
+        if (container.id === "packBody") {
+            const prev = rateBody.querySelector("input, select");
+            if (prev) {
+                const rateFields = Array.from(rateBody.querySelectorAll("input, select")).filter(function (el) { return !el.disabled; });
+                if (rateFields.length) {
+                    rateFields[rateFields.length - 1].focus();
+                    return;
+                }
+            }
+        } else {
+            partySearch.focus();
+            return;
+        }
+    }
+}, true);
+
+document.addEventListener("keydown", function (e) {
+    if (currentMode !== "display") return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const rows = Array.from(setupList.querySelectorAll(".party-row")).filter(function (r) { return r.dataset.id; });
+    if (!rows.length) return;
+    let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activePartyId); });
+    if (currentIndex === -1) currentIndex = 0;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentIndex < rows.length - 1) currentIndex += 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentIndex > 0) currentIndex -= 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+});
+
+setMode("display");
+setFormEditable(false);
+(async function init() {
+    await loadParties();
+    await loadProducts();
+    await loadSetupList();
+    if (allSetups.length) {
+        const firstParty = getPartyById(allSetups[0].party_id);
+        if (firstParty) {
+            await selectParty(firstParty, true, true);
+            return;
+        }
+    }
+    resetForm();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Narration Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot=(function(){const path=String(location.pathname||'').replace(/\\\\/g,'/');const lower=path.toLowerCase();const marker='/brokerapp/';const idx=lower.indexOf(marker);if(idx!==-1){return location.origin+path.slice(0,idx+marker.length);}return location.origin+'/';})();
+(async function(){
+    const res=await fetch(appRoot + "api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Narration Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search narration...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="narrationList"></div></div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="narrationForm" autocomplete="off">
+<input type="hidden" id="narration_id" name="narration_id">
+<div class="form-grid">
+<div class="form-group full"><label for="description" class="label-with-error"><span>Description</span><span id="descError" class="error-text" style="display:none;"></span></label><input id="description" name="description" required data-add-first data-duplicate-check="checkDuplicateDescription"></div>
+<div class="form-group"><label for="narration_type_input">Type</label>
+    <div class="dropdown-wrapper">
+        <input type="text" id="narration_type_input" placeholder="Select Type" autocomplete="off" data-enter-next>
+        <div class="dropdown-list" id="narrationTypeDropdown"></div>
+    </div>
+    <input type="hidden" id="narration_type" name="narration_type" required>
+</div>
+<div class="form-group"><label for="receipt_payment_input">Receipt/Payment</label>
+    <div class="dropdown-wrapper">
+        <input type="text" id="receipt_payment_input" placeholder="Select Receipt/Payment" autocomplete="off" data-enter-next>
+        <div class="dropdown-list" id="receiptPaymentDropdown"></div>
+    </div>
+    <input type="hidden" id="receipt_payment" name="receipt_payment" required>
+</div>
+</div>
+</form>
+
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let allNarrations=[];
+let activeNarrationId=null;
+let currentMode="display";
+let preEditNarrationId=null;
+
+const filterInput=document.getElementById("filterInput");
+const narrationList=document.getElementById("narrationList");
+const narrationForm=document.getElementById("narrationForm");
+const modeTag=document.getElementById("modeTag");
+const displayButtons=document.getElementById("displayButtons");
+const addModeButtons=document.getElementById("addModeButtons");
+const descriptionInput=document.getElementById("description");
+const descError=document.getElementById("descError");
+const narrationTypeInput=document.getElementById("narration_type_input");
+const narrationTypeDropdown=document.getElementById("narrationTypeDropdown");
+const narrationTypeHidden=document.getElementById("narration_type");
+const receiptPaymentInput=document.getElementById("receipt_payment_input");
+const receiptPaymentDropdown=document.getElementById("receiptPaymentDropdown");
+const receiptPaymentHidden=document.getElementById("receipt_payment");
+let narrationTypeIndex=-1;
+let receiptPaymentIndex=-1;
+
+const narrationTypeOptions=[
+    "Cash Bank Line - 1",
+    "Cash Bank Line - 2",
+    "Cash Receipt Line - 1",
+    "Cash Receipt Line - 2",
+    "Journal Line - 1",
+    "Journal Line - 2",
+    "All"
+];
+const receiptPaymentOptions=["Receipt","Payment","Both"];
+
+function esc(v){return (v??"").toString().replace(/[&<>\"']/g,function(m){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m];});}
+function narrationDescOf(n){return (n?.description??"").toString();}
+function showDescError(msg){descriptionInput.classList.add("field-error");descError.textContent=msg;descError.style.display="inline";}
+function clearDescError(){descriptionInput.classList.remove("field-error");descError.textContent="";descError.style.display="none";}
+function checkDuplicateDescription(){const name=descriptionInput.value.trim().toLowerCase();if(!name){clearDescError();return false;}const currentId=Number(document.getElementById("narration_id").value||0);const dup=allNarrations.some(function(n){return narrationDescOf(n).trim().toLowerCase()===name&&Number(n.narration_id)!==currentId;});if(dup){showDescError("Already exists");return true;}clearDescError();return false;}
+
+function setFormEditable(editable){const fields=narrationForm.querySelectorAll("input, select");fields.forEach(function(field){if(field.id==="narration_id")return;if(!editable)field.setAttribute("tabindex","-1");else field.removeAttribute("tabindex");if(field.tagName==="SELECT")field.disabled=!editable;else field.readOnly=!editable;});narrationTypeInput.readOnly=!editable;receiptPaymentInput.readOnly=!editable;}
+function syncActionMode(){const isDisplay=currentMode==="display";displayButtons.classList.toggle("hidden",!isDisplay);addModeButtons.classList.toggle("hidden",isDisplay);displayButtons.style.display=isDisplay?"flex":"none";addModeButtons.style.display=isDisplay?"none":"flex";}
+function setMode(mode){currentMode=mode;const rightPanel=document.querySelector(".right-panel");rightPanel.classList.remove("add-mode","modify-mode","display-mode");if(mode==="add"){modeTag.textContent="Add Mode";rightPanel.classList.add("add-mode");setTimeout(function(){descriptionInput.focus();},0);}if(mode==="modify"){modeTag.textContent="Edit Mode";rightPanel.classList.add("modify-mode");setTimeout(function(){descriptionInput.focus();},0);}if(mode==="display"){modeTag.textContent="Display Mode";rightPanel.classList.add("display-mode");preEditNarrationId=null;clearDescError();syncSelectionHighlight();}closeNarrationTypeDropdown();closeReceiptPaymentDropdown();syncActionMode();}
+
+function ensureActiveNarrationSelection(){if(!allNarrations.length){activeNarrationId=null;return null;}let active=allNarrations.find(function(n){return Number(n.narration_id)===Number(activeNarrationId);});if(!active){active=allNarrations[0];activeNarrationId=Number(active.narration_id);}return active;}
+function resetForm(){narrationForm.reset();document.getElementById("narration_id").value="";narrationTypeHidden.value="Cash Bank Line - 1";narrationTypeInput.value="Cash Bank Line - 1";receiptPaymentHidden.value="Receipt";receiptPaymentInput.value="Receipt";activeNarrationId=null;clearDescError();setMode("add");setFormEditable(true);syncActionMode();renderNarrations();}
+
+function fillForm(n){document.getElementById("narration_id").value=n.narration_id||"";document.getElementById("description").value=n.description||"";narrationTypeHidden.value=n.narration_type||"All";narrationTypeInput.value=n.narration_type||"All";receiptPaymentHidden.value=n.receipt_payment||"Both";receiptPaymentInput.value=n.receipt_payment||"Both";activeNarrationId=Number(n.narration_id);setMode("display");setFormEditable(false);syncActionMode();clearDescError();}
+function fillFormWithoutRender(n){document.getElementById("narration_id").value=n.narration_id||"";document.getElementById("description").value=n.description||"";narrationTypeHidden.value=n.narration_type||"All";narrationTypeInput.value=n.narration_type||"All";receiptPaymentHidden.value=n.receipt_payment||"Both";receiptPaymentInput.value=n.receipt_payment||"Both";activeNarrationId=Number(n.narration_id);setMode("display");setFormEditable(false);syncActionMode();clearDescError();}
+
+function renderNarrations(){ensureActiveNarrationSelection();const keyword = "";const rows=allNarrations.filter(function(n){return !keyword||(n.description||"").toLowerCase().includes(keyword)||(n.narration_type||"").toLowerCase().includes(keyword)||(n.receipt_payment||"").toLowerCase().includes(keyword);});if(!rows.length){narrationList.innerHTML="<div class='narration-row'>No records found</div>";return;}narrationList.innerHTML=rows.map(function(n){const active=Number(n.narration_id)===activeNarrationId?"active":"";return "<div class='narration-row "+active+"' data-id='"+esc(n.narration_id)+"'>"+esc(n.description||"")+"</div>";}).join("");narrationList.querySelectorAll(".narration-row").forEach(function(row){row.addEventListener("click",function(){selectRow(this);});});syncSelectionHighlight();}
+function syncSelectionHighlight(){const rows=Array.from(narrationList.querySelectorAll(".narration-row")).filter(function(r){return r.dataset.id;});rows.forEach(function(r){r.classList.remove("active");});const activeRow=rows.find(function(r){return Number(r.dataset.id)===Number(activeNarrationId);});if(activeRow){activeRow.classList.add("active");activeRow.scrollIntoView({block:"nearest"});}}
+function selectRow(row){narrationList.querySelectorAll(".narration-row").forEach(function(r){r.classList.remove("active");});row.classList.add("active");const id=Number(row.dataset.id);activeNarrationId=id;const n=allNarrations.find(function(x){return Number(x.narration_id)===id;});if(!n)return;fillFormWithoutRender(n);row.scrollIntoView({block:"center"});}
+
+async function loadNarrations(){const res=await fetch("../../../api/narration/get_narration.php");allNarrations=await res.json();if(allNarrations.length){ensureActiveNarrationSelection();renderNarrations();const selected=ensureActiveNarrationSelection();if(selected)fillFormWithoutRender(selected);document.querySelector(".list-wrap").scrollTop=0;}else{renderNarrations();setMode("display");setFormEditable(false);syncActionMode();}}
+
+async function saveNarration(isModify){const fd=new FormData(narrationForm);const narrationId=fd.get("narration_id");const description=(fd.get("description")||"").trim();let narrationType=(narrationTypeHidden.value||"").trim();let receiptPayment=(receiptPaymentHidden.value||"").trim();if(!narrationType && narrationTypeInput.value){const match=narrationTypeOptions.find(function(v){return v.toLowerCase()===narrationTypeInput.value.trim().toLowerCase();});if(match){narrationTypeHidden.value=match;narrationType=match;}}if(!receiptPayment && receiptPaymentInput.value){const match=receiptPaymentOptions.find(function(v){return v.toLowerCase()===receiptPaymentInput.value.trim().toLowerCase();});if(match){receiptPaymentHidden.value=match;receiptPayment=match;}}if(checkDuplicateDescription()){descriptionInput.focus();descriptionInput.select();return;}if(!description){showDescError("Required");setTimeout(function(){descriptionInput.focus();descriptionInput.select();},50);return;}if(!narrationType){alert("Type required");return;}if(!receiptPayment){alert("Receipt/Payment required");return;}let url="../../../api/narration/add_narration.php";if(isModify){if(!narrationId){alert("Select a narration to modify");return;}url="../../../api/narration/update_narration.php";}else{const c=await window.confirmAdd("Are you sure you want to add this narration?\n\n"+description);if(!c)return;}const res=await fetch(url,{method:"POST",body:fd});const data=await res.json();if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }if(data.status==="success"){await loadNarrations();if(isModify&&narrationId){const updated=allNarrations.find(function(n){return Number(n.narration_id)===Number(narrationId);});if(updated)fillForm(updated);return;}resetForm();setMode("add");setFormEditable(true);syncActionMode();descriptionInput.focus();}}
+
+function renderNarrationTypeDropdown(list){narrationTypeDropdown.innerHTML="";if(!list.length){narrationTypeDropdown.style.display="none";return;}const currentValue=narrationTypeHidden.value||narrationTypeInput.value;list.forEach(function(item,index){const div=document.createElement("div");div.textContent=item;if(item===currentValue){div.classList.add("active");narrationTypeIndex=index;}div.onclick=function(){selectNarrationType(item);};narrationTypeDropdown.appendChild(div);});narrationTypeDropdown.style.display="block";if(narrationTypeIndex>=0&&narrationTypeDropdown.children[narrationTypeIndex])narrationTypeDropdown.children[narrationTypeIndex].scrollIntoView({block:"nearest"});}
+function selectNarrationType(value){narrationTypeInput.value=value;narrationTypeHidden.value=value;narrationTypeDropdown.style.display="none";narrationTypeIndex=-1;}
+function closeNarrationTypeDropdown(){narrationTypeDropdown.style.display="none";narrationTypeIndex=-1;}
+
+function renderReceiptPaymentDropdown(list){receiptPaymentDropdown.innerHTML="";if(!list.length){receiptPaymentDropdown.style.display="none";return;}const currentValue=receiptPaymentHidden.value||receiptPaymentInput.value;list.forEach(function(item,index){const div=document.createElement("div");div.textContent=item;if(item===currentValue){div.classList.add("active");receiptPaymentIndex=index;}div.onclick=function(){selectReceiptPayment(item);};receiptPaymentDropdown.appendChild(div);});receiptPaymentDropdown.style.display="block";if(receiptPaymentIndex>=0&&receiptPaymentDropdown.children[receiptPaymentIndex])receiptPaymentDropdown.children[receiptPaymentIndex].scrollIntoView({block:"nearest"});}
+function selectReceiptPayment(value){receiptPaymentInput.value=value;receiptPaymentHidden.value=value;receiptPaymentDropdown.style.display="none";receiptPaymentIndex=-1;}
+function closeReceiptPaymentDropdown(){receiptPaymentDropdown.style.display="none";receiptPaymentIndex=-1;}
+
+async function deleteNarration(){const narrationId=document.getElementById("narration_id").value;if(!narrationId){alert("Select a narration to delete");return;}const yes=await confirmDelete("Delete this narration?");if(!yes)return;const body=new URLSearchParams();body.set("narration_id",narrationId);const res=await fetch("../../../api/narration/delete_narration.php",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body.toString()});const data=await res.json();if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }if(data.status==="success"){await loadNarrations();if(allNarrations.length){setMode("display");setFormEditable(false);syncActionMode();}else resetForm();}}
+
+function handleAddAction(){preEditNarrationId=activeNarrationId;resetForm();descriptionInput.focus();}
+function handleModifyAction(){const narrationId=document.getElementById("narration_id").value;if(!narrationId){alert("Select a narration to modify");return;}preEditNarrationId=Number(narrationId);setMode("modify");setFormEditable(true);syncActionMode();}
+function cancelEditMode(){if(preEditNarrationId){const previous=allNarrations.find(function(n){return Number(n.narration_id)===Number(preEditNarrationId);});if(previous){fillForm(previous);preEditNarrationId=null;return;}}const fallback=ensureActiveNarrationSelection();if(fallback){fillForm(fallback);return;}setMode("display");setFormEditable(false);syncActionMode();renderNarrations();}
+
+descriptionInput.addEventListener("input",function(){if(currentMode==="add"||currentMode==="modify")checkDuplicateDescription();});
+narrationTypeInput.addEventListener("focus",function(){if(currentMode==="add"||currentMode==="modify"){narrationTypeIndex=-1;renderNarrationTypeDropdown(narrationTypeOptions);}});
+narrationTypeInput.addEventListener("input",function(){narrationTypeHidden.value="";const term=this.value.toLowerCase();const filtered=narrationTypeOptions.filter(function(opt){return opt.toLowerCase().includes(term);});renderNarrationTypeDropdown(filtered);if(filtered.length===1){narrationTypeIndex=0;const items=Array.from(narrationTypeDropdown.children);if(items.length){items.forEach(function(item,i){item.classList.toggle("active",i===narrationTypeIndex);});}}else{narrationTypeIndex=-1;}});
+narrationTypeInput.addEventListener("keydown",function(e){const items=Array.from(narrationTypeDropdown.children);if(narrationTypeDropdown.style.display!=="block"||!items.length)return;if(e.key==="ArrowDown"){e.preventDefault();narrationTypeIndex=(narrationTypeIndex+1)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===narrationTypeIndex);});items[narrationTypeIndex].scrollIntoView({block:"nearest"});}else if(e.key==="ArrowUp"){e.preventDefault();narrationTypeIndex=(narrationTypeIndex-1+items.length)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===narrationTypeIndex);});items[narrationTypeIndex].scrollIntoView({block:"nearest"});}else if(e.key==="Enter"){e.preventDefault();if(narrationTypeIndex>=0){selectNarrationType(items[narrationTypeIndex].textContent);}}else if(e.key==="Escape"){closeNarrationTypeDropdown();}});
+narrationTypeInput.addEventListener("blur",function(){setTimeout(closeNarrationTypeDropdown,150);});
+
+receiptPaymentInput.addEventListener("focus",function(){if(currentMode==="add"||currentMode==="modify"){receiptPaymentIndex=-1;renderReceiptPaymentDropdown(receiptPaymentOptions);}});
+receiptPaymentInput.addEventListener("input",function(){receiptPaymentHidden.value="";const term=this.value.toLowerCase();const filtered=receiptPaymentOptions.filter(function(opt){return opt.toLowerCase().includes(term);});renderReceiptPaymentDropdown(filtered);if(filtered.length===1){receiptPaymentIndex=0;const items=Array.from(receiptPaymentDropdown.children);if(items.length){items.forEach(function(item,i){item.classList.toggle("active",i===receiptPaymentIndex);});}}else{receiptPaymentIndex=-1;}});
+receiptPaymentInput.addEventListener("keydown",function(e){const items=Array.from(receiptPaymentDropdown.children);if(receiptPaymentDropdown.style.display!=="block"||!items.length)return;if(e.key==="ArrowDown"){e.preventDefault();receiptPaymentIndex=(receiptPaymentIndex+1)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===receiptPaymentIndex);});items[receiptPaymentIndex].scrollIntoView({block:"nearest"});}else if(e.key==="ArrowUp"){e.preventDefault();receiptPaymentIndex=(receiptPaymentIndex-1+items.length)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===receiptPaymentIndex);});items[receiptPaymentIndex].scrollIntoView({block:"nearest"});}else if(e.key==="Enter"){e.preventDefault();if(receiptPaymentIndex>=0){selectReceiptPayment(items[receiptPaymentIndex].textContent);}}else if(e.key==="Escape"){closeReceiptPaymentDropdown();}});
+receiptPaymentInput.addEventListener("blur",function(){setTimeout(closeReceiptPaymentDropdown,150);});
+
+document.addEventListener("click",function(e){if(!e.target.closest(".dropdown-wrapper")){closeNarrationTypeDropdown();closeReceiptPaymentDropdown();}});
+document.getElementById("addBtn").addEventListener("click",handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click",handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click",deleteNarration);
+document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+document.getElementById("exitBtn").addEventListener("click",function(){window.location.href = appRoot + "index.html";});
+document.getElementById("cancelBtn").addEventListener("click",cancelEditMode);
+document.getElementById("saveBtn").addEventListener("click",function(){if(currentMode==="modify")saveNarration(true);else saveNarration(false);});let typeBuffer="",typeTimer=null,lastMatchedIndex=-1;
+document.addEventListener("keydown",function(e){if(currentMode!=="display")return;if(e.ctrlKey||e.altKey||e.metaKey)return;const rows=Array.from(narrationList.querySelectorAll(".narration-row")).filter(function(r){return r.dataset.id;});if(!rows.length)return;const isSearchBox=document.activeElement.id==="filterInput";if(e.key.length===1&&/^[a-zA-Z]$/.test(e.key)){if(isSearchBox)return;e.preventDefault();const letter=e.key.toLowerCase();if(typeTimer)clearTimeout(typeTimer);typeBuffer+=letter;typeTimer=setTimeout(function(){typeBuffer="";lastMatchedIndex=-1;},700);let matchIndex=-1;if(typeBuffer.length===1){const startIndex=lastMatchedIndex+1;matchIndex=rows.findIndex(function(row,index){return index>=startIndex&&row.textContent.trim().toLowerCase().startsWith(letter);});if(matchIndex===-1)matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(letter);});}else{matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(typeBuffer);});}if(matchIndex!==-1){lastMatchedIndex=matchIndex;selectRow(rows[matchIndex]);}}});
+document.addEventListener("keydown",function(e){if(currentMode!=="display")return;const rows=Array.from(narrationList.querySelectorAll(".narration-row")).filter(function(r){return r.dataset.id;});if(!rows.length)return;let currentIndex=rows.findIndex(function(row){return Number(row.dataset.id)===Number(activeNarrationId);});if(currentIndex===-1)currentIndex=0;if(e.key==="ArrowDown"){e.preventDefault();if(currentIndex<rows.length-1)currentIndex++;selectRow(rows[currentIndex]);}if(e.key==="ArrowUp"){e.preventDefault();if(currentIndex>0)currentIndex--;selectRow(rows[currentIndex]);}});(function(){let navMode=false,mainIndex=0,subIndex=-1;const topNavItems=function(){return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function(li){return li.offsetParent!==null;});};function getSubItems(li){return Array.from(li.querySelectorAll("ul li")).filter(function(item){return item.offsetParent!==null;});}function highlightMain(index){const items=topNavItems();items.forEach(function(i){i.classList.remove("nav-active");});if(!items[index])return;items[index].classList.add("nav-active");if(items[index].focus)items[index].focus();}function highlightSub(subItems,index){subItems.forEach(function(i){i.classList.remove("nav-sub-active");});if(!subItems[index])return;subItems[index].classList.add("nav-sub-active");subItems[index].scrollIntoView({block:"nearest"});}function resetNav(){navMode=false;mainIndex=0;subIndex=-1;document.querySelectorAll(".nav-active").forEach(function(el){el.classList.remove("nav-active");});document.querySelectorAll(".nav-sub-active").forEach(function(el){el.classList.remove("nav-sub-active");});}document.addEventListener("keydown",function(e){if(e.key==="Alt"&&!navMode){e.preventDefault();navMode=true;mainIndex=0;subIndex=-1;highlightMain(mainIndex);return;}if(!navMode)return;const items=topNavItems();const currentMain=items[mainIndex];const subItems=currentMain?getSubItems(currentMain):[];if(e.key==="Escape"){e.preventDefault();resetNav();return;}if(e.key==="ArrowRight"){e.preventDefault();mainIndex=(mainIndex+1)%items.length;subIndex=-1;highlightMain(mainIndex);}if(e.key==="ArrowLeft"){e.preventDefault();mainIndex=(mainIndex-1+items.length)%items.length;subIndex=-1;highlightMain(mainIndex);}if(e.key==="ArrowDown"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=0;else subIndex=(subIndex+1)%subItems.length;highlightSub(subItems,subIndex);}if(e.key==="ArrowUp"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=subItems.length-1;else subIndex=(subIndex-1+subItems.length)%subItems.length;highlightSub(subItems,subIndex);}if(e.key==="Enter"){e.preventDefault();if(subIndex>=0&&subItems[subIndex])subItems[subIndex].click();else if(currentMain)currentMain.click();resetNav();}});})();
+
+setMode("display");
+setFormEditable(false);
+syncActionMode();
+(async function init(){await loadNarrations();if(allNarrations.length){const first=ensureActiveNarrationSelection();if(first)fillFormWithoutRender(first);renderNarrations();}})();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

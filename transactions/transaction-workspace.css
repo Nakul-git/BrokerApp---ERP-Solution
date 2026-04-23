@@ -1,0 +1,343 @@
+.transaction-content {
+    padding: 16px 14px 18px;
+}
+
+.transaction-feature {
+    max-width: none;
+    width: 100%;
+    padding: 12px 14px 16px;
+    border-radius: 20px;
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.transaction-shell {
+    min-height: calc(100vh - 170px);
+    border: 1px solid #e53a3a;
+    background: #fff;
+    padding: 14px 16px 16px;
+    font-family: "Times New Roman", serif;
+}
+
+.transaction-header {
+    position: relative;
+    min-height: 42px;
+    margin-bottom: 12px;
+}
+
+.transaction-title {
+    margin: 0;
+    text-align: center;
+    font-size: 29px;
+    line-height: 1.05;
+    color: #159b2f;
+    font-weight: 400;
+}
+
+.mode-chip {
+    position: absolute;
+    right: 0;
+    top: 0;
+    min-width: 170px;
+    padding: 4px 12px;
+    background: #ffc2cf;
+    border: 1px solid #d5a0ab;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.transaction-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.entry-layout {
+    grid-template-columns: minmax(760px, 1fr) 320px;
+    align-items: start;
+}
+
+.entry-main {
+    border: 1px solid #d3d3d3;
+    padding: 10px 8px 8px;
+    min-height: 720px;
+}
+
+.entry-aside {
+    padding-top: 168px;
+}
+
+.register-layout {
+    grid-template-columns: 340px 1fr;
+    align-items: start;
+}
+
+.register-side,
+.register-main {
+    border: 1px solid #d3d3d3;
+    background: #fff;
+}
+
+.register-side {
+    padding: 10px;
+}
+
+.register-main {
+    padding: 10px;
+    min-height: 650px;
+}
+
+.field-grid {
+    display: grid;
+    gap: 8px 10px;
+    align-items: center;
+}
+
+.field-grid.sauda-top {
+    grid-template-columns: 102px 118px 92px 300px 1fr;
+}
+
+.field-grid.loading-top,
+.field-grid.payment-top {
+    grid-template-columns: 112px 138px 88px 150px 112px 1fr;
+}
+
+.field-label {
+    font-size: 16px;
+    color: #000;
+}
+
+.field-input,
+.field-select,
+.field-textarea {
+    width: 100%;
+    min-height: 29px;
+    padding: 3px 7px;
+    border: 1px solid #9d9d9d;
+    background: #fff;
+    color: #000;
+    font-family: "Times New Roman", serif;
+    font-size: 15px;
+}
+
+.field-input.readonly {
+    background: #ececec;
+}
+
+.field-textarea {
+    min-height: 82px;
+    resize: vertical;
+}
+
+.ref-wrap,
+.inline-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.ref-wrap .field-select {
+    width: 88px;
+}
+
+.ref-wrap .mini,
+.inline-row .mini {
+    width: 58px;
+}
+
+.check-label {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.hero-line {
+    display: grid;
+    gap: 10px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.hero-line.two-col {
+    grid-template-columns: 102px 1fr;
+}
+
+.hero-line.three-col {
+    grid-template-columns: 102px 1fr 320px;
+}
+
+.helper-strip {
+    display: inline-block;
+    margin: 8px 0 10px;
+    padding: 3px 12px;
+    background: #f39a94;
+    border: 1px solid #d7756c;
+    color: #7d0e0e;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.erp-table-wrap {
+    border: 1px solid #666;
+    min-height: 180px;
+    background: #fff;
+}
+
+.erp-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.erp-table th,
+.erp-table td {
+    border: 1px solid #1ba7af;
+    padding: 5px 6px;
+    font-size: 13px;
+}
+
+.erp-table th {
+    background: #e3b06f;
+    font-weight: 400;
+    text-align: left;
+}
+
+.erp-table tbody tr:nth-child(odd) {
+    background: #b9f3f6;
+}
+
+.erp-table tbody tr.active-row {
+    background: #0c84d8;
+    color: #fff;
+    font-weight: 700;
+}
+
+.erp-table tbody tr.active-row td {
+    color: #fff;
+}
+
+.summary-strip {
+    display: grid;
+    grid-template-columns: 1fr 120px 120px 1fr 160px;
+    gap: 10px;
+    align-items: center;
+    margin: 10px 6px 0;
+}
+
+.summary-label {
+    color: #e36868;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.summary-total {
+    color: #ff1919;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.summary-box {
+    min-height: 31px;
+    border: 1px solid #8b8b8b;
+    background: #ececec;
+    padding: 3px 7px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.remarks-row {
+    display: grid;
+    grid-template-columns: 102px 1fr;
+    gap: 10px;
+    align-items: center;
+    margin: 16px 6px 10px;
+}
+
+.action-row.erp-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 6px 4px;
+}
+
+.erp-btn {
+    min-width: 124px;
+    height: 34px;
+    border: 2px solid #f2c7ff;
+    background: #d96be0;
+    color: #000;
+    font-family: "Times New Roman", serif;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px #fff;
+}
+
+.filter-panel {
+    display: grid;
+    gap: 12px;
+}
+
+.filter-box {
+    border: 1px solid #cfcfcf;
+    padding: 10px;
+    background: #fffdf7;
+}
+
+.filter-box-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #7a4b00;
+}
+
+.stack-fields {
+    display: grid;
+    gap: 10px;
+}
+
+.recent-box {
+    border: 1px solid #444;
+    min-height: 180px;
+    background: #fff;
+}
+
+.recent-box.pad {
+    padding: 10px;
+}
+
+.info-note {
+    margin: 8px 0 0;
+    color: #555;
+    font-size: 14px;
+}
+
+@media (max-width: 1280px) {
+    .entry-layout,
+    .register-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .entry-aside {
+        padding-top: 0;
+    }
+
+    .field-grid.sauda-top,
+    .field-grid.loading-top,
+    .field-grid.payment-top {
+        grid-template-columns: 110px 1fr;
+    }
+
+    .hero-line.three-col,
+    .hero-line.two-col,
+    .remarks-row {
+        grid-template-columns: 110px 1fr;
+    }
+
+    .summary-strip {
+        grid-template-columns: 1fr 120px 120px;
+    }
+}

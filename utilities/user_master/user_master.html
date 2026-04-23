@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<base href="../../">
+    <meta charset="UTF-8">
+    <title>User Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            max-width: 100%;
+            overflow: hidden;
+            height: 100%
+        }
+
+        .content {
+            padding: 8px 10px 10px;
+            height: calc(100vh - 116px);
+            overflow: hidden
+        }
+
+        .feature-box {
+            width: 100%;
+            max-width: none;
+            height: 100%;
+            margin: 0 auto;
+            padding: 8px;
+            border: 1px solid #d8d8d8;
+            background: #efefef;
+            overflow: hidden
+        }
+
+        .page-title {
+            margin: 0 0 12px;
+            text-align: center;
+            font-size: 28px;
+            font-family: "Times New Roman", serif;
+            font-weight: 400;
+            color: #0b8d2f;
+            line-height: 1
+        }
+
+        .master-layout {
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 8px;
+            align-items: start;
+            height: calc(100% - 52px);
+            min-height: 0
+        }
+
+        .left-panel,
+        .right-panel {
+            background: #efefef;
+            border: 1px solid #d0d0d0;
+            padding: 10px;
+            min-width: 0;
+            height: 100%;
+            overflow: hidden
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column
+        }
+
+        .left-panel .label {
+            font-size: 18px;
+            font-family: "Times New Roman", serif;
+            color: #2f2f2f;
+            margin-bottom: 4px
+        }
+
+        #filterInput {
+            width: 100%;
+            max-width: 100%;
+            height: 34px;
+            padding: 6px 8px;
+            border: 2px solid #969696;
+            border-radius: 0;
+            background: #fff;
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            color: #000
+        }
+
+        #filterInput:focus {
+            outline: none;
+            background: #1fdde0;
+            border-color: #00cfd6
+        }
+
+        .list-wrap {
+            margin-top: 8px;
+            border: 2px solid #18c7cf;
+            background: #22e2e8;
+            height: calc(100% - 64px);
+            max-height: none;
+            overflow-y: auto;
+            overflow-x: hidden
+        }
+
+        .list-head {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            padding: 6px 8px;
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            color: #000;
+            border-bottom: 1px solid rgba(0, 0, 0, .2);
+            background: #fff
+        }
+
+        .user-row {
+            padding: 4px 8px;
+            font-size: 14px;
+            line-height: 1.2;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            color: #000;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            scroll-margin-top: 30px
+        }
+
+        .user-row:hover {
+            background: rgba(0, 0, 0, .08)
+        }
+
+        .user-row.active {
+            background: #0074d9;
+            color: #fff
+        }
+
+        .mode-tag {
+            display: inline-block;
+            align-self: flex-start;
+            margin-bottom: 10px;
+            padding: 2px 8px;
+            border: 1px solid #c5b800;
+            background: #ffef1c;
+            color: #000;
+            font-size: 16px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700
+        }
+
+        #userForm {
+            border: 1px solid #d7d7d7;
+            padding: 8px;
+            background: #efefef;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+            /* important */
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+            gap: 4px 8px;
+            align-content: start
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1
+        }
+
+        .form-group.span2 {
+            grid-column: span 2
+        }
+
+        .form-group label {
+            font-size: 13px;
+            line-height: 1;
+            font-family: "Times New Roman", serif;
+            color: #2d2d2d
+        }
+
+        .admin-pill {
+            display: none;
+            align-self: flex-start;
+            padding: 5px 10px;
+            border: 1px solid #8f2020;
+            background: #b22222;
+            color: #fff;
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            line-height: 1
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            max-width: 100%;
+            height: 28px;
+            padding: 3px 6px;
+            border: 2px solid #969696;
+            border-radius: 0;
+            background: #fff;
+            font-size: 13px;
+            font-family: "Times New Roman", serif;
+            color: #000
+        }
+
+        .password-wrap {
+            position: relative
+        }
+
+        .password-wrap input {
+            padding-right: 38px
+        }
+
+        .pass-toggle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 36px;
+            height: 28px;
+            border: 2px solid #969696;
+            border-left: 0;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .pass-toggle[disabled] {
+            opacity: .45;
+            cursor: not-allowed
+        }
+
+        .password-hint {
+            font-size: 11px;
+            color: #444;
+            line-height: 1.2
+        }
+
+        .right-panel.add-mode input:focus,
+        .right-panel.add-mode select:focus,
+        .right-panel.modify-mode input:focus,
+        .right-panel.modify-mode select:focus {
+            outline: none;
+            background: #1fdde0;
+            border-color: #00cfd6
+        }
+
+        .right-panel.display-mode input,
+        .right-panel.display-mode select,
+        .right-panel.display-mode textarea {
+            background: #e6e6e6;
+            border-color: #c2c2c2;
+            color: #444;
+            cursor: default;
+            pointer-events: none;
+            user-select: none
+        }
+
+        .section-title {
+            margin: 6px 0 3px;
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            color: #1f1f1f
+        }
+
+        #rightsSection {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 0;
+            flex: 0 0 auto;
+        }
+
+        .rights-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            min-height: 0;
+            height: 160px;
+        }
+
+        .allot-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            min-height: 0;
+            flex: 1
+        }
+
+        .allot-box {
+            border: 1px solid #bcbcbc;
+            background: #f0f0f0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .allot-box .head {
+            padding: 4px 6px;
+            background: #fff;
+            border-bottom: 1px solid #cfcfcf;
+            font-size: 12px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .allot-scroll {
+            overflow: auto;
+            flex: 1;
+            padding: 4px;
+        }
+
+        .rights-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed
+        }
+
+        .rights-table th,
+        .rights-table td {
+            border: 1px solid #b8b8b8;
+            padding: 2px 4px;
+            font-size: 12px;
+            font-family: "Times New Roman", serif;
+            text-align: left;
+            background: #fff
+        }
+
+        .rights-table th {
+            background: #f4f4f4;
+            font-weight: 700
+        }
+
+        .rights-table th.chk,
+        .rights-table td.chk {
+            width: 30px;
+            text-align: center;
+            padding: 2px;
+        }
+
+        .rights-table input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .allot-transfer {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr);
+            gap: 12px;
+            align-items: center;
+            padding: 10px;
+            flex: 1;
+            min-height: 0
+        }
+
+        .allot-list-wrap {
+            min-width: 0
+        }
+
+        .allot-list-title {
+            padding: 6px 10px;
+            border: 1px solid #bcbcbc;
+            border-bottom: 0;
+            background: #fff;
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            color: #000
+        }
+
+        .allot-list {
+            border: 1px solid #bcbcbc;
+            background: #f2d7b7;
+            min-height: 138px;
+            max-height: 138px;
+            overflow: auto
+        }
+
+        .allot-row {
+            padding: 3px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, .45);
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            color: #000;
+            cursor: pointer;
+            user-select: none
+        }
+
+        .allot-row:last-child {
+            border-bottom: 0
+        }
+
+        .allot-row:hover {
+            background: rgba(255, 255, 255, .28)
+        }
+
+        .allot-row.active {
+            background: #fff;
+            color: #000
+        }
+
+        .allot-transfer-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            justify-content: center
+        }
+
+        .allot-transfer-btn {
+            width: 36px;
+            height: 34px;
+            border: 1px solid #c4c4c4;
+            border-radius: 4px;
+            background: #f6f6f6;
+            color: #000;
+            font-size: 20px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            cursor: pointer
+        }
+
+        .allot-transfer-btn:hover {
+            background: #ececec
+        }
+
+        .action-row {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px
+        }
+
+        .action-row.hidden {
+            display: none
+        }
+
+        .btn {
+            min-width: 104px;
+            padding: 4px 10px;
+            height: 32px;
+            border-radius: 2px;
+            border: 2px solid #efc9f0;
+            background: #ea7ce8;
+            color: #000;
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .btn:hover {
+            filter: brightness(.98)
+        }
+
+        .btn.primary,
+        .btn.danger {
+            background: #ea7ce8;
+            color: #000;
+            border-color: #efc9f0
+        }
+
+        .field-error {
+            border-color: #e60000 !important;
+            background: #ffecec !important
+        }
+
+        .error-text {
+            color: #e60000;
+            font-size: 14px;
+            font-family: "Times New Roman", serif;
+            font-weight: 700;
+            margin-left: 8px
+        }
+
+        .label-with-error {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        @media (max-width:1200px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .rights-grid,
+            .allot-grid {
+                grid-template-columns: 1fr
+            }
+
+            .allot-box {
+                min-height: 180px
+            }
+        }
+
+        @media (max-width:900px) {
+
+            html,
+            body {
+                overflow: auto;
+                height: auto
+            }
+
+            .content {
+                padding: 10px 8px 16px;
+                height: auto;
+                overflow: visible
+            }
+
+            .feature-box {
+                height: auto;
+                overflow: visible
+            }
+
+            .master-layout {
+                grid-template-columns: 1fr
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr
+            }
+
+            .list-wrap {
+                height: 260px
+            }
+        }
+
+        .form-scroll {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 4px;
+        }
+    </style>
+
+    <script>
+        (async function () {
+            const res = await fetch("api/check_auth.php");
+            const data = await res.json();
+            if (!data.logged_in) window.location.replace("login.html");
+        })();
+    </script>
+    <script src="permissions-catalog.js"></script>
+    <script src="global-nav.js" defer></script>
+<script src="global-keyboard.js" defer data-global-keyboard="1"></script>
+    <link rel="stylesheet" href="selection-mode.css?v=1">
+    <link rel="stylesheet" href="add-mode.css?v=1">
+    <script src="add-mode.js" defer></script>
+    <script src="selection-mode.js" defer></script>
+<script src="delete-mode.js" defer data-delete-mode="1"></script>
+<script src="edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">User Master</h2>
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div>
+                    <input id="filterInput" type="text" autocomplete="off" placeholder="Search user...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="userList"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <span id="modeTag" class="mode-tag">Display Mode</span>
+                    <form id="userForm" autocomplete="off">
+                        <input type="hidden" id="user_id" name="user_id">
+
+                        <div class="form-scroll">
+
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="user_name" class="label-with-error"><span>User Name</span><span
+                                            id="nameError" class="error-text" style="display:none;"></span></label>
+                                    <input id="user_name" name="user_name" required data-add-first data-duplicate-check="checkDuplicateUserName">
+                                </div>
+                                <div class="form-group" id="roleFieldGroup">
+                                    <label for="role_name" id="roleLabel">Role</label>
+                                    <select id="role_name" name="role_name"></select>
+                                    <div id="adminPill" class="admin-pill">Administrator</div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="password" class="label-with-error"><span>Password</span><span
+                                            id="passError" class="error-text" style="display:none;"></span></label>
+                                    <div class="password-wrap">
+                                        <input id="password" name="password" type="password"
+                                            placeholder="Enter new password to change">
+                                        <button type="button" id="togglePasswordBtn" class="pass-toggle"
+                                            title="Show password in edit mode" aria-label="Toggle password visibility"
+                                            disabled>
+                                            <i id="togglePasswordIcon" class="fa-regular fa-eye-slash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="password-hint">Enter a new password.</div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="is_admin">Administrator</label>
+                                    <select id="is_admin" name="is_admin">
+                                        <option value="1">Y</option>
+                                        <option value="0">N</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="is_active">Active</label>
+                                    <select id="is_active" name="is_active">
+                                        <option value="1">Y</option>
+                                        <option value="0">N</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="rightsSection">
+                                <div class="section-title">Rights Allotment</div>
+                                <div class="rights-grid">
+                                    <div class="allot-box">
+                                        <div class="head">Section Rights (View Only)</div>
+                                        <div class="allot-scroll">
+                                            <table class="rights-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Section</th>
+                                                        <th class="chk">V</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="sectionRightsBody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="allot-box" id="pageRightsWrap">
+                                        <div class="head"
+                                            style="display:flex;align-items:center;justify-content:space-between;">
+                                            <span>Page Rights (Visible Sections)</span>
+
+                                            <div id="bulkRightsBar" style="display:none;gap:10px;align-items:center;">
+                                                <label>V <input type="checkbox" id="bulk_v"></label>
+                                                <label>A <input type="checkbox" id="bulk_a"></label>
+                                                <label>E <input type="checkbox" id="bulk_e"></label>
+                                                <label>D <input type="checkbox" id="bulk_d"></label>
+                                                <label>P <input type="checkbox" id="bulk_p"></label>
+                                            </div>
+                                        </div>
+                                        <div class="allot-scroll">
+                                            <table class="rights-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="chk"></th>
+                                                        <th>Page</th>
+                                                        <th class="chk">V</th>
+                                                        <th class="chk">A</th>
+                                                        <th class="chk">E</th>
+                                                        <th class="chk">D</th>
+                                                        <th class="chk">P</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="pageRightsBody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="allotmentSection">
+                                <div class="section-title">Allotments</div>
+                                <div class="allot-grid">
+                                    <div class="allot-box">
+                                        <div class="head">Division Allotment for Users</div>
+                                        <div class="allot-transfer">
+                                            <div class="allot-list-wrap">
+                                                <div class="allot-list-title">DivName</div>
+                                                <div id="divisionAvailableList" class="allot-list"></div>
+                                            </div>
+                                            <div class="allot-transfer-actions">
+                                                <button type="button" class="allot-transfer-btn"
+                                                    id="moveDivisionRightBtn">&gt;</button>
+                                                <button type="button" class="allot-transfer-btn"
+                                                    id="moveDivisionLeftBtn">&lt;</button>
+                                            </div>
+                                            <div class="allot-list-wrap">
+                                                <div class="allot-list-title">DivName (Active)</div>
+                                                <div id="divisionSelectedList" class="allot-list"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="allot-box">
+                                        <div class="head">Company Allotment for Users</div>
+                                        <div class="allot-transfer">
+                                            <div class="allot-list-wrap">
+                                                <div class="allot-list-title">Company</div>
+                                                <div id="companyAvailableList" class="allot-list"></div>
+                                            </div>
+                                            <div class="allot-transfer-actions">
+                                                <button type="button" class="allot-transfer-btn"
+                                                    id="moveCompanyRightBtn">&gt;</button>
+                                                <button type="button" class="allot-transfer-btn"
+                                                    id="moveCompanyLeftBtn">&lt;</button>
+                                            </div>
+                                            <div class="allot-list-wrap">
+                                                <div class="allot-list-title">Company (Active)</div>
+                                                <div id="companySelectedList" class="allot-list"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        /* =========================================================
+           GLOBAL VARIABLES
+        ========================================================= */
+        let allUsers = [];
+        let rightsCatalog = [];
+        let divisions = [];
+        let companies = [];
+        let activeUserId = null;
+        let currentUserId = null;
+        let currentMode = "display";
+        let preEditUserId = null;
+        let loggedIsAdmin = 0;
+        let availableRoles = [];
+        let fillFormRequestId = 0;
+        /* =========================================================
+           DOM REFERENCES
+        ========================================================= */
+        const filterInput = document.getElementById("filterInput");
+        const userList = document.getElementById("userList");
+        const userForm = document.getElementById("userForm");
+        const sectionRightsBody = document.getElementById("sectionRightsBody");
+        const pageRightsBody = document.getElementById("pageRightsBody");
+        const pageRightsWrap = document.getElementById("pageRightsWrap");
+        const divisionAvailableList = document.getElementById("divisionAvailableList");
+        const divisionSelectedList = document.getElementById("divisionSelectedList");
+        const companyAvailableList = document.getElementById("companyAvailableList");
+        const companySelectedList = document.getElementById("companySelectedList");
+        const modeTag = document.getElementById("modeTag");
+        const displayButtons = document.getElementById("displayButtons");
+        const addModeButtons = document.getElementById("addModeButtons");
+        const userNameInput = document.getElementById("user_name");
+        const passwordInput = document.getElementById("password");
+        const roleInput = document.getElementById("role_name");
+        const roleFieldGroup = document.getElementById("roleFieldGroup");
+        const roleLabel = document.getElementById("roleLabel");
+        const adminPill = document.getElementById("adminPill");
+        const nameError = document.getElementById("nameError");
+        const passError = document.getElementById("passError");
+        const togglePasswordBtn = document.getElementById("togglePasswordBtn");
+        const togglePasswordIcon = document.getElementById("togglePasswordIcon");
+        const isAdminInput = document.getElementById("is_admin");
+        const rightsSection = document.getElementById("rightsSection");
+        const allotmentSection = document.getElementById("allotmentSection");
+        let divisionAssigned = [];
+        let companyAssigned = [];
+        let activeDivisionSource = "available";
+        let activeDivisionValue = "";
+        let activeCompanySource = "available";
+        let activeCompanyValue = "";
+
+        function showPassError(message) {
+            passwordInput.classList.add("field-error");
+            passError.textContent = message;
+            passError.style.display = "inline";
+        }
+
+        function clearPassError() {
+            passwordInput.classList.remove("field-error");
+            passError.textContent = "";
+            passError.style.display = "none";
+        }
+
+        function showUserNameError(message) {
+            userNameInput.classList.add("field-error");
+            nameError.textContent = message;
+            nameError.style.display = "inline";
+        }
+
+        function clearUserNameError() {
+            userNameInput.classList.remove("field-error");
+            nameError.textContent = "";
+            nameError.style.display = "none";
+        }
+
+        function checkDuplicateUserName() {
+            if (currentMode !== "add" && currentMode !== "modify") {
+                clearUserNameError();
+                return false;
+            }
+
+            const value = (userNameInput.value || "").trim().toLowerCase();
+            const currentId = document.getElementById("user_id").value;
+
+            if (!value) { clearUserNameError(); return false; }
+
+            const duplicate = allUsers.find(function (u) {
+                return String(u.name || "").toLowerCase() === value
+                    && String(u.id) !== String(currentId);
+            });
+
+            if (duplicate) {
+                showUserNameError("Already exists");
+                return true;
+            }
+
+            clearUserNameError();
+            return false;
+        }
+
+        function isSelectedUserAdmin() {
+            return String(isAdminInput.value || "0") === "1";
+        }
+
+        function syncAdminOverrideUI() {
+            const selectedIsAdmin = isSelectedUserAdmin();
+            const canManageRights = loggedIsAdmin === 1 && !selectedIsAdmin;
+
+            roleFieldGroup.style.display = "";
+            roleLabel.style.display = selectedIsAdmin ? "none" : "";
+            roleInput.style.display = selectedIsAdmin ? "none" : "";
+            adminPill.style.display = selectedIsAdmin ? "inline-block" : "none";
+
+            if (rightsSection) rightsSection.style.display = canManageRights ? "" : "none";
+            if (allotmentSection) allotmentSection.style.display = canManageRights ? "" : "none";
+
+            updatePageRightsVisibility();
+        }
+
+        function renderRoleOptions(selectedRole) {
+            const current = String(selectedRole || "").toUpperCase();
+            const roleSet = new Set();
+            availableRoles.forEach(function (r) {
+                const val = String(r || "").toUpperCase().trim();
+                if (val) roleSet.add(val);
+            });
+            if (current && roleSet.has(current)) roleSet.add(current);
+
+            const roles = Array.from(roleSet).sort();
+            roleInput.innerHTML = `<option value="">Select Role</option>` + roles.map(function (role) {
+                return `<option value="${role}">${role}</option>`;
+            }).join("");
+            roleInput.value = roles.includes(current) ? current : "";
+        }
+
+        async function loadRoleOptions(selectedRole) {
+            try {
+                const res = await fetch("api/user_master/get_role_list.php", { cache: "no-store" });
+                const data = await res.json();
+                availableRoles = data.status === "success" && Array.isArray(data.roles)
+                    ? data.roles
+                    : [];
+            } catch (e) {
+                availableRoles = [];
+            }
+
+            renderRoleOptions(selectedRole || "");
+        }
+
+        function clearAllPermissionChecks() {
+            document.querySelectorAll("#sectionRightsBody input[type='checkbox'], #pageRightsBody input[type='checkbox']")
+                .forEach(function (cb) { cb.checked = false; });
+        }
+
+        function normalizeTransferItems(items, keyField, labelField) {
+            return (Array.isArray(items) ? items : []).map(function (item) {
+                return {
+                    key: String(item[keyField] || item[labelField] || "").trim(),
+                    label: String(item[labelField] || item[keyField] || "").trim()
+                };
+            }).filter(function (item) {
+                return item.key && item.label;
+            });
+        }
+
+        function renderTransferList(target, items, activeValue, sourceName, hiddenName, kind) {
+            target.innerHTML = "";
+
+            items.forEach(function (item) {
+                const row = document.createElement("div");
+                row.className = "allot-row" + (activeValue === item.key ? " active" : "");
+                row.textContent = item.label;
+                row.dataset.value = item.key;
+                row.addEventListener("click", function () {
+                    if (kind === "division") {
+                        activeDivisionSource = sourceName;
+                        activeDivisionValue = item.key;
+                        renderDivisionTransfer();
+                        return;
+                    }
+
+                    activeCompanySource = sourceName;
+                    activeCompanyValue = item.key;
+                    renderCompanyTransfer();
+                });
+
+                if (hiddenName) {
+                    const hidden = document.createElement("input");
+                    hidden.type = "hidden";
+                    hidden.name = hiddenName;
+                    hidden.value = item.key;
+                    row.appendChild(hidden);
+                }
+
+                target.appendChild(row);
+            });
+        }
+
+        function renderDivisionTransfer() {
+            const assignedKeys = new Set(divisionAssigned.map(function (item) { return item.key; }));
+            const available = divisions.filter(function (item) { return !assignedKeys.has(item.key); });
+
+            renderTransferList(divisionAvailableList, available, activeDivisionSource === "available" ? activeDivisionValue : "", "available", "", "division");
+            renderTransferList(divisionSelectedList, divisionAssigned, activeDivisionSource === "selected" ? activeDivisionValue : "", "selected", "division_codes[]", "division");
+        }
+
+        function renderCompanyTransfer() {
+            const assignedKeys = new Set(companyAssigned.map(function (item) { return item.key; }));
+            const available = companies.filter(function (item) { return !assignedKeys.has(item.key); });
+
+            renderTransferList(companyAvailableList, available, activeCompanySource === "available-company" ? activeCompanyValue : "", "available-company", "", "company");
+            renderTransferList(companySelectedList, companyAssigned, activeCompanySource === "selected-company" ? activeCompanyValue : "", "selected-company", "company_codes[]", "company");
+        }
+
+        function moveDivisionToSelected() {
+            if (activeDivisionSource !== "available" || !activeDivisionValue) return;
+            const item = divisions.find(function (entry) { return entry.key === activeDivisionValue; });
+            if (!item || divisionAssigned.some(function (entry) { return entry.key === item.key; })) return;
+            divisionAssigned.push(item);
+            activeDivisionSource = "selected";
+            renderDivisionTransfer();
+        }
+
+        function moveDivisionToAvailable() {
+            if (activeDivisionSource !== "selected" || !activeDivisionValue) return;
+            divisionAssigned = divisionAssigned.filter(function (item) { return item.key !== activeDivisionValue; });
+            activeDivisionSource = "available";
+            renderDivisionTransfer();
+        }
+
+        function moveCompanyToSelected() {
+            if (activeCompanySource !== "available-company" || !activeCompanyValue) return;
+            const item = companies.find(function (entry) { return entry.key === activeCompanyValue; });
+            if (!item || companyAssigned.some(function (entry) { return entry.key === item.key; })) return;
+            companyAssigned.push(item);
+            activeCompanySource = "selected-company";
+            renderCompanyTransfer();
+        }
+
+        function moveCompanyToAvailable() {
+            if (activeCompanySource !== "selected-company" || !activeCompanyValue) return;
+            companyAssigned = companyAssigned.filter(function (item) { return item.key !== activeCompanyValue; });
+            activeCompanySource = "available-company";
+            renderCompanyTransfer();
+        }
+
+        function resetAllotmentTransfers() {
+            divisionAssigned = [];
+            companyAssigned = [];
+            activeDivisionSource = "available";
+            activeDivisionValue = "";
+            activeCompanySource = "available-company";
+            activeCompanyValue = "";
+            renderDivisionTransfer();
+            renderCompanyTransfer();
+        }
+
+        function applySavedAllotments(user) {
+            const divisionCodes = String(user.allowed_divisions || "").split(",").map(function (value) {
+                return value.trim();
+            }).filter(Boolean);
+            const companyCodes = String(user.allowed_companies || "").split(",").map(function (value) {
+                return value.trim();
+            }).filter(Boolean);
+
+            divisionAssigned = divisions.filter(function (item) {
+                return divisionCodes.includes(item.key);
+            });
+            companyAssigned = companies.filter(function (item) {
+                return companyCodes.includes(item.key);
+            });
+
+            activeDivisionSource = "available";
+            activeDivisionValue = "";
+            activeCompanySource = "available-company";
+            activeCompanyValue = "";
+            renderDivisionTransfer();
+            renderCompanyTransfer();
+        }
+
+        async function loadAllotmentMasters() {
+            try {
+                const [divisionRes, companyRes] = await Promise.all([
+                    fetch("api/division/get_division.php", { cache: "no-store" }),
+                    fetch("api/company/get_company.php", { cache: "no-store" })
+                ]);
+                const [divisionData, companyData] = await Promise.all([
+                    divisionRes.json(),
+                    companyRes.json()
+                ]);
+
+                divisions = normalizeTransferItems(divisionData, "div_code", "div_code");
+                companies = normalizeTransferItems(companyData, "code", "code");
+            } catch (e) {
+                divisions = [];
+                companies = [];
+            }
+
+            resetAllotmentTransfers();
+        }
+
+        async function applyRoleTemplate(roleName) {
+            const normalizedRole = String(roleName || "").toUpperCase().trim();
+            if (!normalizedRole) {
+                clearAllPermissionChecks();
+                updatePageRightsVisibility();
+                return;
+            }
+
+            clearAllPermissionChecks();
+
+            try {
+                const res = await fetch("api/role_master/get_role_permissions.php?role_name=" + encodeURIComponent(normalizedRole), { cache: "no-store" });
+                const data = await res.json();
+
+                if (data.status === "success") {
+                    const perms = data.permissions || {};
+
+                    Object.keys(perms).forEach(function (moduleName) {
+                        const perm = perms[moduleName] || {};
+
+                        if (moduleName.indexOf("PAGE:") === 0) {
+                            const pageKey = moduleName.substring(5);
+                            ["v", "a", "e", "d", "p"].forEach(function (action) {
+                                const cb = document.querySelector(`input[name="page_rights[${pageKey}][${action}]"]`);
+                                if (cb && Number(perm[action]) === 1) cb.checked = true;
+                            });
+                            return;
+                        }
+
+                        const sectionViewCb = document.querySelector(`input[name="rights[${moduleName}][v]"]`);
+                        if (sectionViewCb && Number(perm.v) === 1) sectionViewCb.checked = true;
+                    });
+                }
+            } catch (e) {
+                // keep defaults if template fails
+            }
+
+            updatePageRightsVisibility();
+        }
+
+        function resetPasswordVisibility() {
+            passwordInput.type = "password";
+            togglePasswordIcon.className = "fa-regular fa-eye-slash";
+        }
+
+        function syncPasswordToggleAccess() {
+            const canUse = currentMode === "modify" || currentMode === "add";
+            togglePasswordBtn.disabled = !canUse;
+            togglePasswordBtn.title = canUse
+                ? "Show or hide typed password"
+                : "Available in add/edit mode only";
+            if (!canUse) resetPasswordVisibility();
+        }
+
+        togglePasswordBtn.addEventListener("click", function () {
+            if (togglePasswordBtn.disabled) return;
+            const show = passwordInput.type === "password";
+            passwordInput.type = show ? "text" : "password";
+            togglePasswordIcon.className = show ? "fa-regular fa-eye" : "fa-regular fa-eye-slash";
+        });
+        passwordInput.addEventListener("input", function () {
+            clearPassError();
+        });
+        passwordInput.addEventListener("keydown", function (e) {
+            if (e.key !== "Enter") return;
+            if (currentMode !== "add" && currentMode !== "modify") return;
+            const value = (passwordInput.value || "").trim();
+            if (!value) {
+                if (currentMode === "modify") return;
+                e.preventDefault();
+                showPassError("Required");
+                passwordInput.focus();
+            }
+        });
+
+        async function loadUsers() {
+
+            const res = await fetch("api/user_master/get_users.php");
+            const data = await res.json();
+
+            if (data.status !== "success") {
+                alert(data.message || "Error loading users");
+                return;
+            }
+
+            allUsers = Array.isArray(data.users) ? data.users : [];
+            currentUserId = Number(data.current_user_id || 0);
+
+            // âœ… get admin flag properly AFTER fetch
+            loggedIsAdmin = Number(data.logged_is_admin || 0);
+
+            // âœ… apply visibility AFTER value is set
+            applyAdminVisibility();
+
+            if (!allUsers.length) {
+                userList.innerHTML = "<div class='user-row'>No records found</div>";
+                return;
+            }
+
+            activeUserId = currentUserId;
+
+            renderUsers();
+
+            const selected =
+                allUsers.find(u => Number(u.id) === currentUserId)
+                || allUsers[0];
+
+            if (selected) {
+                await fillForm(selected);
+                setMode("display");
+                setFormEditable(false);
+            }
+        }
+        function applyAdminVisibility() {
+            syncAdminOverrideUI();
+        }
+        function renderUsers() {
+
+            userList.innerHTML = allUsers.map(function (u) {
+
+                const active =
+                    Number(u.id) === Number(activeUserId)
+                        ? "active"
+                        : "";
+
+                return `
+            <div class="user-row ${active}" data-id="${u.id}">
+                ${u.name}
+            </div>
+        `;
+            }).join("");
+
+            userList.querySelectorAll(".user-row").forEach(row => {
+
+                row.addEventListener("click", function () {
+
+                    activeUserId = Number(this.dataset.id);
+
+                    const selected =
+                        allUsers.find(u => Number(u.id) === activeUserId);
+
+                    if (selected) fillForm(selected);
+
+                    renderUsers();
+                });
+
+            });
+        }
+
+        function selectRow(rowElement) {
+
+            if (!rowElement) return;
+
+            const id = Number(rowElement.dataset.id);
+
+            activeUserId = id;
+
+            const selected =
+                allUsers.find(u => Number(u.id) === id);
+
+            if (selected) fillForm(selected);
+
+            renderUsers();
+
+            const updatedRow = userList.querySelector(`.user-row[data-id="${id}"]`);
+            if (updatedRow) {
+                updatedRow.scrollIntoView({
+                    block: "nearest"
+                });
+            }
+        }
+        async function fillForm(user) {
+            const requestId = ++fillFormRequestId;
+
+            document.getElementById("user_id").value = user.id || "";
+            document.getElementById("user_name").value = user.name || "";
+            renderRoleOptions(user.role_name || "");
+
+            document.getElementById("password").value = "";
+            resetPasswordVisibility();
+            document.getElementById("is_admin").value = Number(user.is_admin) ? "1" : "0";
+            document.getElementById("is_active").value = Number(user.is_active) ? "1" : "0";
+            syncAdminOverrideUI();
+            applySavedAllotments(user);
+
+            clearAllPermissionChecks();
+
+            const res = await fetch("api/user_master/get_user_permissions.php?user_id=" + user.id);
+            const data = await res.json();
+
+            if (requestId !== fillFormRequestId) return;
+
+            if (data.status === "success") {
+                const perms = data.permissions || {};
+
+                Object.keys(perms).forEach(function (moduleName) {
+                    const perm = perms[moduleName] || {};
+
+                    if (moduleName.indexOf("PAGE:") === 0) {
+                        const pageKey = moduleName.substring(5);
+                        ["v", "a", "e", "d", "p"].forEach(function (action) {
+                            const cb = document.querySelector(`input[name="page_rights[${pageKey}][${action}]"]`);
+                            if (cb && Number(perm[action]) === 1) cb.checked = true;
+                        });
+                        return;
+                    }
+
+                    const sectionViewCb = document.querySelector(`input[name="rights[${moduleName}][v]"]`);
+                    if (sectionViewCb && Number(perm.v) === 1) sectionViewCb.checked = true;
+                });
+            }
+
+            updatePageRightsVisibility();
+        }
+
+        function buildRightsFromNavbar() {
+            sectionRightsBody.innerHTML = "";
+            pageRightsBody.innerHTML = "";
+
+            const sections = (window.PERMISSION_SECTIONS || [
+                "MASTERS",
+                "TRANSACTIONS",
+                "SCREENING",
+                "PRINTING",
+                "BILL SECTION",
+                "ACCOUNTING",
+                "UTILITIES"
+            ]);
+            const pages = (window.PAGE_PERMISSION_ITEMS || []);
+
+            sections.forEach(function (name) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+            <td style="font-weight:700;">${name}</td>
+            <td class="chk"><input type="checkbox" name="rights[${name}][v]" data-section-view="${name}"></td>
+        `;
+                sectionRightsBody.appendChild(row);
+            });
+
+            pages.forEach(function (item) {
+                const pageKey = String(item.key || "").toUpperCase();
+                const sectionName = String(item.section || "").toUpperCase();
+                const row = document.createElement("tr");
+                row.setAttribute("data-parent-section", sectionName);
+                row.innerHTML = `
+<td class="chk">
+    <input type="checkbox" class="page-select">
+</td>
+<td style="font-weight:700;">${item.label}</td>
+
+<td class="chk">
+    <input type="checkbox" class="perm-v" name="page_rights[${pageKey}][v]">
+</td>
+
+<td class="chk">
+    <input type="checkbox" class="perm-a" name="page_rights[${pageKey}][a]">
+</td>
+
+<td class="chk">
+    <input type="checkbox" class="perm-e" name="page_rights[${pageKey}][e]">
+</td>
+
+<td class="chk">
+    <input type="checkbox" class="perm-d" name="page_rights[${pageKey}][d]">
+</td>
+
+<td class="chk">
+    <input type="checkbox" class="perm-p" name="page_rights[${pageKey}][p]">
+</td>
+`;
+                pageRightsBody.appendChild(row);
+            });
+
+            sectionRightsBody.querySelectorAll("input[data-section-view]").forEach(function (cb) {
+                cb.addEventListener("change", updatePageRightsVisibility);
+            });
+
+            updatePageRightsVisibility();
+        }
+
+        function getEnabledSections() {
+            const enabled = [];
+            sectionRightsBody.querySelectorAll("input[data-section-view]").forEach(function (cb) {
+                if (cb.checked) enabled.push((cb.getAttribute("data-section-view") || "").toUpperCase());
+            });
+            return enabled;
+        }
+
+        function updatePageRightsVisibility() {
+            if (isSelectedUserAdmin()) {
+                pageRightsWrap.style.display = "none";
+                return;
+            }
+
+            const enabledSections = getEnabledSections();
+            let visibleCount = 0;
+
+            pageRightsBody.querySelectorAll("tr").forEach(function (row) {
+                const section = (row.getAttribute("data-parent-section") || "").toUpperCase();
+                const show = enabledSections.includes(section);
+                row.style.display = show ? "" : "none";
+                if (show) visibleCount += 1;
+            });
+
+            pageRightsWrap.style.display = visibleCount > 0 ? "" : "none";
+        }
+        /* =========================================================
+           ðŸ”¥ ESC FIX (OVERRIDES GLOBAL NAV)
+        ========================================================= */// capture phase â€” runs BEFORE global-nav
+
+        /* =========================================================
+           MODE CONTROL
+        ========================================================= */
+        function setMode(mode) {
+            currentMode = mode;
+            const rightPanel = document.querySelector(".right-panel");
+            rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+
+            if (mode === "add") {
+                modeTag.textContent = "Add Mode";
+                rightPanel.classList.add("add-mode");
+                setTimeout(() => userNameInput.focus(), 0);
+            }
+
+            if (mode === "modify") {
+                modeTag.textContent = "Edit Mode";
+                rightPanel.classList.add("modify-mode");
+                setTimeout(() => userNameInput.focus(), 0);
+            }
+
+            if (mode === "display") {
+                modeTag.textContent = "Display Mode";
+                rightPanel.classList.add("display-mode");
+                preEditUserId = null;
+                clearUserNameError();
+                clearPassError();
+            }
+
+            updatePageRightsVisibility();
+            syncPasswordToggleAccess();
+            syncActionMode();
+        }
+
+        function syncActionMode() {
+            const isDisplay = currentMode === "display";
+            displayButtons.style.display = isDisplay ? "flex" : "none";
+            addModeButtons.style.display = isDisplay ? "none" : "flex";
+        }
+
+        function setFormEditable(editable) {
+            userForm.querySelectorAll("input, select").forEach(f => {
+                if (f.id === "user_id") return;
+                if (f.type === "checkbox") f.disabled = !editable;
+                else if (f.tagName === "SELECT") f.disabled = !editable;
+                else f.readOnly = !editable;
+            });
+        }
+
+        /* =========================================================
+           KEYBOARD MASTER CONTROLLER
+        ========================================================= */
+
+        /* =========================================================
+           MODE ACTIONS
+        ========================================================= */
+        function startAddMode() {
+            userForm.reset();
+            document.getElementById("user_id").value = "";
+            renderRoleOptions("");
+            resetAllotmentTransfers();
+            setMode("add");
+            setFormEditable(true);
+            clearAllPermissionChecks();
+            syncAdminOverrideUI();
+            clearUserNameError();
+            clearPassError();
+        }
+        function ensureActiveSelection() {
+
+            if (!allUsers.length) return null;
+
+            let selected =
+                allUsers.find(u => Number(u.id) === Number(activeUserId));
+
+            if (!selected) {
+                selected = allUsers[0];
+                activeUserId = selected.id;
+                renderUsers();
+            }
+
+            return selected;
+        }
+        function startModifyMode() {
+
+            const selected = ensureActiveSelection();
+            if (!selected) return alert("No user selected");
+
+            preEditUserId = selected.id;
+
+            // Just use normal fillForm
+            fillForm(selected);
+
+            setMode("modify");
+            setFormEditable(true);
+
+            // clear password for security
+            document.getElementById("password").value = "";
+            resetPasswordVisibility();
+        }
+
+        function cancelEditMode() {
+
+            const selected =
+                allUsers.find(u => Number(u.id) === Number(activeUserId))
+                || allUsers[0];
+
+            if (selected) {
+                fillForm(selected).then(() => {
+                    setMode("display");
+                    setFormEditable(false);
+                    renderUsers();
+                });
+            }
+        }
+        async function saveRecord() {
+            if (checkDuplicateUserName()) {
+                userNameInput.focus();
+                userNameInput.select();
+                return;
+            }
+
+            const formData = new FormData(userForm);
+            const modeValue = String(formData.get("mode") || "").toLowerCase();
+            if (modeValue === "add") {
+                const userName = String(formData.get("user_name") || "").trim();
+                const confirmFn = window.confirmAdd || window.confirmDelete;
+                if (confirmFn) {
+                    const ok = await confirmFn(
+                        "Are you sure you want to add this user?\n\n" + userName
+                    );
+                    if (!ok) return;
+                }
+            }
+            const isAdmin = String(formData.get("is_admin") || "0") === "1";
+            if (isAdmin) {
+                formData.set("role_name", "");
+            }
+
+            const url =
+                currentMode === "add"
+                    ? "api/user_master/add_user.php"
+                    : "api/user_master/update_user.php";
+
+            const res = await fetch(url, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.status !== "success") {
+                const message = String(data.message || "");
+                if (message.toLowerCase().indexOf("password") !== -1 && message.toLowerCase().indexOf("required") !== -1) {
+                    if (currentMode === "add") {
+                        showPassError("Required");
+                        passwordInput.focus();
+                        return;
+                    }
+                }
+                alert(data.message || "Error");
+                return;
+            }
+
+            // ðŸ”¥ IMPORTANT: get correct user id
+            const savedUserId = data.user_id || formData.get("user_id");
+
+            // Save permissions before reloading users
+            const permForm = new FormData(userForm);
+            permForm.set("user_id", savedUserId);
+            if (isAdmin) {
+                permForm.set("role_name", "");
+                document.querySelectorAll("#sectionRightsBody input[type='checkbox'], #pageRightsBody input[type='checkbox']").forEach(function (cb) {
+                    permForm.delete(cb.name);
+                });
+            }
+
+            await fetch("api/user_master/save_user_permissions.php", {
+                method: "POST",
+                body: permForm
+            });
+
+            // NOW reload
+            await loadUsers();
+
+            activeUserId = Number(savedUserId);
+
+            setMode("display");
+            setFormEditable(false);
+        }
+        async function deleteRecord() {
+
+            const selected =
+                allUsers.find(u => Number(u.id) === Number(activeUserId));
+
+            if (!selected) {
+                alert("No user selected");
+                return;
+            }
+
+            if (!(await confirmDelete("Are you sure you want to delete this user?")))
+                return;
+
+            const formData = new FormData();
+            formData.append("user_id", selected.id);
+
+            const res = await fetch("api/user_master/delete_user.php", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.status !== "success") {
+                alert(data.message || "Delete failed");
+                return;
+            }
+
+            await loadUsers();
+        }
+        /* =========================================================
+           LIST NAVIGATION (ARROWS)
+        ========================================================= */
+        document.addEventListener("keydown", function (e) {
+
+            if (currentMode !== "display") return;
+
+            const rows = Array.from(
+                userList.querySelectorAll(".user-row")
+            ).filter(r => r.dataset.id);
+
+            if (!rows.length) return;
+
+            let index = rows.findIndex(
+                r => Number(r.dataset.id) === Number(activeUserId)
+            );
+
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (index < rows.length - 1) index++;
+                selectRow(rows[index]);
+            }
+
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (index > 0) index--;
+                selectRow(rows[index]);
+            }
+
+        });
+        /* =========================================
+    SMART BULK RIGHTS ENGINE
+ ========================================= */
+
+        const bulkBar = document.getElementById("bulkRightsBar");
+
+        const bulkBoxes = {
+            v: document.getElementById("bulk_v"),
+            a: document.getElementById("bulk_a"),
+            e: document.getElementById("bulk_e"),
+            d: document.getElementById("bulk_d"),
+            p: document.getElementById("bulk_p")
+        };
+
+        /* ---------- SHOW / HIDE BULK BAR ---------- */
+
+        function updateBulkBarVisibility() {
+
+            const anySelected = [...pageRightsBody.querySelectorAll(".page-select")]
+                .some(cb => cb.checked);
+
+            bulkBar.style.display = anySelected ? "flex" : "none";
+
+        }
+
+        pageRightsBody.addEventListener("change", function (e) {
+
+            if (e.target.classList.contains("page-select")) {
+
+                updateBulkBarVisibility();
+
+                /* inherit bulk permissions */
+                if (e.target.checked) {
+
+                    const row = e.target.closest("tr");
+
+                    Object.keys(bulkBoxes).forEach(type => {
+
+                        if (bulkBoxes[type].checked) {
+
+                            const perm = row.querySelector(".perm-" + type);
+
+                            if (perm) perm.checked = true;
+
+                        }
+
+                    });
+
+                }
+
+            }
+
+        });
+
+
+        /* ---------- BULK APPLY ---------- */
+
+        Object.keys(bulkBoxes).forEach(function (type) {
+
+            bulkBoxes[type].addEventListener("change", function () {
+
+                const checked = bulkBoxes[type].checked;
+
+                pageRightsBody.querySelectorAll("tr").forEach(function (row) {
+
+                    const selected = row.querySelector(".page-select");
+
+                    if (!selected || !selected.checked) return;
+
+                    const perm = row.querySelector(".perm-" + type);
+
+                    if (perm) perm.checked = checked;
+
+                });
+
+            });
+
+        });
+
+
+        /* ---------- ROW CHANGE → UPDATE BULK STATE ---------- */
+
+        pageRightsBody.addEventListener("change", function (e) {
+
+            if (!e.target.classList.contains("perm-v") &&
+                !e.target.classList.contains("perm-a") &&
+                !e.target.classList.contains("perm-e") &&
+                !e.target.classList.contains("perm-d") &&
+                !e.target.classList.contains("perm-p")) return;
+
+            const type = [...e.target.classList].find(c => c.startsWith("perm-")).split("-")[1];
+
+            const selectedRows = [...pageRightsBody.querySelectorAll("tr")]
+                .filter(row => row.querySelector(".page-select")?.checked);
+
+            if (selectedRows.length === 0) return;
+
+            const allChecked = selectedRows.every(row => {
+                return row.querySelector(".perm-" + type)?.checked;
+            });
+
+            bulkBoxes[type].checked = allChecked;
+
+        });
+        /* =========================================================
+           BUTTON CLICK HANDLERS
+        ========================================================= */
+
+        document.getElementById("addBtn").addEventListener("click", function () {
+            if (currentMode === "display") startAddMode();
+        });
+
+        document.getElementById("modifyBtn").addEventListener("click", function () {
+            if (currentMode === "display") startModifyMode();
+        });
+
+        document.getElementById("deleteBtn").addEventListener("click", function () {
+            if (currentMode === "display") deleteRecord();
+        });
+
+        document.getElementById("printBtn").addEventListener("click", function () {
+            if (currentMode === "display") window.print();
+        });
+
+        document.getElementById("exitBtn").addEventListener("click", function () {
+            if (currentMode === "display") window.location.href = "index.html";
+        });
+
+        document.getElementById("saveBtn").addEventListener("click", function () {
+            if (currentMode === "add" || currentMode === "modify") saveRecord();
+        });
+
+        document.getElementById("cancelBtn").addEventListener("click", function () {
+            if (currentMode === "add" || currentMode === "modify") cancelEditMode();
+        });
+
+        document.getElementById("moveDivisionRightBtn").addEventListener("click", function () {
+            if (currentMode !== "add" && currentMode !== "modify") return;
+            moveDivisionToSelected();
+        });
+
+        document.getElementById("moveDivisionLeftBtn").addEventListener("click", function () {
+            if (currentMode !== "add" && currentMode !== "modify") return;
+            moveDivisionToAvailable();
+        });
+
+        document.getElementById("moveCompanyRightBtn").addEventListener("click", function () {
+            if (currentMode !== "add" && currentMode !== "modify") return;
+            moveCompanyToSelected();
+        });
+
+        document.getElementById("moveCompanyLeftBtn").addEventListener("click", function () {
+            if (currentMode !== "add" && currentMode !== "modify") return;
+            moveCompanyToAvailable();
+        });
+
+        roleInput.addEventListener("change", function () {
+            if (currentMode !== "add" && currentMode !== "modify") return;
+            applyRoleTemplate(roleInput.value || "");
+        });
+
+        isAdminInput.addEventListener("change", function () {
+            if (currentMode !== "add" && currentMode !== "modify") return;
+
+            if (isSelectedUserAdmin()) {
+                clearAllPermissionChecks();
+            } else if (roleInput.value) {
+                applyRoleTemplate(roleInput.value || "");
+                return;
+            }
+
+            syncAdminOverrideUI();
+        });
+        /* =========================================================
+           INITIALIZE
+        ========================================================= */
+        setMode("display");
+        setFormEditable(false);
+
+        (async function init() {
+            buildRightsFromNavbar();
+            await loadAllotmentMasters();
+            await loadRoleOptions("");
+            await loadUsers();
+        })();
+    </script>
+</body>
+
+</html>
+

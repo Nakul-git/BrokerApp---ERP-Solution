@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Product Group Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot=(function(){const path=String(location.pathname||'').replace(/\\\\/g,'/');const lower=path.toLowerCase();const marker='/brokerapp/';const idx=lower.indexOf(marker);if(idx!==-1){return location.origin+path.slice(0,idx+marker.length);}return location.origin+'/';})();
+(async function(){
+    const res=await fetch(appRoot + "api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Product Group Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search product group...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="groupList"></div></div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="productGroupForm" autocomplete="off">
+<input type="hidden" id="product_group_id" name="product_group_id">
+<div class="form-grid">
+<div class="form-group full">
+<label for="product_group_name" class="label-with-error">
+<span>Description</span>
+<span id="groupNameError" class="error-text" style="display:none;"></span>
+</label>
+<input id="product_group_name" name="product_group_name" required data-add-first data-duplicate-check="checkDuplicateGroupName">
+</div>
+</div>
+</form>
+
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+
+<script>
+let allGroups=[];
+let activeGroupId=null;
+let currentMode="display";
+let preEditGroupId=null;
+
+const filterInput=document.getElementById("filterInput");
+const groupList=document.getElementById("groupList");
+const productGroupForm=document.getElementById("productGroupForm");
+const modeTag=document.getElementById("modeTag");
+const displayButtons=document.getElementById("displayButtons");
+const addModeButtons=document.getElementById("addModeButtons");
+const groupNameInput=document.getElementById("product_group_name");
+const groupNameError=document.getElementById("groupNameError");
+
+function esc(v){return (v??"").toString().replace(/[&<>\"']/g,function(m){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m];});}
+function groupNameOf(row){return (row?.product_group_name ?? row?.description ?? "").toString();}
+function showGroupNameError(message){groupNameInput.classList.add("field-error");groupNameError.textContent=message;groupNameError.style.display="inline";}
+function clearGroupNameError(){groupNameInput.classList.remove("field-error");groupNameError.textContent="";groupNameError.style.display="none";}
+
+function checkDuplicateGroupName(){
+    const name=groupNameInput.value.trim().toLowerCase();
+    if(!name){clearGroupNameError();return false;}
+    const currentId=Number(document.getElementById("product_group_id").value||0);
+    const duplicate=allGroups.some(function(row){
+        const sameName=groupNameOf(row).trim().toLowerCase()===name;
+        const sameId=Number(row.product_group_id)===currentId;
+        return sameName&&!sameId;
+    });
+    if(duplicate){showGroupNameError("Already exists");return true;}
+    clearGroupNameError();
+    return false;
+}
+
+function setFormEditable(editable){
+    const fields=productGroupForm.querySelectorAll("input");
+    fields.forEach(function(field){
+        if(field.id==="product_group_id")return;
+        if(!editable)field.setAttribute("tabindex","-1");
+        else field.removeAttribute("tabindex");
+        field.readOnly=!editable;
+    });
+}
+
+function syncActionMode(){
+    const isDisplay=currentMode==="display";
+    displayButtons.classList.toggle("hidden",!isDisplay);
+    addModeButtons.classList.toggle("hidden",isDisplay);
+    displayButtons.style.display=isDisplay?"flex":"none";
+    addModeButtons.style.display=isDisplay?"none":"flex";
+}
+
+function setMode(mode){
+    currentMode=mode;
+    const rightPanel=document.querySelector(".right-panel");
+    rightPanel.classList.remove("add-mode","modify-mode","display-mode");
+    if(mode==="add"){
+        modeTag.textContent="Add Mode";
+        rightPanel.classList.add("add-mode");
+        setTimeout(function(){groupNameInput.focus();},0);
+    }
+    if(mode==="modify"){
+        modeTag.textContent="Edit Mode";
+        rightPanel.classList.add("modify-mode");
+        setTimeout(function(){groupNameInput.focus();},0);
+    }
+    if(mode==="display"){
+        modeTag.textContent="Display Mode";
+        rightPanel.classList.add("display-mode");
+        preEditGroupId=null;
+        clearGroupNameError();
+        syncSelectionHighlight();
+    }
+    syncActionMode();
+}
+
+function ensureActiveGroupSelection(){
+    if(!allGroups.length){activeGroupId=null;return null;}
+    let active=allGroups.find(function(row){return Number(row.product_group_id)===Number(activeGroupId);});
+    if(!active){active=allGroups[0];activeGroupId=Number(active.product_group_id);}
+    return active;
+}
+
+function resetForm(){
+    productGroupForm.reset();
+    document.getElementById("product_group_id").value="";
+    activeGroupId=null;
+    clearGroupNameError();
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+    renderGroups();
+}
+
+function fillForm(row){
+    document.getElementById("product_group_id").value=row.product_group_id||"";
+    document.getElementById("product_group_name").value=groupNameOf(row);
+    activeGroupId=Number(row.product_group_id);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    clearGroupNameError();
+}
+
+function fillFormWithoutRender(row){
+    document.getElementById("product_group_id").value=row.product_group_id||"";
+    document.getElementById("product_group_name").value=groupNameOf(row);
+    activeGroupId=Number(row.product_group_id);
+}
+
+function renderGroups(){
+    ensureActiveGroupSelection();
+    const keyword = "";
+    const rows=allGroups.filter(function(row){return !keyword || groupNameOf(row).toLowerCase().includes(keyword);});
+    if(!rows.length){groupList.innerHTML="<div class='group-row'>No records found</div>";return;}
+    groupList.innerHTML=rows.map(function(row){
+        const active=Number(row.product_group_id)===activeGroupId?"active":"";
+        return "<div class='group-row "+active+"' data-id='"+esc(row.product_group_id)+"'>"+esc(groupNameOf(row))+"</div>";
+    }).join("");
+    groupList.querySelectorAll(".group-row").forEach(function(item){item.addEventListener("click",function(){selectRow(this);});});
+    syncSelectionHighlight();
+}
+
+function syncSelectionHighlight(){
+    const rows=Array.from(groupList.querySelectorAll(".group-row")).filter(function(r){return r.dataset.id;});
+    rows.forEach(function(r){r.classList.remove("active");});
+    const activeRow=rows.find(function(r){return Number(r.dataset.id)===Number(activeGroupId);});
+    if(activeRow){activeRow.classList.add("active");activeRow.scrollIntoView({block:"nearest"});}
+}
+
+function selectRow(row){
+    groupList.querySelectorAll(".group-row").forEach(function(r){r.classList.remove("active");});
+    row.classList.add("active");
+    const id=Number(row.dataset.id);
+    activeGroupId=id;
+    const selected=allGroups.find(function(x){return Number(x.product_group_id)===id;});
+    if(!selected)return;
+    fillFormWithoutRender(selected);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    row.scrollIntoView({block:"center"});
+}
+
+async function loadGroups(){
+    const res=await fetch("../../../api/product_group/get_product_group.php");
+    allGroups=await res.json();
+    if(allGroups.length){
+        ensureActiveGroupSelection();
+        renderGroups();
+        const selected=ensureActiveGroupSelection();
+        if(selected)fillFormWithoutRender(selected);
+        setMode("display");
+        setFormEditable(false);
+        syncActionMode();
+        document.querySelector(".list-wrap").scrollTop=0;
+    }else{
+        renderGroups();
+        setMode("display");
+        setFormEditable(false);
+        syncActionMode();
+    }
+}
+
+function customConfirm(message,callback){
+    if(window.deleteModeConfirm){window.deleteModeConfirm(message,callback);return;}
+}
+
+async function saveGroup(isModify){
+    const fd=new FormData(productGroupForm);
+    const groupId=fd.get("product_group_id");
+    const groupName=(fd.get("product_group_name")||"").trim();
+    if(checkDuplicateGroupName()){groupNameInput.focus();groupNameInput.select();return;}
+    if(!groupName){showGroupNameError("Required");setTimeout(function(){groupNameInput.focus();groupNameInput.select();},50);return;}
+    if(!isModify){
+        const confirmAdd=await window.confirmAdd("Are you sure you want to add this product group?\n\n"+groupName);
+        if(!confirmAdd)return;
+    }
+    let url="../../../api/product_group/add_product_group.php";
+    if(isModify){
+        if(!groupId){alert("Select a product group to modify");return;}
+        url="../../../api/product_group/update_product_group.php";
+    }
+    const res=await fetch(url,{method:"POST",body:fd});
+    const data=await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status==="success"){
+        await loadGroups();
+        if(isModify&&groupId){
+            const updated=allGroups.find(function(row){return Number(row.product_group_id)===Number(groupId);});
+            if(updated)fillForm(updated);
+            return;
+        }
+        resetForm();
+        setMode("add");
+        setFormEditable(true);
+        syncActionMode();
+        groupNameInput.focus();
+    }
+}
+
+async function deleteGroup(){
+    const groupId=document.getElementById("product_group_id").value;
+    if(!groupId){alert("Select a product group to delete");return;}
+    customConfirm("Delete this product group?",async function(){
+        const body=new URLSearchParams();
+        body.set("product_group_id",groupId);
+        const res=await fetch("../../../api/product_group/delete_product_group.php",{
+            method:"POST",
+            headers:{"Content-Type":"application/x-www-form-urlencoded"},
+            body:body.toString()
+        });
+        const data=await res.json();
+        if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+        if(data.status==="success"){
+            await loadGroups();
+            if(allGroups.length){
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+            }else{
+                resetForm();
+            }
+        }
+    });
+}
+
+function handleAddAction(){preEditGroupId=activeGroupId;resetForm();groupNameInput.focus();}
+function handleModifyAction(){
+    const groupId=document.getElementById("product_group_id").value;
+    if(!groupId){alert("Select a product group to modify");return;}
+    preEditGroupId=Number(groupId);
+    setMode("modify");
+    setFormEditable(true);
+    syncActionMode();
+}
+
+function cancelEditMode(){
+    if(preEditGroupId){
+        const previous=allGroups.find(function(row){return Number(row.product_group_id)===Number(preEditGroupId);});
+        if(previous){fillForm(previous);preEditGroupId=null;return;}
+    }
+    const fallback=ensureActiveGroupSelection();
+    if(fallback){fillForm(fallback);return;}
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    renderGroups();
+}
+
+function keepGroupNameActive(){
+    if(currentMode==="add"||currentMode==="modify"){
+        setTimeout(function(){if(!productGroupForm.contains(document.activeElement))groupNameInput.focus();},0);
+    }
+}
+
+groupNameInput.addEventListener("input",function(){if(currentMode==="add"||currentMode==="modify")checkDuplicateGroupName();});
+productGroupForm.addEventListener("focusin",function(e){
+    if(currentMode!=="modify")return;
+    const field=e.target;
+    if(field.tagName==="INPUT"&&field.type!=="hidden"&&!field.readOnly){setTimeout(function(){field.select();},0);}
+});
+
+document.getElementById("addBtn").addEventListener("click",handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click",handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click",deleteGroup);
+document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+document.getElementById("exitBtn").addEventListener("click",function(){window.location.href = appRoot + "index.html";});
+document.getElementById("cancelBtn").addEventListener("click",cancelEditMode);
+document.getElementById("saveBtn").addEventListener("click",function(){if(currentMode==="modify")saveGroup(true);else saveGroup(false);});
+let typeBuffer="",typeTimer=null,lastMatchedIndex=-1;
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    if(e.ctrlKey||e.altKey||e.metaKey)return;
+    const rows=Array.from(groupList.querySelectorAll(".group-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    const isSearchBox=document.activeElement.id==="filterInput";
+    if(e.key.length===1&&/^[a-zA-Z]$/.test(e.key)){
+        if(isSearchBox)return;
+        e.preventDefault();
+        const letter=e.key.toLowerCase();
+        if(typeTimer)clearTimeout(typeTimer);
+        typeBuffer+=letter;
+        typeTimer=setTimeout(function(){typeBuffer="";lastMatchedIndex=-1;},700);
+        let matchIndex=-1;
+        if(typeBuffer.length===1){
+            const startIndex=lastMatchedIndex+1;
+            matchIndex=rows.findIndex(function(row,index){return index>=startIndex&&row.textContent.trim().toLowerCase().startsWith(letter);});
+            if(matchIndex===-1)matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(letter);});
+        }else{
+            matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(typeBuffer);});
+        }
+        if(matchIndex!==-1){lastMatchedIndex=matchIndex;selectRow(rows[matchIndex]);}
+    }
+});
+
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    const rows=Array.from(groupList.querySelectorAll(".group-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    let currentIndex=rows.findIndex(function(row){return Number(row.dataset.id)===Number(activeGroupId);});
+    if(currentIndex===-1)currentIndex=0;
+    if(e.key==="ArrowDown"){e.preventDefault();if(currentIndex<rows.length-1)currentIndex++;selectRow(rows[currentIndex]);}
+    if(e.key==="ArrowUp"){e.preventDefault();if(currentIndex>0)currentIndex--;selectRow(rows[currentIndex]);}
+});
+
+document.addEventListener("mousedown",function(e){if(currentMode==="add"||currentMode==="modify"){if(!productGroupForm.contains(e.target))keepGroupNameActive();}});(function(){
+    let navMode=false,mainIndex=0,subIndex=-1;
+    const topNavItems=function(){return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function(li){return li.offsetParent!==null;});};
+    function getSubItems(li){return Array.from(li.querySelectorAll("ul li")).filter(function(item){return item.offsetParent!==null;});}
+    function highlightMain(index){const items=topNavItems();items.forEach(function(i){i.classList.remove("nav-active");});if(!items[index])return;items[index].classList.add("nav-active");if(items[index].focus)items[index].focus();}
+    function highlightSub(subItems,index){subItems.forEach(function(i){i.classList.remove("nav-sub-active");});if(!subItems[index])return;subItems[index].classList.add("nav-sub-active");subItems[index].scrollIntoView({block:"nearest"});}
+    function resetNav(){navMode=false;mainIndex=0;subIndex=-1;document.querySelectorAll(".nav-active").forEach(function(el){el.classList.remove("nav-active");});document.querySelectorAll(".nav-sub-active").forEach(function(el){el.classList.remove("nav-sub-active");});}
+    document.addEventListener("keydown",function(e){
+        if(e.key==="Alt"&&!navMode){e.preventDefault();navMode=true;mainIndex=0;subIndex=-1;highlightMain(mainIndex);return;}
+        if(!navMode)return;
+        const items=topNavItems();
+        const currentMain=items[mainIndex];
+        const subItems=currentMain?getSubItems(currentMain):[];
+        if(e.key==="Escape"){e.preventDefault();resetNav();return;}
+        if(e.key==="ArrowRight"){e.preventDefault();mainIndex=(mainIndex+1)%items.length;subIndex=-1;highlightMain(mainIndex);}
+        if(e.key==="ArrowLeft"){e.preventDefault();mainIndex=(mainIndex-1+items.length)%items.length;subIndex=-1;highlightMain(mainIndex);}
+        if(e.key==="ArrowDown"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=0;else subIndex=(subIndex+1)%subItems.length;highlightSub(subItems,subIndex);}
+        if(e.key==="ArrowUp"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=subItems.length-1;else subIndex=(subIndex-1+subItems.length)%subItems.length;highlightSub(subItems,subIndex);}
+        if(e.key==="Enter"){e.preventDefault();if(subIndex>=0&&subItems[subIndex])subItems[subIndex].click();else if(currentMain)currentMain.click();resetNav();}
+    });
+})();
+
+setMode("display");
+setFormEditable(false);
+syncActionMode();
+(async function init(){
+    await loadGroups();
+    if(allGroups.length){
+        const first=ensureActiveGroupSelection();
+        if(first)fillFormWithoutRender(first);
+        renderGroups();
+    }
+})();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

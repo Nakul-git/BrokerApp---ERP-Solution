@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Company Group Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot=(function(){const path=String(location.pathname||'').replace(/\\\\/g,'/');const lower=path.toLowerCase();const marker='/brokerapp/';const idx=lower.indexOf(marker);if(idx!==-1){return location.origin+path.slice(0,idx+marker.length);}return location.origin+'/';})();
+(async function(){
+    const res=await fetch(appRoot + "api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Company Group Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search company group...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="groupList"></div></div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="groupForm" autocomplete="off">
+<input type="hidden" id="company_group_id" name="company_group_id">
+<input type="hidden" id="station" name="station">
+<input type="hidden" id="applicable_divisions" name="applicable_divisions">
+<div class="form-grid">
+    <div class="left-stack">
+        <div class="form-group"><label for="acc_name" class="label-with-error"><span>Acc. Name</span><span id="accNameError" class="error-text" style="display:none;"></span></label><input id="acc_name" name="acc_name" required data-add-first data-duplicate-check="checkDuplicateAccName"></div>
+        <div class="pair-row">
+            <div class="form-group">
+                <label for="stationInput">Station</label>
+                <div class="dropdown-wrapper">
+                    <input id="stationInput" autocomplete="off" placeholder="Select station" data-enter-next>
+                    <div id="stationDropdown" class="dropdown-list"></div>
+                </div>
+            </div>
+            <div class="form-group"><label for="state_name">State</label><input id="state_name" name="state_name" class="read-only-input" readonly></div>
+        </div>
+        <div class="pair-row">
+            <div class="form-group"><label for="pin_code">Pin Code</label><input id="pin_code" name="pin_code"></div>
+            <div class="form-group"><label for="phone_no">Phone</label><input id="phone_no" name="phone_no"></div>
+        </div>
+        <div class="pair-row">
+            <div class="form-group"><label for="contact_person">Contact Person</label><input id="contact_person" name="contact_person"></div>
+            <div class="form-group"><label for="pan_no">Pan No.</label><input id="pan_no" name="pan_no"></div>
+        </div>
+    </div>
+    <div class="right-stack">
+        <div class="form-group address-row">
+            <label for="address1">Address</label>
+            <div class="address-grid">
+                <input id="address1" name="address1">
+                <input id="address2" name="address2">
+            </div>
+        </div>
+        <div class="form-group address-row">
+            <label>&nbsp;</label>
+            <div class="address-grid">
+                <input id="address3" name="address3">
+                <input id="address4" name="address4">
+            </div>
+        </div>
+        <div class="division-row">
+            <div class="form-group division-group">
+                <label>Applicable Divisions</label>
+                <div class="division-box">
+                    <div class="division-head">DivName</div>
+                    <div id="divisionOptions" class="division-list"></div>
+                </div>
+            </div>
+            <div class="form-group active-group">
+                <label>Active</label>
+                <div class="check-row"><label><input id="is_active" name="is_active" type="checkbox" checked></label></div>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+
+<script>
+let allGroups=[];
+let allCities=[];
+let allDivisions=[];
+let activeGroupId=null;
+let preEditGroupId=null;
+let currentMode="display";
+let stationIndex=-1;
+
+const filterInput=document.getElementById("filterInput");
+const groupList=document.getElementById("groupList");
+const groupForm=document.getElementById("groupForm");
+const modeTag=document.getElementById("modeTag");
+const displayButtons=document.getElementById("displayButtons");
+const addModeButtons=document.getElementById("addModeButtons");
+const accNameInput=document.getElementById("acc_name");
+const accNameError=document.getElementById("accNameError");
+const stationInput=document.getElementById("stationInput");
+const stationHidden=document.getElementById("station");
+const stateInput=document.getElementById("state_name");
+const stationDropdown=document.getElementById("stationDropdown");
+const applicableDivisionsInput=document.getElementById("applicable_divisions");
+const divisionOptions=document.getElementById("divisionOptions");
+
+function esc(v){return (v??"").toString().replace(/[&<>\"']/g,function(m){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m];});}
+function accNameOf(g){return (g?.acc_name??"").toString();}
+function showAccNameError(message){accNameInput.classList.add("field-error");accNameError.textContent=message;accNameError.style.display="inline";}
+function clearAccNameError(){accNameInput.classList.remove("field-error");accNameError.textContent="";accNameError.style.display="none";}
+
+function checkDuplicateAccName(){
+    const name=accNameInput.value.trim().toLowerCase();
+    if(!name){clearAccNameError();return false;}
+    const currentId=Number(document.getElementById("company_group_id").value||0);
+    const duplicate=allGroups.some(function(g){
+        const sameName=accNameOf(g).trim().toLowerCase()===name;
+        const sameId=Number(g.company_group_id)===currentId;
+        return sameName&&!sameId;
+    });
+    if(duplicate){showAccNameError("Already exists");return true;}
+    clearAccNameError();
+    return false;
+}
+
+function setMode(mode){
+    currentMode=mode;
+    const rightPanel=document.querySelector(".right-panel");
+    rightPanel.classList.remove("add-mode","modify-mode","display-mode");
+    if(mode==="add"){modeTag.textContent="Add Mode";rightPanel.classList.add("add-mode");setTimeout(function(){accNameInput.focus();},0);}
+    if(mode==="modify"){modeTag.textContent="Edit Mode";rightPanel.classList.add("modify-mode");setTimeout(function(){accNameInput.focus();},0);}
+    if(mode==="display"){modeTag.textContent="Display Mode";rightPanel.classList.add("display-mode");preEditGroupId=null;clearAccNameError();syncSelectionHighlight();}
+    closeStationDropdown();
+    syncActionMode();
+}
+
+function syncActionMode(){
+    const isDisplay=currentMode==="display";
+    displayButtons.classList.toggle("hidden",!isDisplay);
+    addModeButtons.classList.toggle("hidden",isDisplay);
+    displayButtons.style.display=isDisplay?"flex":"none";
+    addModeButtons.style.display=isDisplay?"none":"flex";
+}
+
+function setFormEditable(editable){
+    const fields=groupForm.querySelectorAll("input");
+    fields.forEach(function(field){
+        if(field.id==="company_group_id"||field.id==="station"||field.id==="applicable_divisions")return;
+        if(field.id==="state_name"){field.readOnly=true;return;}
+        if(field.type==="checkbox"){
+            field.disabled=!editable;
+            if(!editable)field.setAttribute("tabindex","-1");else field.removeAttribute("tabindex");
+            return;
+        }
+        if(!editable)field.setAttribute("tabindex","-1");else field.removeAttribute("tabindex");
+        field.readOnly=!editable;
+    });
+    stationInput.readOnly=!editable;
+    stationInput.tabIndex=editable?0:-1;
+    divisionOptions.querySelectorAll("input[type='checkbox']").forEach(function(cb){
+        cb.disabled=!editable;
+        cb.tabIndex=editable?0:-1;
+    });
+}
+
+function parseStoredDivisionValues(raw){
+    if(!raw)return [];
+    return raw.split(",").map(function(v){return v.trim();}).filter(Boolean);
+}
+
+function getSelectedDivisionIds(){
+    return Array.from(divisionOptions.querySelectorAll("input[type='checkbox']:checked")).map(function(cb){return cb.value;});
+}
+
+function syncApplicableDivisionsHidden(){applicableDivisionsInput.value=getSelectedDivisionIds().join(",");}
+
+function renderDivisionOptions(selectedValues){
+    const selectedSet=new Set((selectedValues||[]).map(function(v){return v.toString().toLowerCase();}));
+    if(!allDivisions.length){
+        divisionOptions.innerHTML="<div style='font-size:14px;font-family:\"Times New Roman\",serif;'>No divisions found</div>";
+        applicableDivisionsInput.value="";
+        return;
+    }
+    divisionOptions.innerHTML=allDivisions.map(function(d){
+        const id=String(d.division_id??"");
+        const name=String(d.div_name??"");
+        const checked=selectedSet.has(id.toLowerCase())||selectedSet.has(name.toLowerCase())?"checked":"";
+        return "<label class='division-option'><input type='checkbox' value='"+esc(id)+"' data-name='"+esc(name)+"' "+checked+"> "+esc(name)+"</label>";
+    }).join("");
+    divisionOptions.querySelectorAll("input[type='checkbox']").forEach(function(cb){cb.addEventListener("change",syncApplicableDivisionsHidden);});
+    syncApplicableDivisionsHidden();
+}
+function setField(id,v){const el=document.getElementById(id);if(el)el.value=v??"";}
+function setCheck(id,v){const el=document.getElementById(id);if(el)el.checked=Number(v)===1;}
+
+function fillForm(g){
+    setField("company_group_id",g.company_group_id);
+    setField("acc_name",g.acc_name);
+    setField("address1",g.address1);
+    setField("address2",g.address2);
+    setField("address3",g.address3);
+    setField("address4",g.address4);
+    stationInput.value=g.station||"";
+    stationHidden.value=g.station||"";
+    setField("state_name",g.state_name);
+    setField("pin_code",g.pin_code);
+    setField("phone_no",g.phone_no);
+    setField("contact_person",g.contact_person);
+    setField("pan_no",g.pan_no);
+    setCheck("is_active",g.is_active);
+    renderDivisionOptions(parseStoredDivisionValues(g.applicable_divisions||""));
+    activeGroupId=Number(g.company_group_id);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    clearAccNameError();
+}
+
+function fillFormWithoutRender(g){
+    setField("company_group_id",g.company_group_id);
+    setField("acc_name",g.acc_name);
+    setField("address1",g.address1);
+    setField("address2",g.address2);
+    setField("address3",g.address3);
+    setField("address4",g.address4);
+    stationInput.value=g.station||"";
+    stationHidden.value=g.station||"";
+    setField("state_name",g.state_name);
+    setField("pin_code",g.pin_code);
+    setField("phone_no",g.phone_no);
+    setField("contact_person",g.contact_person);
+    setField("pan_no",g.pan_no);
+    setCheck("is_active",g.is_active);
+    renderDivisionOptions(parseStoredDivisionValues(g.applicable_divisions||""));
+    activeGroupId=Number(g.company_group_id);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    clearAccNameError();
+}
+
+function ensureActiveGroupSelection(){
+    if(!allGroups.length){activeGroupId=null;return null;}
+    let active=allGroups.find(function(g){return Number(g.company_group_id)===Number(activeGroupId);});
+    if(!active){active=allGroups[0];activeGroupId=Number(active.company_group_id);}
+    return active;
+}
+
+function renderGroups(){
+    ensureActiveGroupSelection();
+    const keyword = "";
+    const rows=allGroups.filter(function(g){
+        const name=(g.acc_name||"").toLowerCase();
+        const station=(g.station||"").toLowerCase();
+        return !keyword||name.includes(keyword)||station.includes(keyword);
+    });
+    if(!rows.length){groupList.innerHTML="<div class='group-row'>No records found</div>";return;}
+    groupList.innerHTML=rows.map(function(g){
+        const active=Number(g.company_group_id)===activeGroupId?"active":"";
+        return "<div class='group-row "+active+"' data-id='"+esc(g.company_group_id)+"'>"+esc(accNameOf(g))+"</div>";
+    }).join("");
+    groupList.querySelectorAll(".group-row").forEach(function(row){row.addEventListener("click",function(){selectRow(this);});});
+    syncSelectionHighlight();
+}
+
+function syncSelectionHighlight(){
+    const rows=Array.from(groupList.querySelectorAll(".group-row")).filter(function(r){return r.dataset.id;});
+    rows.forEach(function(r){r.classList.remove("active");});
+    const activeRow=rows.find(function(r){return Number(r.dataset.id)===Number(activeGroupId);});
+    if(activeRow){activeRow.classList.add("active");activeRow.scrollIntoView({block:"nearest"});}
+}
+
+function selectRow(row){
+    groupList.querySelectorAll(".group-row").forEach(function(r){r.classList.remove("active");});
+    row.classList.add("active");
+    const id=Number(row.dataset.id);
+    activeGroupId=id;
+    const g=allGroups.find(function(x){return Number(x.company_group_id)===id;});
+    if(!g)return;
+    fillFormWithoutRender(g);
+    row.scrollIntoView({block:"center"});
+}
+
+function resetForm(){
+    groupForm.reset();
+    setField("company_group_id","");
+    setField("station","");
+    stationInput.value="";
+    setField("state_name","");
+    setCheck("is_active",1);
+    activeGroupId=null;
+    clearAccNameError();
+    renderDivisionOptions([]);
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+    renderGroups();
+}
+
+function filterCities(term){
+    const q=(term||"").trim().toLowerCase();
+    return allCities.filter(function(c){return (c.city_name||"").toLowerCase().includes(q);});
+}
+
+function selectCity(city){
+    stationInput.value=city.city_name||"";
+    stationHidden.value=city.city_name||"";
+    stateInput.value=city.state_name||"";
+    stationDropdown.style.display="none";
+    stationIndex=-1;
+}
+
+function renderStationDropdown(cities){
+    stationDropdown.innerHTML="";
+    if(!cities.length){stationDropdown.style.display="none";return;}
+    cities.forEach(function(city,idx){
+        const row=document.createElement("div");
+        row.textContent=(city.city_name||"")+" ("+(city.state_name||"")+")";
+        if(idx===stationIndex)row.classList.add("active");
+        row.addEventListener("click",function(){selectCity(city);});
+        stationDropdown.appendChild(row);
+    });
+    stationDropdown.style.display="block";
+}
+
+function closeStationDropdown(){
+    stationDropdown.style.display="none";
+    stationIndex=-1;
+}
+
+function openStationDropdown(){
+    if(currentMode!=="add"&&currentMode!=="modify")return;
+    if(!allCities.length){
+        loadCities().then(function(){stationIndex=-1;renderStationDropdown(allCities);});
+        return;
+    }
+    stationIndex=-1;
+    renderStationDropdown(allCities);
+}
+
+async function loadDivisions(){
+    const res=await fetch("../../../api/division/get_division.php");
+    allDivisions=await res.json();
+    renderDivisionOptions(parseStoredDivisionValues(applicableDivisionsInput.value||""));
+}
+
+async function loadCities(){
+    const res=await fetch("../../../api/area/get_cities.php");
+    allCities=await res.json();
+}
+
+async function loadGroups(){
+    const res=await fetch("../../../api/company_group/get_company_group.php");
+    allGroups=await res.json();
+    if(allGroups.length){
+        ensureActiveGroupSelection();
+        renderGroups();
+        const selected=ensureActiveGroupSelection();
+        if(selected)fillFormWithoutRender(selected);
+        document.querySelector(".list-wrap").scrollTop=0;
+    }else{
+        renderGroups();
+        setMode("display");
+        setFormEditable(false);
+        syncActionMode();
+    }
+}
+
+async function saveGroup(isModify){
+    if(checkDuplicateAccName()){accNameInput.focus();accNameInput.select();return;}
+    const groupId=document.getElementById("company_group_id").value;
+    const accName=(accNameInput.value||"").trim();
+    if(!accName){showAccNameError("Required");setTimeout(function(){accNameInput.focus();accNameInput.select();},50);return;}
+
+    if(stationInput.value.trim()&&!stationHidden.value){
+        const city=allCities.find(function(c){return (c.city_name||"").toLowerCase()===stationInput.value.trim().toLowerCase();});
+        if(city)selectCity(city);
+    }
+
+    syncApplicableDivisionsHidden();
+
+    let url="../../../api/company_group/add_company_group.php";
+    if(isModify){
+        if(!groupId){alert("Select a company group to modify");return;}
+        url="../../../api/company_group/update_company_group.php";
+    }else{
+        const c=await window.confirmAdd("Are you sure you want to add this company group?\n\n"+accName);
+        if(!c)return;
+    }
+
+    const fd=new FormData(groupForm);
+    const res=await fetch(url,{method:"POST",body:fd});
+    const data=await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status==="success"){
+        await loadGroups();
+        if(isModify&&groupId){
+            const updated=allGroups.find(function(g){return Number(g.company_group_id)===Number(groupId);});
+            if(updated)fillForm(updated);
+            return;
+        }
+        resetForm();
+        setMode("add");
+        setFormEditable(true);
+        syncActionMode();
+        accNameInput.focus();
+    }
+}
+async function deleteGroup(){
+    const groupId=document.getElementById("company_group_id").value;
+    if(!groupId){alert("Select a company group to delete");return;}
+    const yes=await confirmDelete("Delete this company group?");
+    if(!yes)return;
+    const body=new URLSearchParams();
+    body.set("company_group_id",groupId);
+    const res=await fetch("../../../api/company_group/delete_company_group.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:body.toString()
+    });
+    const data=await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status==="success"){
+        await loadGroups();
+        if(allGroups.length){setMode("display");setFormEditable(false);syncActionMode();}
+        else resetForm();
+    }
+}
+
+function handleAddAction(){preEditGroupId=activeGroupId;resetForm();accNameInput.focus();}
+function handleModifyAction(){
+    const groupId=document.getElementById("company_group_id").value;
+    if(!groupId){alert("Select a company group to modify");return;}
+    preEditGroupId=Number(groupId);
+    setMode("modify");
+    setFormEditable(true);
+    syncActionMode();
+}
+function cancelEditMode(){
+    if(preEditGroupId){
+        const prev=allGroups.find(function(g){return Number(g.company_group_id)===Number(preEditGroupId);});
+        if(prev){fillForm(prev);preEditGroupId=null;return;}
+    }
+    const fallback=ensureActiveGroupSelection();
+    if(fallback){fillForm(fallback);return;}
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    renderGroups();
+}
+
+accNameInput.addEventListener("input",function(){if(currentMode==="add"||currentMode==="modify")checkDuplicateAccName();});
+stationInput.addEventListener("focus",function(){if(currentMode==="add"||currentMode==="modify"){stationIndex=-1;renderStationDropdown(allCities);}});
+stationInput.addEventListener("input",function(){stationHidden.value="";stateInput.value="";const term=this.value.toLowerCase();const filtered=allCities.filter(function(c){return (c.city_name||"").toLowerCase().includes(term);});renderStationDropdown(filtered);if(filtered.length===1){stationIndex=0;const items=Array.from(stationDropdown.children);if(items.length){items.forEach(function(item,i){item.classList.toggle("active",i===stationIndex);});}}else{stationIndex=-1;}});
+stationInput.addEventListener("keydown",function(e){const items=Array.from(stationDropdown.children);if(stationDropdown.style.display!=="block"||!items.length)return;if(e.key==="ArrowDown"){e.preventDefault();stationIndex=(stationIndex+1)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===stationIndex);});items[stationIndex].scrollIntoView({block:"nearest"});}else if(e.key==="ArrowUp"){e.preventDefault();stationIndex=(stationIndex-1+items.length)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===stationIndex);});items[stationIndex].scrollIntoView({block:"nearest"});}else if(e.key==="Enter"){e.preventDefault();if(stationIndex>=0){const text=items[stationIndex].textContent||"";const cityName=text.split(" (")[0];const city=allCities.find(function(c){return (c.city_name||"")===cityName;});if(city)selectCity(city);}}else if(e.key==="Escape"){closeStationDropdown();}});
+stationInput.addEventListener("blur",function(){setTimeout(closeStationDropdown,150);});
+document.addEventListener("click",function(e){if(!e.target.closest(".dropdown-wrapper")){closeStationDropdown();}});
+document.getElementById("addBtn").addEventListener("click",handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click",handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click",deleteGroup);
+document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+document.getElementById("exitBtn").addEventListener("click",function(){window.location.href = appRoot + "index.html";});
+document.getElementById("cancelBtn").addEventListener("click",cancelEditMode);
+document.getElementById("saveBtn").addEventListener("click",function(){if(currentMode==="modify")saveGroup(true);else saveGroup(false);});let typeBuffer="",typeTimer=null,lastMatchedIndex=-1;
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    if(e.ctrlKey||e.altKey||e.metaKey)return;
+    const rows=Array.from(groupList.querySelectorAll(".group-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    const isSearchBox=document.activeElement.id==="filterInput";
+    if(e.key.length===1&&/^[a-zA-Z]$/.test(e.key)){
+        if(isSearchBox)return;
+        e.preventDefault();
+        const letter=e.key.toLowerCase();
+        if(typeTimer)clearTimeout(typeTimer);
+        typeBuffer+=letter;
+        typeTimer=setTimeout(function(){typeBuffer="";lastMatchedIndex=-1;},700);
+        let matchIndex=-1;
+        if(typeBuffer.length===1){
+            const startIndex=lastMatchedIndex+1;
+            matchIndex=rows.findIndex(function(row,index){return index>=startIndex&&row.textContent.trim().toLowerCase().startsWith(letter);});
+            if(matchIndex===-1)matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(letter);});
+        }else{
+            matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(typeBuffer);});
+        }
+        if(matchIndex!==-1){lastMatchedIndex=matchIndex;selectRow(rows[matchIndex]);}
+    }
+});
+
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    const rows=Array.from(groupList.querySelectorAll(".group-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    let currentIndex=rows.findIndex(function(row){return Number(row.dataset.id)===Number(activeGroupId);});
+    if(currentIndex===-1)currentIndex=0;
+    if(e.key==="ArrowDown"){e.preventDefault();if(currentIndex<rows.length-1)currentIndex++;selectRow(rows[currentIndex]);}
+    if(e.key==="ArrowUp"){e.preventDefault();if(currentIndex>0)currentIndex--;selectRow(rows[currentIndex]);}
+});(function(){let navMode=false,mainIndex=0,subIndex=-1;const topNavItems=function(){return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function(li){return li.offsetParent!==null;});};function getSubItems(li){return Array.from(li.querySelectorAll("ul li")).filter(function(item){return item.offsetParent!==null;});}function highlightMain(index){const items=topNavItems();items.forEach(function(i){i.classList.remove("nav-active");});if(!items[index])return;items[index].classList.add("nav-active");if(items[index].focus)items[index].focus();}function highlightSub(subItems,index){subItems.forEach(function(i){i.classList.remove("nav-sub-active");});if(!subItems[index])return;subItems[index].classList.add("nav-sub-active");subItems[index].scrollIntoView({block:"nearest"});}function resetNav(){navMode=false;mainIndex=0;subIndex=-1;document.querySelectorAll(".nav-active").forEach(function(el){el.classList.remove("nav-active");});document.querySelectorAll(".nav-sub-active").forEach(function(el){el.classList.remove("nav-sub-active");});}document.addEventListener("keydown",function(e){if(e.key==="Alt"&&!navMode){e.preventDefault();navMode=true;mainIndex=0;subIndex=-1;highlightMain(mainIndex);return;}if(!navMode)return;const items=topNavItems();const currentMain=items[mainIndex];const subItems=currentMain?getSubItems(currentMain):[];if(e.key==="Escape"){e.preventDefault();resetNav();return;}if(e.key==="ArrowRight"){e.preventDefault();mainIndex=(mainIndex+1)%items.length;subIndex=-1;highlightMain(mainIndex);}if(e.key==="ArrowLeft"){e.preventDefault();mainIndex=(mainIndex-1+items.length)%items.length;subIndex=-1;highlightMain(mainIndex);}if(e.key==="ArrowDown"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=0;else subIndex=(subIndex+1)%subItems.length;highlightSub(subItems,subIndex);}if(e.key==="ArrowUp"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=subItems.length-1;else subIndex=(subIndex-1+subItems.length)%subItems.length;highlightSub(subItems,subIndex);}if(e.key==="Enter"){e.preventDefault();if(subIndex>=0&&subItems[subIndex])subItems[subIndex].click();else if(currentMain)currentMain.click();resetNav();}});})();
+
+setMode("display");
+setFormEditable(false);
+syncActionMode();
+(async function init(){
+    await loadDivisions();
+    await loadCities();
+    await loadGroups();
+    if(allGroups.length){
+        const first=ensureActiveGroupSelection();
+        if(first)fillFormWithoutRender(first);
+        renderGroups();
+    }
+})();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

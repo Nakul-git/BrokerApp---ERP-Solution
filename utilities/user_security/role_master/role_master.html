@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<base href="../../../">
+<title>Role Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="utilities/user_security/role_master/style.css?v=8">
+<link rel="stylesheet" href="selection-mode.css?v=1">
+<link rel="stylesheet" href="add-mode.css?v=1">
+<style>
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow:hidden;height:100%}
+.content{padding:8px 10px 10px;height:calc(100vh - 116px);overflow:hidden}
+.feature-box{width:100%;max-width:none;height:100%;margin:0 auto;padding:8px;border:1px solid #d8d8d8;background:#efefef;overflow:hidden}
+.page-title{margin:0 0 12px;text-align:center;font-size:28px;font-family:"Times New Roman",serif;font-weight:400;color:#0b8d2f;line-height:1}
+.master-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:8px;align-items:start;height:calc(100% - 52px);min-height:0}
+.left-panel,.right-panel{background:#efefef;border:1px solid #d0d0d0;padding:10px;min-width:0;height:100%;overflow:hidden}
+.right-panel{display:flex;flex-direction:column}
+.left-panel .label{font-size:18px;font-family:"Times New Roman",serif;color:#2f2f2f;margin-bottom:4px}
+#filterInput{width:100%;max-width:100%;height:34px;padding:6px 8px;border:2px solid #969696;border-radius:0;background:#fff;font-size:14px;font-family:"Times New Roman",serif;color:#000}
+#filterInput:focus{outline:none;background:#1fdde0;border-color:#00cfd6}
+.list-wrap{margin-top:8px;border:2px solid #18c7cf;background:#22e2e8;height:calc(100% - 64px);max-height:none;overflow-y:auto;overflow-x:hidden}
+.list-head{position:sticky;top:0;z-index:1;padding:6px 8px;font-size:14px;font-family:"Times New Roman",serif;font-weight:700;color:#000;border-bottom:1px solid rgba(0,0,0,.2);background:#fff}
+.role-row{padding:4px 8px;font-size:14px;line-height:1.2;font-family:"Times New Roman",serif;font-weight:700;color:#000;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;scroll-margin-top:30px}
+.role-row:hover{background:rgba(0,0,0,.08)}
+.role-row.active{background:#0074d9;color:#fff}
+.mode-tag{display:inline-block;align-self:flex-start;margin-bottom:10px;padding:2px 8px;border:1px solid #c5b800;background:#ffef1c;color:#000;font-size:16px;font-family:"Times New Roman",serif;font-weight:700}
+#roleForm{border:1px solid #d7d7d7;padding:8px;background:#efefef;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.form-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 12px;align-content:start}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1 / -1}
+.form-group label{font-size:16px;line-height:1;font-family:"Times New Roman",serif;color:#2d2d2d}
+.form-group input,.form-group select{width:100%;max-width:100%;height:32px;padding:4px 8px;border:2px solid #969696;border-radius:0;background:#fff;font-size:14px;font-family:"Times New Roman",serif;color:#000}
+.right-panel.add-mode input:focus,.right-panel.add-mode select:focus,.right-panel.modify-mode input:focus,.right-panel.modify-mode select:focus{outline:none;background:#1fdde0;border-color:#00cfd6}
+.right-panel.display-mode input,.right-panel.display-mode select{background:#e6e6e6;border-color:#c2c2c2;color:#444;cursor:default;pointer-events:none;user-select:none}
+.section-title{margin:8px 0 4px;font-size:16px;font-family:"Times New Roman",serif;color:#1f1f1f}
+.allot-box{border:1px solid #bcbcbc;background:#f0f0f0;min-height:140px;display:flex;flex-direction:column;overflow:hidden}
+.allot-box .head{padding:5px 8px;background:#fff;border-bottom:1px solid #cfcfcf;font-size:14px;font-family:"Times New Roman",serif;font-weight:700}
+.allot-scroll{overflow:auto;flex:1;padding:6px}
+.rights-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.rights-table th,.rights-table td{border:1px solid #b8b8b8;padding:3px 6px;font-size:14px;font-family:"Times New Roman",serif;text-align:left;background:#fff}
+.rights-table th{background:#f4f4f4;font-weight:700}
+.rights-table th.chk,.rights-table td.chk{width:34px;text-align:center;padding:2px}
+.rights-table input[type="checkbox"]{width:14px;height:14px;cursor:pointer}
+.action-row{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.action-row.hidden{display:none}
+.btn{min-width:104px;padding:4px 10px;height:32px;border-radius:2px;border:2px solid #efc9f0;background:#ea7ce8;color:#000;font-size:14px;font-family:"Times New Roman",serif;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.8);display:flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(.98)}
+.form-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px;background:#efefef;border:1px solid #d7d7d7;border-radius:4px}
+</style>
+<script>
+(async function(){
+    const res=await fetch("api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace("login.html");
+})();
+</script>
+<script src="permissions-catalog.js"></script>
+<script src="global-nav.js" defer></script>
+<script src="global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="add-mode.js" defer></script>
+<script src="selection-mode.js" defer></script>
+<script src="delete-mode.js" defer data-delete-mode="1"></script>
+<script src="edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Role Master</h2>
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search role...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="roleList"></div></div>
+</div>
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="roleForm" autocomplete="off">
+<input type="hidden" id="role_id" name="role_id">
+<input type="hidden" id="mode_field" name="mode" value="add">
+<div class="form-scroll">
+<div class="form-grid">
+<div class="form-group">
+<label for="role_name" class="label-with-error"><span>Role Name</span><span id="roleNameError" class="error-text" style="display:none;"></span></label>
+<input id="role_name" name="role_name" required data-add-first data-duplicate-check="checkDuplicateRoleName">
+</div>
+<div class="form-group">
+<label for="is_active">Active</label>
+<select id="is_active" name="is_active"><option value="1">Y</option><option value="0">N</option></select>
+</div>
+<div class="form-group full">
+<label for="description">Description</label>
+<input id="description" name="description">
+</div>
+</div>
+<div class="section-title">Rights Allotment</div>
+<div class="allot-box" style="min-height:130px;">
+<div class="head">Section Rights (View Only)</div>
+<div class="allot-scroll"><table class="rights-table"><thead><tr><th>Section</th><th class="chk">V</th></tr></thead><tbody id="sectionRightsBody"></tbody></table></div>
+</div>
+<div class="allot-box" id="pageRightsWrap" style="min-height:200px;margin-top:8px;">
+<div class="head" style="display:flex;align-items:center;justify-content:space-between;">
+<span>Page Rights (Visible Sections)</span>
+
+<div id="bulkRightsBar" style="display:none;gap:10px;align-items:center;">
+<label>V <input type="checkbox" id="bulk_v"></label>
+<label>A <input type="checkbox" id="bulk_a"></label>
+<label>E <input type="checkbox" id="bulk_e"></label>
+<label>D <input type="checkbox" id="bulk_d"></label>
+<label>P <input type="checkbox" id="bulk_p"></label>
+</div>
+
+</div>
+
+<div class="allot-scroll">
+<table class="rights-table">
+<thead>
+<tr>
+<th class="chk"></th>
+<th>Page</th>
+<th class="chk">V</th>
+<th class="chk">A</th>
+<th class="chk">E</th>
+<th class="chk">D</th>
+<th class="chk">P</th>
+</tr>
+</thead><tbody id="pageRightsBody"></tbody></table></div>
+</div>
+</div>
+</form>
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+</div>
+<script>
+let allRoles = [];
+let activeRoleId = null;
+let currentMode = "display";
+
+const filterInput = document.getElementById("filterInput");
+const roleList = document.getElementById("roleList");
+const roleForm = document.getElementById("roleForm");
+const sectionRightsBody = document.getElementById("sectionRightsBody");
+const pageRightsBody = document.getElementById("pageRightsBody");
+const pageRightsWrap = document.getElementById("pageRightsWrap");
+const modeTag = document.getElementById("modeTag");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const roleNameInput = document.getElementById("role_name");
+const roleNameError = document.getElementById("roleNameError");
+
+function showRoleNameError(message) {
+    roleNameInput.classList.add("field-error");
+    roleNameError.textContent = message;
+    roleNameError.style.display = "inline";
+}
+
+function clearRoleNameError() {
+    roleNameInput.classList.remove("field-error");
+    roleNameError.textContent = "";
+    roleNameError.style.display = "none";
+}
+
+function checkDuplicateRoleName() {
+    if (currentMode !== "add" && currentMode !== "modify") {
+        clearRoleNameError();
+        return false;
+    }
+
+    const value = (roleNameInput.value || "").trim().toLowerCase();
+    const currentId = document.getElementById("role_id").value;
+    if (!value) { clearRoleNameError(); return false; }
+
+    const duplicate = allRoles.find(function (r) {
+        return String(r.role_name || "").toLowerCase() === value
+            && String(r.id) !== String(currentId);
+    });
+
+    if (duplicate) {
+        showRoleNameError("Already exists");
+        return true;
+    }
+
+    clearRoleNameError();
+    return false;
+}
+
+function buildRightsFromCatalog() {
+    sectionRightsBody.innerHTML = "";
+    pageRightsBody.innerHTML = "";
+
+    (window.PERMISSION_SECTIONS || []).forEach(function (name) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td style="font-weight:700;">${name}</td><td class="chk"><input type="checkbox" name="rights[${name}][v]" data-section-view="${name}"></td>`;
+        sectionRightsBody.appendChild(tr);
+    });
+
+    (window.PAGE_PERMISSION_ITEMS || []).forEach(function (item) {
+        const key = String(item.key || "").toUpperCase();
+        const section = String(item.section || "").toUpperCase();
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-parent-section", section);
+        tr.innerHTML = `
+<td class="chk">
+<input type="checkbox" class="page-select">
+</td>
+
+<td style="font-weight:700;">${item.label}</td>
+
+<td class="chk">
+<input type="checkbox" class="perm-v" name="page_rights[${key}][v]">
+</td>
+
+<td class="chk">
+<input type="checkbox" class="perm-a" name="page_rights[${key}][a]">
+</td>
+
+<td class="chk">
+<input type="checkbox" class="perm-e" name="page_rights[${key}][e]">
+</td>
+
+<td class="chk">
+<input type="checkbox" class="perm-d" name="page_rights[${key}][d]">
+</td>
+
+<td class="chk">
+<input type="checkbox" class="perm-p" name="page_rights[${key}][p]">
+</td>
+`;
+        pageRightsBody.appendChild(tr);
+    });
+
+    sectionRightsBody.querySelectorAll("input[data-section-view]").forEach(function (cb) {
+        cb.addEventListener("change", updatePageRightsVisibility);
+    });
+
+    updatePageRightsVisibility();
+}
+
+function clearAllRights() {
+    document.querySelectorAll("#sectionRightsBody input[type='checkbox'], #pageRightsBody input[type='checkbox']")
+        .forEach(function (cb) { cb.checked = false; });
+}
+
+function updatePageRightsVisibility() {
+    const enabled = [];
+    sectionRightsBody.querySelectorAll("input[data-section-view]").forEach(function (cb) {
+        if (cb.checked) enabled.push((cb.getAttribute("data-section-view") || "").toUpperCase());
+    });
+
+    let visibleCount = 0;
+    pageRightsBody.querySelectorAll("tr").forEach(function (tr) {
+        const section = (tr.getAttribute("data-parent-section") || "").toUpperCase();
+        const show = enabled.includes(section);
+        tr.style.display = show ? "" : "none";
+        if (show) visibleCount += 1;
+    });
+
+    pageRightsWrap.style.display = visibleCount > 0 ? "" : "none";
+}
+
+async function loadRoles() {
+    let data;
+    let raw = "";
+    try {
+        const res = await fetch("./api/role_master/get_roles.php", { cache: "no-store" });
+        raw = await res.text();
+        data = JSON.parse(raw);
+    } catch (e) {
+        alert("Failed to load roles. API says:\n" + (raw || String(e)));
+        return;
+    }
+
+    if (data.status !== "success") {
+        alert(data.message || "Failed to load roles");
+        return;
+    }
+
+    allRoles = Array.isArray(data.roles) ? data.roles : [];
+    if (!allRoles.length) {
+        activeRoleId = null;
+        roleList.innerHTML = "<div class='role-row'>No records found</div>";
+        return;
+    }
+
+    renderRoles();
+
+    if (!activeRoleId || !allRoles.find(function (r) { return Number(r.id) === Number(activeRoleId); })) {
+        activeRoleId = Number(allRoles[0].id);
+    }
+    const active = allRoles.find(function (r) { return Number(r.id) === Number(activeRoleId); }) || allRoles[0];
+    await fillForm(active);
+    renderRoles();
+}
+
+function renderRoles() {
+    const q = (filterInput.value || "").trim().toLowerCase();
+    const filtered = allRoles.filter(function (r) {
+        return String(r.role_name || "").toLowerCase().includes(q);
+    });
+
+    roleList.innerHTML = filtered.map(function (r) {
+        const active = Number(r.id) === Number(activeRoleId) ? "active" : "";
+        return `<div class="role-row ${active}" data-id="${r.id}">${r.role_name}</div>`;
+    }).join("");
+
+    roleList.querySelectorAll(".role-row").forEach(function (row) {
+        row.addEventListener("click", async function () {
+            activeRoleId = Number(this.dataset.id);
+            const selected = allRoles.find(function (r) { return Number(r.id) === activeRoleId; });
+            if (selected) await fillForm(selected);
+            renderRoles();
+            setMode("display");
+            setFormEditable(false);
+        });
+    });
+}
+
+async function fillForm(role) {
+    document.getElementById("role_id").value = role.id || "";
+    document.getElementById("role_name").value = role.role_name || "";
+    document.getElementById("description").value = role.description || "";
+    document.getElementById("is_active").value = Number(role.is_active) ? "1" : "0";
+
+    clearAllRights();
+
+    const res = await fetch("./api/role_master/get_role_permissions.php?role_name=" + encodeURIComponent(role.role_name || ""));
+    const data = await res.json();
+    if (data.status === "success") {
+        Object.keys(data.permissions || {}).forEach(function (moduleName) {
+            const perm = data.permissions[moduleName] || {};
+            if (moduleName.indexOf("PAGE:") === 0) {
+                const pageKey = moduleName.substring(5);
+                ["v", "a", "e", "d", "p"].forEach(function (action) {
+                    const cb = document.querySelector(`input[name="page_rights[${pageKey}][${action}]"]`);
+                    if (cb && Number(perm[action]) === 1) cb.checked = true;
+                });
+            } else {
+                const cb = document.querySelector(`input[name="rights[${moduleName}][v]"]`);
+                if (cb && Number(perm.v) === 1) cb.checked = true;
+            }
+        });
+    }
+
+    updatePageRightsVisibility();
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    const rightPanel = document.querySelector(".right-panel");
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+        clearRoleNameError();
+    }
+
+    displayButtons.style.display = mode === "display" ? "flex" : "none";
+    addModeButtons.style.display = mode === "display" ? "none" : "flex";
+    document.getElementById("mode_field").value = mode === "modify" ? "modify" : "add";
+}
+
+function setFormEditable(editable) {
+    roleForm.querySelectorAll("input, select").forEach(function (f) {
+        if (f.id === "role_id" || f.id === "mode_field") return;
+        if (f.type === "checkbox") f.disabled = !editable;
+        else if (f.tagName === "SELECT") f.disabled = !editable;
+        else f.readOnly = !editable;
+    });
+}
+
+function startAddMode() {
+    roleForm.reset();
+    clearAllRights();
+    document.getElementById("role_id").value = "";
+    document.getElementById("role_name").value = "";
+    document.getElementById("is_active").value = "1";
+    setMode("add");
+    setFormEditable(true);
+    updatePageRightsVisibility();
+    clearRoleNameError();
+    document.getElementById("role_name").focus();
+}
+
+async function startModifyMode() {
+    const selected = allRoles.find(function (r) { return Number(r.id) === Number(activeRoleId); });
+    if (!selected) {
+        alert("No role selected");
+        return;
+    }
+    await fillForm(selected);
+    setMode("modify");
+    setFormEditable(true);
+    document.getElementById("role_name").focus();
+}
+
+async function cancelEditMode() {
+    const selected = allRoles.find(function (r) { return Number(r.id) === Number(activeRoleId); }) || allRoles[0];
+    if (selected) {
+        await fillForm(selected);
+    }
+    setMode("display");
+    setFormEditable(false);
+    renderRoles();
+}
+
+async function saveRole() {
+    if (checkDuplicateRoleName()) {
+        roleNameInput.focus();
+        roleNameInput.select();
+        return;
+    }
+
+    const formData = new FormData(roleForm);
+    const roleName = String(formData.get("role_name") || "").trim();
+    const modeValue = String(formData.get("mode") || "").toLowerCase();
+    if (modeValue === "add") {
+        const confirmFn = window.confirmAdd || window.confirmDelete;
+        if (confirmFn) {
+            const ok = await confirmFn(
+                "Are you sure you want to add this role?\n\n" + roleName
+            );
+            if (!ok) return;
+        }
+    }
+
+    let data;
+    let raw = "";
+
+    try {
+
+        const res = await fetch("./api/role_master/save_role.php", {
+            method: "POST",
+            body: formData
+        });
+
+        raw = await res.text();
+        data = JSON.parse(raw);
+
+    } catch (e) {
+
+        alert("Save failed. API says:\n" + (raw || String(e)));
+        return;
+
+    }
+
+    if (data.status !== "success") {
+        alert(data.message || "Save failed");
+        return;
+    }
+
+    /* --------------------------------------------------
+       SAVE ROLE PERMISSIONS
+    -------------------------------------------------- */
+
+    const permForm = new FormData(roleForm);
+    permForm.set("role_name", roleName);
+
+    await fetch("./api/role_master/save_role_permissions.php", {
+        method: "POST",
+        body: permForm
+    });
+
+    /* --------------------------------------------------
+       RELOAD DATA
+    -------------------------------------------------- */
+
+    await loadRoles();
+
+    activeRoleId = Number(data.role_id || activeRoleId);
+
+    const selected = allRoles.find(r => Number(r.id) === activeRoleId);
+
+    if (selected) await fillForm(selected);
+
+    setMode("display");
+    setFormEditable(false);
+    renderRoles();
+}
+/* =========================================
+   SMART BULK RIGHTS ENGINE
+========================================= */
+
+const bulkBar = document.getElementById("bulkRightsBar");
+
+const bulkBoxes = {
+v: document.getElementById("bulk_v"),
+a: document.getElementById("bulk_a"),
+e: document.getElementById("bulk_e"),
+d: document.getElementById("bulk_d"),
+p: document.getElementById("bulk_p")
+};
+
+function updateBulkBarVisibility(){
+const anySelected=[...pageRightsBody.querySelectorAll(".page-select")]
+.some(cb=>cb.checked);
+bulkBar.style.display=anySelected?"flex":"none";
+}
+
+pageRightsBody.addEventListener("change",function(e){
+
+if(e.target.classList.contains("page-select")){
+
+updateBulkBarVisibility();
+
+if(e.target.checked){
+
+const row=e.target.closest("tr");
+
+Object.keys(bulkBoxes).forEach(type=>{
+if(bulkBoxes[type].checked){
+const perm=row.querySelector(".perm-"+type);
+if(perm)perm.checked=true;
+}
+});
+
+}
+
+}
+
+});
+
+Object.keys(bulkBoxes).forEach(function(type){
+
+bulkBoxes[type].addEventListener("change",function(){
+
+const checked=bulkBoxes[type].checked;
+
+pageRightsBody.querySelectorAll("tr").forEach(function(row){
+
+const selected=row.querySelector(".page-select");
+
+if(!selected||!selected.checked)return;
+
+const perm=row.querySelector(".perm-"+type);
+
+if(perm)perm.checked=checked;
+
+});
+
+});
+
+});
+
+pageRightsBody.addEventListener("change",function(e){
+
+if(!e.target.classList.contains("perm-v") &&
+!e.target.classList.contains("perm-a") &&
+!e.target.classList.contains("perm-e") &&
+!e.target.classList.contains("perm-d") &&
+!e.target.classList.contains("perm-p")) return;
+
+const type=[...e.target.classList].find(c=>c.startsWith("perm-")).split("-")[1];
+
+const selectedRows=[...pageRightsBody.querySelectorAll("tr")]
+.filter(row=>row.querySelector(".page-select")?.checked);
+
+if(selectedRows.length===0)return;
+
+const allChecked=selectedRows.every(row=>{
+return row.querySelector(".perm-"+type)?.checked;
+});
+
+bulkBoxes[type].checked=allChecked;
+
+});
+async function deleteRole() {
+    const selected = allRoles.find(function (r) { return Number(r.id) === Number(activeRoleId); });
+    if (!selected) {
+        alert("No role selected");
+        return;
+    }
+
+    if (!(await confirmDelete("Delete selected role?"))) return;
+
+    const fd = new FormData();
+    fd.append("role_id", selected.id);
+
+    let data;
+    let raw = "";
+    try {
+        const res = await fetch("./api/role_master/delete_role.php", { method: "POST", body: fd });
+        raw = await res.text();
+        data = JSON.parse(raw);
+    } catch (e) {
+        alert("Delete failed. API says:\n" + (raw || String(e)));
+        return;
+    }
+
+    if (data.status !== "success") {
+        alert(data.message || "Delete failed");
+        return;
+    }
+
+    await loadRoles();
+    activeRoleId = allRoles.length ? Number(allRoles[0].id) : null;
+    const first = allRoles[0];
+    if (first) await fillForm(first);
+    renderRoles();
+}
+
+document.getElementById("addBtn").addEventListener("click", function () { if (currentMode === "display") startAddMode(); });
+document.getElementById("modifyBtn").addEventListener("click", function () { if (currentMode === "display") startModifyMode(); });
+document.getElementById("deleteBtn").addEventListener("click", function () { if (currentMode === "display") deleteRole(); });
+document.getElementById("printBtn").addEventListener("click", function () { if (currentMode === "display") window.print(); });
+document.getElementById("exitBtn").addEventListener("click", function () { if (currentMode === "display") window.location.href = "index.html"; });
+document.getElementById("saveBtn").addEventListener("click", function () { if (currentMode !== "display") saveRole(); });
+document.getElementById("cancelBtn").addEventListener("click", function () { if (currentMode !== "display") cancelEditMode(); });
+
+filterInput.addEventListener("input", renderRoles);
+
+setMode("display");
+setFormEditable(false);
+buildRightsFromCatalog();
+loadRoles();
+
+function moveActiveRole(delta) {
+    const rows = Array.from(roleList.querySelectorAll(".role-row"));
+    if (!rows.length) return;
+    let idx = rows.findIndex(function (row) { return row.classList.contains("active"); });
+    if (idx === -1) idx = 0;
+    let next = idx + delta;
+    if (next < 0) next = 0;
+    if (next >= rows.length) next = rows.length - 1;
+    const target = rows[next];
+    if (!target) return;
+    activeRoleId = Number(target.dataset.id);
+    const selected = allRoles.find(function (r) { return Number(r.id) === Number(activeRoleId); });
+    if (selected) {
+        fillForm(selected).then(function () {
+            renderRoles();
+            const activeRow = roleList.querySelector(".role-row.active");
+            if (activeRow && typeof activeRow.scrollIntoView === "function") {
+                activeRow.scrollIntoView({ block: "nearest" });
+            }
+        });
+    }
+}
+
+document.addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    if (currentMode !== "display") return;
+    e.preventDefault();
+    moveActiveRole(e.key === "ArrowDown" ? 1 : -1);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Condition Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../../../style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script>
+        const appRoot = (function () { const path = String(location.pathname || '').replace(/\\\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+        (async function () {
+            const res = await fetch(appRoot + "api/check_auth.php");
+            const data = await res.json();
+            if (!data.logged_in) window.location.replace(appRoot + "login.html");
+        })();
+    </script>
+    <script src="../../../global-nav.js" defer></script>
+    <script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+    <link rel="stylesheet" href="../../../selection-mode.css?v=1">
+    <link rel="stylesheet" href="../../../add-mode.css?v=1">
+    <script src="../../../add-mode.js" defer></script>
+    <script src="../../../permissions-catalog.js"></script>
+    <script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+    <script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+    <script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">Condition Master</h2>
+
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div>
+                    <input id="filterInput" type="text" autocomplete="off" placeholder="Search condition...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="conditionList"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <span id="modeTag" class="mode-tag">Display Mode</span>
+                    <form id="conditionForm" autocomplete="off">
+                        <input type="hidden" id="condition_id" name="condition_id">
+                        <input type="hidden" id="application_items_json" name="application_items_json">
+                        <div class="form-grid">
+                            <div class="form-group full"><label for="term_description"
+                                    class="label-with-error"><span>Term Description</span><span
+                                        id="termDescriptionError" class="error-text"
+                                        style="display:none;"></span></label><input id="term_description"
+                                    name="term_description" data-add-first
+                                    data-duplicate-check="checkDuplicateTermDescription"></div>
+                            <div class="form-group full">
+                                <div class="checks-inline">
+                                    <label><input id="is_default" name="is_default" type="checkbox">Default
+                                        Condition</label>
+                                    <label><input id="packing_condition" name="packing_condition" type="checkbox"
+                                            checked>Packing Condition</label>
+                                    <label><input id="loading_condition" name="loading_condition" type="checkbox"
+                                            checked>Loading Condition</label>
+                                    <label><input id="payment_condition" name="payment_condition" type="checkbox"
+                                            checked>Payment Condition</label>
+                                </div>
+                            </div>
+                            <div class="form-group full">
+                                <label>Application Item</label>
+                                <div class="app-table">
+                                    <div class="app-head">
+                                        <div>SNO.</div>
+                                        <div>REQUIRED</div>
+                                        <div>PRODUCT NAME</div>
+                                    </div>
+                                    <div id="applicationBody" class="app-body"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let allConditions = [];
+            let allProducts = [];
+            let selectedProductIds = new Set();
+            let activeConditionId = null;
+            let currentMode = "display";
+            let preEditConditionId = null;
+
+            const filterInput = document.getElementById("filterInput");
+            const conditionList = document.getElementById("conditionList");
+            const conditionForm = document.getElementById("conditionForm");
+            const modeTag = document.getElementById("modeTag");
+            const displayButtons = document.getElementById("displayButtons");
+            const addModeButtons = document.getElementById("addModeButtons");
+            const termDescriptionInput = document.getElementById("term_description");
+            const termDescriptionError = document.getElementById("termDescriptionError");
+            const applicationBody = document.getElementById("applicationBody");
+
+            function esc(v) { return (v ?? "").toString().replace(/[&<>\"']/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[m]; }); }
+            function termDescriptionOf(c) { return (c?.term_description ?? "").toString(); }
+            function showTermDescriptionError(message) { termDescriptionInput.classList.add("field-error"); termDescriptionError.textContent = message; termDescriptionError.style.display = "inline"; }
+            function clearTermDescriptionError() { termDescriptionInput.classList.remove("field-error"); termDescriptionError.textContent = ""; termDescriptionError.style.display = "none"; }
+
+            function checkDuplicateTermDescription() { const name = termDescriptionInput.value.trim().toLowerCase(); if (!name) { clearTermDescriptionError(); return false; } const currentId = Number(document.getElementById("condition_id").value || 0); const duplicate = allConditions.some(function (c) { const sameName = termDescriptionOf(c).trim().toLowerCase() === name; const sameId = Number(c.condition_id) === currentId; return sameName && !sameId; }); if (duplicate) { showTermDescriptionError("Already exists"); return true; } clearTermDescriptionError(); return false; }
+
+            function setFormEditable(editable) {
+                const fields = conditionForm.querySelectorAll("input");
+                fields.forEach(function (field) {
+                    if (field.id === "condition_id" || field.id === "application_items_json") return;
+                    if (field.type === "checkbox") {
+                        field.disabled = !editable;
+                        if (!editable) field.setAttribute("tabindex", "-1"); else field.removeAttribute("tabindex");
+                        return;
+                    }
+                    if (!editable) field.setAttribute("tabindex", "-1"); else field.removeAttribute("tabindex");
+                    field.readOnly = !editable;
+                });
+                applicationBody.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+                    cb.disabled = !editable;
+                    cb.tabIndex = editable ? 0 : -1;
+                });
+            }
+
+            function syncActionMode() { const isDisplay = currentMode === "display"; displayButtons.classList.toggle("hidden", !isDisplay); addModeButtons.classList.toggle("hidden", isDisplay); displayButtons.style.display = isDisplay ? "flex" : "none"; addModeButtons.style.display = isDisplay ? "none" : "flex"; }
+            function setMode(mode) { currentMode = mode; const rightPanel = document.querySelector(".right-panel"); rightPanel.classList.remove("add-mode", "modify-mode", "display-mode"); if (mode === "add") { modeTag.textContent = "Add Mode"; rightPanel.classList.add("add-mode"); setTimeout(function () { termDescriptionInput.focus(); }, 0); } if (mode === "modify") { modeTag.textContent = "Edit Mode"; rightPanel.classList.add("modify-mode"); setTimeout(function () { termDescriptionInput.focus(); }, 0); } if (mode === "display") { modeTag.textContent = "Display Mode"; rightPanel.classList.add("display-mode"); preEditConditionId = null; clearTermDescriptionError(); syncSelectionHighlight(); } syncActionMode(); }
+
+            function ensureActiveConditionSelection() { if (!allConditions.length) { activeConditionId = null; return null; } let active = allConditions.find(function (c) { return Number(c.condition_id) === Number(activeConditionId); }); if (!active) { active = allConditions[0]; activeConditionId = Number(active.condition_id); } return active; }
+
+            function renderApplicationItems() {
+                if (!allProducts.length) {
+                    applicationBody.innerHTML = "<div class='app-row'><div class='center'>-</div><div class='center'>-</div><div>NO PRODUCTS FOUND</div></div>";
+                    return;
+                }
+                applicationBody.innerHTML = allProducts.map(function (p, i) {
+                    const pid = Number(p.product_id);
+                    const checked = selectedProductIds.has(pid) ? "checked" : "";
+                    return "<div class='app-row'><div class='center'>" + (i + 1) + "</div><div class='center'><input type='checkbox' data-pid='" + esc(pid) + "' " + checked + "></div><div>" + esc((p.product_name || "").toUpperCase()) + "</div></div>";
+                }).join("");
+                applicationBody.querySelectorAll("input[type='checkbox']").forEach(function (cb) {
+                    cb.addEventListener("change", function () {
+                        const pid = Number(this.dataset.pid);
+                        if (this.checked) selectedProductIds.add(pid);
+                        else selectedProductIds.delete(pid);
+                    });
+                });
+                if (currentMode === "display") setFormEditable(false);
+            }
+
+            function getApplicationItemsPayload() {
+                return JSON.stringify(
+                    allProducts
+                        .filter(function (p) { return selectedProductIds.has(Number(p.product_id)); })
+                        .map(function (p) { return { product_id: Number(p.product_id), product_name: p.product_name || "" }; })
+                );
+            }
+
+            function resetForm() {
+                conditionForm.reset();
+                document.getElementById("condition_id").value = "";
+                document.getElementById("packing_condition").checked = true;
+                document.getElementById("loading_condition").checked = true;
+                document.getElementById("payment_condition").checked = true;
+                selectedProductIds.clear();
+                activeConditionId = null;
+                clearTermDescriptionError();
+                renderApplicationItems();
+                setMode("add");
+                setFormEditable(true);
+                syncActionMode();
+                renderConditions();
+            }
+
+            function fillForm(c) {
+                document.getElementById("condition_id").value = c.condition_id || "";
+                document.getElementById("term_description").value = c.term_description || "";
+                document.getElementById("is_default").checked = Number(c.is_default) === 1;
+                document.getElementById("packing_condition").checked = Number(c.packing_condition) === 1;
+                document.getElementById("loading_condition").checked = Number(c.loading_condition) === 1;
+                document.getElementById("payment_condition").checked = Number(c.payment_condition) === 1;
+                selectedProductIds.clear();
+                let items = []; try { items = JSON.parse(c.application_items_json || "[]"); } catch (e) { items = []; }
+                items.forEach(function (it) { const pid = Number(it.product_id); if (pid > 0) selectedProductIds.add(pid); });
+                activeConditionId = Number(c.condition_id);
+                renderApplicationItems();
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                clearTermDescriptionError();
+            }
+
+            function fillFormWithoutRender(c) {
+                document.getElementById("condition_id").value = c.condition_id || "";
+                document.getElementById("term_description").value = c.term_description || "";
+                document.getElementById("is_default").checked = Number(c.is_default) === 1;
+                document.getElementById("packing_condition").checked = Number(c.packing_condition) === 1;
+                document.getElementById("loading_condition").checked = Number(c.loading_condition) === 1;
+                document.getElementById("payment_condition").checked = Number(c.payment_condition) === 1;
+                selectedProductIds.clear();
+                let items = []; try { items = JSON.parse(c.application_items_json || "[]"); } catch (e) { items = []; }
+                items.forEach(function (it) { const pid = Number(it.product_id); if (pid > 0) selectedProductIds.add(pid); });
+                activeConditionId = Number(c.condition_id);
+                renderApplicationItems();
+            }
+
+            function renderConditions() {
+                ensureActiveConditionSelection();
+                const keyword = "";
+                const rows = allConditions.filter(function (c) { return !keyword || termDescriptionOf(c).toLowerCase().includes(keyword); });
+                if (!rows.length) { conditionList.innerHTML = "<div class='condition-row'>NO RECORDS FOUND</div>"; return; }
+                conditionList.innerHTML = rows.map(function (c) { const active = Number(c.condition_id) === activeConditionId ? "active" : ""; return "<div class='condition-row " + active + "' data-id='" + esc(c.condition_id) + "'>" + esc(termDescriptionOf(c).toUpperCase()) + "</div>"; }).join("");
+                conditionList.querySelectorAll(".condition-row").forEach(function (row) { row.addEventListener("click", function () { selectRow(this); }); });
+                syncSelectionHighlight();
+            }
+
+            function syncSelectionHighlight() { const rows = Array.from(conditionList.querySelectorAll(".condition-row")).filter(function (r) { return r.dataset.id; }); rows.forEach(function (r) { r.classList.remove("active"); }); const activeRow = rows.find(function (r) { return Number(r.dataset.id) === Number(activeConditionId); }); if (activeRow) { activeRow.classList.add("active"); activeRow.scrollIntoView({ block: "nearest" }); } }
+            function selectRow(row) { conditionList.querySelectorAll(".condition-row").forEach(function (r) { r.classList.remove("active"); }); row.classList.add("active"); const id = Number(row.dataset.id); activeConditionId = id; const c = allConditions.find(function (x) { return Number(x.condition_id) === id; }); if (!c) return; fillFormWithoutRender(c); setMode("display"); setFormEditable(false); syncActionMode(); row.scrollIntoView({ block: "center" }); }
+
+            async function loadConditions() { const res = await fetch("../../../api/condition/get_condition.php"); allConditions = await res.json(); if (allConditions.length) { ensureActiveConditionSelection(); renderConditions(); const selected = ensureActiveConditionSelection(); if (selected) fillFormWithoutRender(selected); setMode("display"); setFormEditable(false); syncActionMode(); document.querySelector(".list-wrap").scrollTop = 0; } else { renderConditions(); setMode("display"); setFormEditable(false); syncActionMode(); } }
+            async function loadProducts() { const res = await fetch("../../../api/product/get_product.php"); allProducts = await res.json(); renderApplicationItems(); }
+
+            function customConfirm(message, callback) { if (window.deleteModeConfirm) { window.deleteModeConfirm(message, callback); return; } }
+
+            async function saveCondition(isModify) {
+                const fd = new FormData(conditionForm);
+                const conditionId = fd.get("condition_id");
+                const termDescription = (fd.get("term_description") || "").trim();
+                if (checkDuplicateTermDescription()) { termDescriptionInput.focus(); termDescriptionInput.select(); return; }
+                fd.set("application_items_json", getApplicationItemsPayload());
+
+                let url = "../../../api/condition/add_condition.php";
+                if (isModify) {
+                    if (!conditionId) { alert("Select a condition to modify"); return; }
+                    url = "../../../api/condition/update_condition.php";
+                } else {
+                    const c = await window.confirmAdd("Are you sure you want to add this condition?\n\n" + termDescription);
+                    if (!c) return;
+                }
+                const res = await fetch(url, { method: "POST", body: fd });
+                const data = await res.json();
+                if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+                if (data.status === "success") {
+                    await loadConditions();
+                    if (isModify && conditionId) {
+                        const updated = allConditions.find(function (c) { return Number(c.condition_id) === Number(conditionId); });
+                        if (updated) fillForm(updated);
+                        return;
+                    }
+                    resetForm();
+                    setMode("add");
+                    setFormEditable(true);
+                    syncActionMode();
+                    termDescriptionInput.focus();
+                }
+            }
+
+            async function deleteCondition() {
+                const conditionId = document.getElementById("condition_id").value;
+                if (!conditionId) { alert("Select a condition to delete"); return; }
+                customConfirm("Delete this condition?", async function () {
+                    const body = new URLSearchParams();
+                    body.set("condition_id", conditionId);
+                    const res = await fetch("../../../api/condition/delete_condition.php", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() });
+                    const data = await res.json();
+                    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+                    if (data.status === "success") {
+                        await loadConditions();
+                        if (allConditions.length) { setMode("display"); setFormEditable(false); syncActionMode(); }
+                        else resetForm();
+                    }
+                });
+            }
+
+            function handleAddAction() { preEditConditionId = activeConditionId; resetForm(); termDescriptionInput.focus(); }
+            function handleModifyAction() { const conditionId = document.getElementById("condition_id").value; if (!conditionId) { alert("Select a condition to modify"); return; } preEditConditionId = Number(conditionId); setMode("modify"); setFormEditable(true); syncActionMode(); }
+            function cancelEditMode() { if (preEditConditionId) { const previous = allConditions.find(function (c) { return Number(c.condition_id) === Number(preEditConditionId); }); if (previous) { fillForm(previous); preEditConditionId = null; return; } } const fallback = ensureActiveConditionSelection(); if (fallback) { fillForm(fallback); return; } setMode("display"); setFormEditable(false); syncActionMode(); renderConditions(); }
+
+            termDescriptionInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkDuplicateTermDescription(); });
+            document.getElementById("addBtn").addEventListener("click", handleAddAction);
+            document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+            document.getElementById("deleteBtn").addEventListener("click", deleteCondition);
+            document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+            document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = appRoot + "index.html"; });
+            document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+            document.getElementById("saveBtn").addEventListener("click", function () { if (currentMode === "modify") saveCondition(true); else saveCondition(false); }); let typeBuffer = "", typeTimer = null, lastMatchedIndex = -1;
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+                const rows = Array.from(conditionList.querySelectorAll(".condition-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                const isSearchBox = document.activeElement.id === "filterInput";
+                if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+                    if (isSearchBox) return;
+                    e.preventDefault();
+                    const letter = e.key.toLowerCase();
+                    if (typeTimer) clearTimeout(typeTimer);
+                    typeBuffer += letter;
+                    typeTimer = setTimeout(function () { typeBuffer = ""; lastMatchedIndex = -1; }, 700);
+                    let matchIndex = -1;
+                    if (typeBuffer.length === 1) {
+                        const startIndex = lastMatchedIndex + 1;
+                        matchIndex = rows.findIndex(function (row, index) { return index >= startIndex && row.textContent.trim().toLowerCase().startsWith(letter); });
+                        if (matchIndex === -1) matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(letter); });
+                    } else {
+                        matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(typeBuffer); });
+                    }
+                    if (matchIndex !== -1) { lastMatchedIndex = matchIndex; selectRow(rows[matchIndex]); }
+                }
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                const rows = Array.from(conditionList.querySelectorAll(".condition-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeConditionId); });
+                if (currentIndex === -1) currentIndex = 0;
+                if (e.key === "ArrowDown") { e.preventDefault(); if (currentIndex < rows.length - 1) currentIndex++; selectRow(rows[currentIndex]); }
+                if (e.key === "ArrowUp") { e.preventDefault(); if (currentIndex > 0) currentIndex--; selectRow(rows[currentIndex]); }
+            }); (function () { let navMode = false, mainIndex = 0, subIndex = -1; const topNavItems = function () { return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function (li) { return li.offsetParent !== null; }); }; function getSubItems(li) { return Array.from(li.querySelectorAll("ul li")).filter(function (item) { return item.offsetParent !== null; }); } function highlightMain(index) { const items = topNavItems(); items.forEach(function (i) { i.classList.remove("nav-active"); }); if (!items[index]) return; items[index].classList.add("nav-active"); if (items[index].focus) items[index].focus(); } function highlightSub(subItems, index) { subItems.forEach(function (i) { i.classList.remove("nav-sub-active"); }); if (!subItems[index]) return; subItems[index].classList.add("nav-sub-active"); subItems[index].scrollIntoView({ block: "nearest" }); } function resetNav() { navMode = false; mainIndex = 0; subIndex = -1; document.querySelectorAll(".nav-active").forEach(function (el) { el.classList.remove("nav-active"); }); document.querySelectorAll(".nav-sub-active").forEach(function (el) { el.classList.remove("nav-sub-active"); }); } document.addEventListener("keydown", function (e) { if (e.key === "Alt" && !navMode) { e.preventDefault(); navMode = true; mainIndex = 0; subIndex = -1; highlightMain(mainIndex); return; } if (!navMode) return; const items = topNavItems(); const currentMain = items[mainIndex]; const subItems = currentMain ? getSubItems(currentMain) : []; if (e.key === "Escape") { e.preventDefault(); resetNav(); return; } if (e.key === "ArrowRight") { e.preventDefault(); mainIndex = (mainIndex + 1) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowLeft") { e.preventDefault(); mainIndex = (mainIndex - 1 + items.length) % items.length; subIndex = -1; highlightMain(mainIndex); } if (e.key === "ArrowDown") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = 0; else subIndex = (subIndex + 1) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "ArrowUp") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = subItems.length - 1; else subIndex = (subIndex - 1 + subItems.length) % subItems.length; highlightSub(subItems, subIndex); } if (e.key === "Enter") { e.preventDefault(); if (subIndex >= 0 && subItems[subIndex]) subItems[subIndex].click(); else if (currentMain) currentMain.click(); resetNav(); } }); })();
+
+            setMode("display");
+            setFormEditable(false);
+            syncActionMode();
+            (async function init() {
+                await loadProducts();
+                await loadConditions();
+                if (allConditions.length) {
+                    const first = ensureActiveConditionSelection();
+                    if (first) fillFormWithoutRender(first);
+                    renderConditions();
+                } else {
+                    resetForm();
+                }
+            })();
+        </script>
+
+</body>
+
+</html>

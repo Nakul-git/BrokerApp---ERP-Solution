@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Product Type Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot=(function(){const path=String(location.pathname||'').replace(/\\\\/g,'/');const lower=path.toLowerCase();const marker='/brokerapp/';const idx=lower.indexOf(marker);if(idx!==-1){return location.origin+path.slice(0,idx+marker.length);}return location.origin+'/';})();
+(async function(){
+    const res=await fetch(appRoot + "api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Product Type Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search product type...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="typeList"></div></div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="typeForm" autocomplete="off">
+<input type="hidden" id="product_type_id" name="product_type_id">
+<div class="form-grid">
+<div class="form-group full"><label for="description" class="label-with-error"><span>Description</span><span id="descriptionError" class="error-text" style="display:none;"></span></label><input id="description" name="description" required data-add-first data-duplicate-check="checkDuplicateDescription"></div>
+<div class="form-group full"><label for="material_type_input">Material Type</label>
+    <div class="dropdown-wrapper">
+        <input type="text" id="material_type_input" placeholder="Select Material Type" autocomplete="off" data-enter-next>
+        <div class="dropdown-list" id="materialTypeDropdown"></div>
+    </div>
+    <input type="hidden" id="material_type" name="material_type" required>
+</div>
+</div>
+</form>
+
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+
+<script>
+let allTypes=[];
+let activeTypeId=null;
+let currentMode="display";
+let preEditTypeId=null;
+
+const filterInput=document.getElementById("filterInput");
+const typeList=document.getElementById("typeList");
+const typeForm=document.getElementById("typeForm");
+const modeTag=document.getElementById("modeTag");
+const displayButtons=document.getElementById("displayButtons");
+const addModeButtons=document.getElementById("addModeButtons");
+const descriptionInput=document.getElementById("description");
+const descriptionError=document.getElementById("descriptionError");
+const materialTypeInput=document.getElementById("material_type_input");
+const materialTypeDropdown=document.getElementById("materialTypeDropdown");
+const materialTypeHidden=document.getElementById("material_type");
+let materialTypeIndex=-1;
+const materialTypeOptions=["Raw Material","Finished Goods","Part Product","Packing Material","Consumable Material","Bardana","Other"];
+
+function esc(v){return (v??"").toString().replace(/[&<>\"']/g,function(m){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m];});}
+function descOf(t){return (t?.description ?? "").toString();}
+function showDescriptionError(message){descriptionInput.classList.add("field-error");descriptionError.textContent=message;descriptionError.style.display="inline";}
+function clearDescriptionError(){descriptionInput.classList.remove("field-error");descriptionError.textContent="";descriptionError.style.display="none";}
+function checkDuplicateDescription(){const name=descriptionInput.value.trim().toLowerCase();if(!name){clearDescriptionError();return false;}const currentId=Number(document.getElementById("product_type_id").value||0);const duplicate=allTypes.some(function(t){const sameName=descOf(t).trim().toLowerCase()===name;const sameId=Number(t.product_type_id)===currentId;return sameName&&!sameId;});if(duplicate){showDescriptionError("Already exists");return true;}clearDescriptionError();return false;}
+
+function setFormEditable(editable){const fields=typeForm.querySelectorAll("input, select");fields.forEach(function(field){if(field.id==="product_type_id")return;if(!editable)field.setAttribute("tabindex","-1");else field.removeAttribute("tabindex");if(field.tagName==="SELECT")field.disabled=!editable;else field.readOnly=!editable;});materialTypeInput.readOnly=!editable;}
+function syncActionMode(){const isDisplay=currentMode==="display";displayButtons.classList.toggle("hidden",!isDisplay);addModeButtons.classList.toggle("hidden",isDisplay);displayButtons.style.display=isDisplay?"flex":"none";addModeButtons.style.display=isDisplay?"none":"flex";}
+function setMode(mode){currentMode=mode;const rightPanel=document.querySelector(".right-panel");rightPanel.classList.remove("add-mode","modify-mode","display-mode");if(mode==="add"){modeTag.textContent="Add Mode";rightPanel.classList.add("add-mode");setTimeout(function(){descriptionInput.focus();},0);}if(mode==="modify"){modeTag.textContent="Edit Mode";rightPanel.classList.add("modify-mode");setTimeout(function(){descriptionInput.focus();},0);}if(mode==="display"){modeTag.textContent="Display Mode";rightPanel.classList.add("display-mode");preEditTypeId=null;clearDescriptionError();syncSelectionHighlight();}closeMaterialTypeDropdown();syncActionMode();}
+
+function ensureActiveTypeSelection(){if(!allTypes.length){activeTypeId=null;return null;}let active=allTypes.find(function(t){return Number(t.product_type_id)===Number(activeTypeId);});if(!active){active=allTypes[0];activeTypeId=Number(active.product_type_id);}return active;}
+function resetForm(){typeForm.reset();document.getElementById("product_type_id").value="";materialTypeHidden.value="Raw Material";materialTypeInput.value="Raw Material";activeTypeId=null;clearDescriptionError();setMode("add");setFormEditable(true);syncActionMode();renderTypes();}
+
+function fillForm(t){document.getElementById("product_type_id").value=t.product_type_id||"";document.getElementById("description").value=t.description||"";materialTypeHidden.value=t.material_type||"Raw Material";materialTypeInput.value=t.material_type||"Raw Material";activeTypeId=Number(t.product_type_id);setMode("display");setFormEditable(false);syncActionMode();clearDescriptionError();}
+function fillFormWithoutRender(t){document.getElementById("product_type_id").value=t.product_type_id||"";document.getElementById("description").value=t.description||"";materialTypeHidden.value=t.material_type||"Raw Material";materialTypeInput.value=t.material_type||"Raw Material";activeTypeId=Number(t.product_type_id);}
+
+function renderTypes(){ensureActiveTypeSelection();const keyword = "";const rows=allTypes.filter(function(t){return !keyword||descOf(t).toLowerCase().includes(keyword)||(t.material_type||"").toLowerCase().includes(keyword);});if(!rows.length){typeList.innerHTML="<div class='type-row'>No records found</div>";return;}typeList.innerHTML=rows.map(function(t){const active=Number(t.product_type_id)===activeTypeId?"active":"";return "<div class='type-row "+active+"' data-id='"+esc(t.product_type_id)+"'>"+esc(descOf(t))+"</div>";}).join("");typeList.querySelectorAll(".type-row").forEach(function(row){row.addEventListener("click",function(){selectRow(this);});});syncSelectionHighlight();}
+function syncSelectionHighlight(){const rows=Array.from(typeList.querySelectorAll(".type-row")).filter(function(r){return r.dataset.id;});rows.forEach(function(r){r.classList.remove("active");});const activeRow=rows.find(function(r){return Number(r.dataset.id)===Number(activeTypeId);});if(activeRow){activeRow.classList.add("active");activeRow.scrollIntoView({block:"nearest"});}}
+function selectRow(row){typeList.querySelectorAll(".type-row").forEach(function(r){r.classList.remove("active");});row.classList.add("active");const id=Number(row.dataset.id);activeTypeId=id;const t=allTypes.find(function(x){return Number(x.product_type_id)===id;});if(!t)return;fillFormWithoutRender(t);setMode("display");setFormEditable(false);syncActionMode();row.scrollIntoView({block:"center"});}
+
+async function loadTypes(){const res=await fetch("../../../api/product_type/get_product_type.php");allTypes=await res.json();if(allTypes.length){ensureActiveTypeSelection();renderTypes();const selected=ensureActiveTypeSelection();if(selected)fillFormWithoutRender(selected);setMode("display");setFormEditable(false);syncActionMode();document.querySelector(".list-wrap").scrollTop=0;}else{renderTypes();setMode("display");setFormEditable(false);syncActionMode();}}
+
+function customConfirm(message,callback){if(window.deleteModeConfirm){window.deleteModeConfirm(message,callback);return;}}
+
+async function saveType(isModify){const fd=new FormData(typeForm);const productTypeId=fd.get("product_type_id");const description=(fd.get("description")||"").trim();let materialType=(materialTypeHidden.value||"").trim();if(!materialType&&materialTypeInput.value){const match=materialTypeOptions.find(function(v){return v.toLowerCase()===materialTypeInput.value.trim().toLowerCase();});if(match){materialTypeHidden.value=match;materialType=match;}}if(checkDuplicateDescription()){descriptionInput.focus();descriptionInput.select();return;}if(!description){showDescriptionError("Required");setTimeout(function(){descriptionInput.focus();descriptionInput.select();},50);return;}if(!materialType){alert("Material type required");return;}if(!isModify){const c=await window.confirmAdd("Are you sure you want to add this product type?\n\n"+description);if(!c)return;}let url="../../../api/product_type/add_product_type.php";if(isModify){if(!productTypeId){alert("Select a product type to modify");return;}url="../../../api/product_type/update_product_type.php";}const res=await fetch(url,{method:"POST",body:fd});const data=await res.json();if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }if(data.status==="success"){await loadTypes();if(isModify&&productTypeId){const updated=allTypes.find(function(t){return Number(t.product_type_id)===Number(productTypeId);});if(updated)fillForm(updated);return;}resetForm();setMode("add");setFormEditable(true);syncActionMode();descriptionInput.focus();}}
+
+function renderMaterialTypeDropdown(list){materialTypeDropdown.innerHTML="";if(!list.length){materialTypeDropdown.style.display="none";return;}const currentValue=materialTypeHidden.value||materialTypeInput.value;list.forEach(function(item,index){const div=document.createElement("div");div.textContent=item;if(item===currentValue){div.classList.add("active");materialTypeIndex=index;}div.onclick=function(){selectMaterialType(item);};materialTypeDropdown.appendChild(div);});materialTypeDropdown.style.display="block";if(materialTypeIndex>=0&&materialTypeDropdown.children[materialTypeIndex])materialTypeDropdown.children[materialTypeIndex].scrollIntoView({block:"nearest"});}
+function selectMaterialType(value){materialTypeInput.value=value;materialTypeHidden.value=value;materialTypeDropdown.style.display="none";materialTypeIndex=-1;}
+function closeMaterialTypeDropdown(){materialTypeDropdown.style.display="none";materialTypeIndex=-1;}
+
+async function deleteType(){const productTypeId=document.getElementById("product_type_id").value;if(!productTypeId){alert("Select a product type to delete");return;}customConfirm("Delete this product type?",async function(){const body=new URLSearchParams();body.set("product_type_id",productTypeId);const res=await fetch("../../../api/product_type/delete_product_type.php",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body.toString()});const data=await res.json();if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }if(data.status==="success"){await loadTypes();if(allTypes.length){setMode("display");setFormEditable(false);syncActionMode();}else resetForm();}});}
+
+function handleAddAction(){preEditTypeId=activeTypeId;resetForm();descriptionInput.focus();}
+function handleModifyAction(){const productTypeId=document.getElementById("product_type_id").value;if(!productTypeId){alert("Select a product type to modify");return;}preEditTypeId=Number(productTypeId);setMode("modify");setFormEditable(true);syncActionMode();}
+function cancelEditMode(){if(preEditTypeId){const previous=allTypes.find(function(t){return Number(t.product_type_id)===Number(preEditTypeId);});if(previous){fillForm(previous);preEditTypeId=null;return;}}const fallback=ensureActiveTypeSelection();if(fallback){fillForm(fallback);return;}setMode("display");setFormEditable(false);syncActionMode();renderTypes();}
+
+function keepDescriptionActive(){if(currentMode==="add"||currentMode==="modify"){setTimeout(function(){if(!typeForm.contains(document.activeElement))descriptionInput.focus();},0);}}
+
+descriptionInput.addEventListener("input",function(){if(currentMode==="add"||currentMode==="modify")checkDuplicateDescription();});
+materialTypeInput.addEventListener("focus",function(){if(currentMode==="add"||currentMode==="modify"){materialTypeIndex=-1;renderMaterialTypeDropdown(materialTypeOptions);}});
+materialTypeInput.addEventListener("input",function(){materialTypeHidden.value="";const term=this.value.toLowerCase();const filtered=materialTypeOptions.filter(function(opt){return opt.toLowerCase().includes(term);});renderMaterialTypeDropdown(filtered);if(filtered.length===1){materialTypeIndex=0;const items=Array.from(materialTypeDropdown.children);if(items.length){items.forEach(function(item,i){item.classList.toggle("active",i===materialTypeIndex);});}}else{materialTypeIndex=-1;}});
+materialTypeInput.addEventListener("keydown",function(e){const items=Array.from(materialTypeDropdown.children);if(materialTypeDropdown.style.display!=="block"||!items.length)return;if(e.key==="ArrowDown"){e.preventDefault();materialTypeIndex=(materialTypeIndex+1)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===materialTypeIndex);});items[materialTypeIndex].scrollIntoView({block:"nearest"});}else if(e.key==="ArrowUp"){e.preventDefault();materialTypeIndex=(materialTypeIndex-1+items.length)%items.length;items.forEach(function(item,i){item.classList.toggle("active",i===materialTypeIndex);});items[materialTypeIndex].scrollIntoView({block:"nearest"});}else if(e.key==="Enter"){e.preventDefault();if(materialTypeIndex>=0){selectMaterialType(items[materialTypeIndex].textContent);}}else if(e.key==="Escape"){closeMaterialTypeDropdown();}});
+materialTypeInput.addEventListener("blur",function(){setTimeout(closeMaterialTypeDropdown,150);});
+document.addEventListener("click",function(e){if(!e.target.closest(".dropdown-wrapper")){closeMaterialTypeDropdown();}});
+typeForm.addEventListener("focusin",function(e){if(currentMode!=="modify")return;const field=e.target;if(field.tagName==="INPUT"&&field.type!=="hidden"&&!field.readOnly){setTimeout(function(){field.select();},0);}});
+
+document.getElementById("addBtn").addEventListener("click",handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click",handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click",deleteType);
+document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+document.getElementById("exitBtn").addEventListener("click",function(){window.location.href = appRoot + "index.html";});
+document.getElementById("cancelBtn").addEventListener("click",cancelEditMode);
+document.getElementById("saveBtn").addEventListener("click",function(){if(currentMode==="modify")saveType(true);else saveType(false);});
+let typeBuffer="",typeTimer=null,lastMatchedIndex=-1;
+document.addEventListener("keydown",function(e){if(currentMode!=="display")return;if(e.ctrlKey||e.altKey||e.metaKey)return;const rows=Array.from(typeList.querySelectorAll(".type-row")).filter(function(r){return r.dataset.id;});if(!rows.length)return;const isSearchBox=document.activeElement.id==="filterInput";if(e.key.length===1&&/^[a-zA-Z]$/.test(e.key)){if(isSearchBox)return;e.preventDefault();const letter=e.key.toLowerCase();if(typeTimer)clearTimeout(typeTimer);typeBuffer+=letter;typeTimer=setTimeout(function(){typeBuffer="";lastMatchedIndex=-1;},700);let matchIndex=-1;if(typeBuffer.length===1){const startIndex=lastMatchedIndex+1;matchIndex=rows.findIndex(function(row,index){return index>=startIndex&&row.textContent.trim().toLowerCase().startsWith(letter);});if(matchIndex===-1)matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(letter);});}else{matchIndex=rows.findIndex(function(row){return row.textContent.trim().toLowerCase().startsWith(typeBuffer);});}if(matchIndex!==-1){lastMatchedIndex=matchIndex;selectRow(rows[matchIndex]);}}});
+document.addEventListener("keydown",function(e){if(currentMode!=="display")return;const rows=Array.from(typeList.querySelectorAll(".type-row")).filter(function(r){return r.dataset.id;});if(!rows.length)return;let currentIndex=rows.findIndex(function(row){return Number(row.dataset.id)===Number(activeTypeId);});if(currentIndex===-1)currentIndex=0;if(e.key==="ArrowDown"){e.preventDefault();if(currentIndex<rows.length-1)currentIndex++;selectRow(rows[currentIndex]);}if(e.key==="ArrowUp"){e.preventDefault();if(currentIndex>0)currentIndex--;selectRow(rows[currentIndex]);}});
+document.addEventListener("mousedown",function(e){if(currentMode==="add"||currentMode==="modify"){if(!typeForm.contains(e.target))keepDescriptionActive();}});(function(){let navMode=false,mainIndex=0,subIndex=-1;const topNavItems=function(){return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function(li){return li.offsetParent!==null;});};function getSubItems(li){return Array.from(li.querySelectorAll("ul li")).filter(function(item){return item.offsetParent!==null;});}function highlightMain(index){const items=topNavItems();items.forEach(function(i){i.classList.remove("nav-active");});if(!items[index])return;items[index].classList.add("nav-active");if(items[index].focus)items[index].focus();}function highlightSub(subItems,index){subItems.forEach(function(i){i.classList.remove("nav-sub-active");});if(!subItems[index])return;subItems[index].classList.add("nav-sub-active");subItems[index].scrollIntoView({block:"nearest"});}function resetNav(){navMode=false;mainIndex=0;subIndex=-1;document.querySelectorAll(".nav-active").forEach(function(el){el.classList.remove("nav-active");});document.querySelectorAll(".nav-sub-active").forEach(function(el){el.classList.remove("nav-sub-active");});}document.addEventListener("keydown",function(e){if(e.key==="Alt"&&!navMode){e.preventDefault();navMode=true;mainIndex=0;subIndex=-1;highlightMain(mainIndex);return;}if(!navMode)return;const items=topNavItems();const currentMain=items[mainIndex];const subItems=currentMain?getSubItems(currentMain):[];if(e.key==="Escape"){e.preventDefault();resetNav();return;}if(e.key==="ArrowRight"){e.preventDefault();mainIndex=(mainIndex+1)%items.length;subIndex=-1;highlightMain(mainIndex);}if(e.key==="ArrowLeft"){e.preventDefault();mainIndex=(mainIndex-1+items.length)%items.length;subIndex=-1;highlightMain(mainIndex);}if(e.key==="ArrowDown"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=0;else subIndex=(subIndex+1)%subItems.length;highlightSub(subItems,subIndex);}if(e.key==="ArrowUp"){e.preventDefault();if(!subItems.length)return;if(subIndex<0)subIndex=subItems.length-1;else subIndex=(subIndex-1+subItems.length)%subItems.length;highlightSub(subItems,subIndex);}if(e.key==="Enter"){e.preventDefault();if(subIndex>=0&&subItems[subIndex])subItems[subIndex].click();else if(currentMain)currentMain.click();resetNav();}});})();
+
+setMode("display");
+setFormEditable(false);
+syncActionMode();
+(async function init(){await loadTypes();if(allTypes.length){const first=ensureActiveTypeSelection();if(first)fillFormWithoutRender(first);renderTypes();}})();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

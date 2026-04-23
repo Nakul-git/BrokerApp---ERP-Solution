@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Area Master | SoftBrokerage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../../../style.css?v=8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+   <link rel="stylesheet" href="./style.css?v=8">
+
+    <script>
+        const appRoot = (function(){ const path = String(location.pathname || '').replace(/\\\\/g, '/'); const lower = path.toLowerCase(); const marker = '/brokerapp/'; const idx = lower.indexOf(marker); if (idx !== -1) { return location.origin + path.slice(0, idx + marker.length); } return location.origin + '/'; })();
+(async function () {
+            const res = await fetch(appRoot + "api/check_auth.php");
+            const data = await res.json();
+            if (!data.logged_in) window.location.replace(appRoot + "login.html");
+        })();
+    </script>
+    <script src="../../../global-nav.js" defer></script>
+    <script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+    <link rel="stylesheet" href="../../../selection-mode.css?v=1">
+    <link rel="stylesheet" href="../../../add-mode.css?v=1">
+    <script src="../../../add-mode.js" defer></script>
+    <script src="../../../permissions-catalog.js"></script>
+    <script src="../../../selection-mode.js" defer></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+
+<body>
+
+    <div class="content">
+        <div class="feature-box">
+            <h2 class="page-title">Area Master</h2>
+
+            <div class="master-layout">
+                <div class="left-panel">
+                    <div class="label">Selection Mode</div>
+                    <input id="filterInput" type="text" autocomplete="off" placeholder="Search area...">
+                    <div class="list-wrap">
+                        <div class="list-head">Name</div>
+                        <div id="areaList"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <span id="modeTag" class="mode-tag">Display Mode</span>
+                    <form id="areaForm" autocomplete="off">
+                        <input type="hidden" id="area_id" name="area_id">
+                        <input type="hidden" id="city_id" name="city_id" value="">
+                        <div class="form-grid">
+                            <div class="form-group full">
+                                <label for="area_name" class="label-with-error">
+                                    <span>Area Name</span>
+                                    <span id="areaNameError" class="error-text" style="display:none;"></span>
+                                </label>
+                                <input id="area_name" name="area_name" required data-add-first
+                                    data-duplicate-check="checkDuplicateAreaName">
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let allAreas = [];
+            let activeAreaId = null;
+            let currentMode = "display";
+            let preEditAreaId = null;
+
+            const filterInput = document.getElementById("filterInput");
+            const areaList = document.getElementById("areaList");
+            const areaForm = document.getElementById("areaForm");
+            const modeTag = document.getElementById("modeTag");
+            const displayButtons = document.getElementById("displayButtons");
+            const addModeButtons = document.getElementById("addModeButtons");
+            const areaNameInput = document.getElementById("area_name");
+            const areaNameError = document.getElementById("areaNameError");
+            function esc(v) { return (v ?? "").toString().replace(/[&<>\"']/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[m]; }); }
+            function areaNameOf(area) { return (area?.name ?? area?.area_name ?? "").toString(); }
+
+            function showAreaNameError(message) { areaNameInput.classList.add("field-error"); areaNameError.textContent = message; areaNameError.style.display = "inline"; }
+            function clearAreaNameError() { areaNameInput.classList.remove("field-error"); areaNameError.textContent = ""; areaNameError.style.display = "none"; }
+
+            function checkDuplicateAreaName() {
+                const name = areaNameInput.value.trim().toLowerCase();
+                if (!name) { clearAreaNameError(); return false; }
+                const currentId = Number(document.getElementById("area_id").value || 0);
+                const duplicate = allAreas.some(function (a) {
+                    const sameName = areaNameOf(a).trim().toLowerCase() === name;
+                    const sameId = Number(a.area_id) === currentId;
+                    return sameName && !sameId;
+                });
+                if (duplicate) { showAreaNameError("Already exists"); return true; }
+                clearAreaNameError();
+                return false;
+            }
+
+            function setFormEditable(editable) {
+                const fields = areaForm.querySelectorAll("input, select");
+                fields.forEach(function (field) {
+                    if (field.id === "area_id") return;
+                    if (!editable) field.setAttribute("tabindex", "-1");
+                    else field.removeAttribute("tabindex");
+                    if (field.tagName === "SELECT") field.disabled = !editable;
+                    else field.readOnly = !editable;
+                });
+            }
+
+            function syncActionMode() {
+                const isDisplay = currentMode === "display";
+                displayButtons.classList.toggle("hidden", !isDisplay);
+                addModeButtons.classList.toggle("hidden", isDisplay);
+                displayButtons.style.display = isDisplay ? "flex" : "none";
+                addModeButtons.style.display = isDisplay ? "none" : "flex";
+            }
+
+            function setMode(mode) {
+                currentMode = mode;
+                const rightPanel = document.querySelector(".right-panel");
+                rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+
+                if (mode === "add") {
+                    modeTag.textContent = "Add Mode";
+                    rightPanel.classList.add("add-mode");
+                    setTimeout(function () { areaNameInput.focus(); }, 0);
+                }
+                if (mode === "modify") {
+                    modeTag.textContent = "Edit Mode";
+                    rightPanel.classList.add("modify-mode");
+                    setTimeout(function () { areaNameInput.focus(); }, 0);
+                }
+                if (mode === "display") {
+                    modeTag.textContent = "Display Mode";
+                    rightPanel.classList.add("display-mode");
+                    preEditAreaId = null;
+                    clearAreaNameError();
+                    syncSelectionHighlight();
+                }
+
+                syncActionMode();
+            }
+
+            function resetForm() {
+                areaForm.reset();
+                document.getElementById("area_id").value = "";
+                document.getElementById("city_id").value = "";
+                activeAreaId = null;
+                clearAreaNameError();
+                setMode("add");
+                setFormEditable(true);
+                syncActionMode();
+                renderAreas();
+            }
+
+            function fillForm(area) {
+                document.getElementById("area_id").value = area.area_id || "";
+                document.getElementById("area_name").value = areaNameOf(area);
+                document.getElementById("city_id").value = area.city_id || "";
+                activeAreaId = Number(area.area_id);
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                clearAreaNameError();
+            }
+
+            function fillFormWithoutRender(area) {
+                document.getElementById("area_id").value = area.area_id || "";
+                document.getElementById("area_name").value = areaNameOf(area);
+                document.getElementById("city_id").value = area.city_id || "";
+                activeAreaId = Number(area.area_id);
+            }
+
+            function ensureActiveAreaSelection() {
+                if (!allAreas.length) {
+                    activeAreaId = null;
+                    return null;
+                }
+                let active = allAreas.find(function (a) { return Number(a.area_id) === Number(activeAreaId); });
+                if (!active) {
+                    active = allAreas[0];
+                    activeAreaId = Number(active.area_id);
+                }
+                return active;
+            }
+
+            function renderAreas() {
+                ensureActiveAreaSelection();
+                const keyword = "";
+                const rows = allAreas.filter(function (a) {
+                    const n = areaNameOf(a).toLowerCase();
+                    const c = (a.city_name || "").toLowerCase();
+                    const s = (a.state_name || "").toLowerCase();
+                    return !keyword || n.includes(keyword) || c.includes(keyword) || s.includes(keyword);
+                });
+
+                if (!rows.length) {
+                    areaList.innerHTML = "<div class='area-row'>No areas found</div>";
+                    return;
+                }
+
+                areaList.innerHTML = rows.map(function (a) {
+                    const active = Number(a.area_id) === activeAreaId ? "active" : "";
+                    return "<div class='area-row " + active + "' data-id='" + esc(a.area_id) + "'>" + esc(areaNameOf(a)) + "</div>";
+                }).join("");
+
+                areaList.querySelectorAll(".area-row").forEach(function (row) {
+                    row.addEventListener("click", function () { selectRow(this); });
+                });
+
+                syncSelectionHighlight();
+            }
+
+            function syncSelectionHighlight() {
+                const rows = Array.from(areaList.querySelectorAll(".area-row")).filter(function (r) { return r.dataset.id; });
+                rows.forEach(function (r) { r.classList.remove("active"); });
+                const activeRow = rows.find(function (r) { return Number(r.dataset.id) === Number(activeAreaId); });
+                if (activeRow) {
+                    activeRow.classList.add("active");
+                    activeRow.scrollIntoView({ block: "nearest" });
+                }
+            }
+
+            function selectRow(row) {
+                areaList.querySelectorAll(".area-row").forEach(function (r) { r.classList.remove("active"); });
+                row.classList.add("active");
+                const id = Number(row.dataset.id);
+                activeAreaId = id;
+                const area = allAreas.find(function (a) { return Number(a.area_id) === id; });
+                if (!area) return;
+                fillFormWithoutRender(area);
+                row.scrollIntoView({ block: "center" });
+            }
+
+            async function loadAreas() {
+                const res = await fetch("../../../api/area/get_area.php");
+                allAreas = await res.json();
+
+                if (allAreas.length) {
+                    ensureActiveAreaSelection();
+                    renderAreas();
+                    const selected = ensureActiveAreaSelection();
+                    if (selected) fillFormWithoutRender(selected);
+                    document.querySelector(".list-wrap").scrollTop = 0;
+                } else {
+                    renderAreas();
+                    setMode("display");
+                    setFormEditable(false);
+                    syncActionMode();
+                }
+            }
+
+            function customConfirm(message, callback) {
+                if (window.deleteModeConfirm) {
+                    window.deleteModeConfirm(message, callback);
+                    return;
+                }
+            }
+
+            async function saveArea(isModify) {
+                const fd = new FormData(areaForm);
+                const areaId = fd.get("area_id");
+                const areaName = (fd.get("area_name") || "").trim();
+
+                if (checkDuplicateAreaName()) {
+                    areaNameInput.focus();
+                    areaNameInput.select();
+                    return;
+                }
+
+                if (!areaName) {
+                    showAreaNameError("Required");
+                    setTimeout(function () { areaNameInput.focus(); areaNameInput.select(); }, 50);
+                    return;
+                }
+
+                if (!isModify) {
+                    const confirmAdd = await window.confirmAdd("Are you sure you want to add this area?\n\n" + areaName);
+                    if (!confirmAdd) return;
+                }
+
+                let url = "../../../api/area/add_area.php";
+                if (isModify) {
+                    if (!areaId) { alert("Select an area to modify"); return; }
+                    url = "../../../api/area/update_area.php";
+                }
+
+                const res = await fetch(url, { method: "POST", body: fd });
+                const data = await res.json();
+                if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+                if (data.status === "success") {
+                    await loadAreas();
+                    if (isModify && areaId) {
+                        const updated = allAreas.find(function (a) { return Number(a.area_id) === Number(areaId); });
+                        if (updated) fillForm(updated);
+                        return;
+                    }
+                    resetForm();
+                    setMode("add");
+                    setFormEditable(true);
+                    syncActionMode();
+                    areaNameInput.focus();
+                }
+            }
+
+            async function deleteArea() {
+                const areaId = document.getElementById("area_id").value;
+                if (!areaId) { alert("Select an area to delete"); return; }
+
+                customConfirm("Delete this area?", async function () {
+                    const body = new URLSearchParams();
+                    body.set("area_id", areaId);
+
+                    const res = await fetch("../../../api/area/delete_area.php", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: body.toString()
+                    });
+
+                    const data = await res.json();
+                    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+                    if (data.status === "success") {
+                        await loadAreas();
+                        if (allAreas.length) {
+                            setMode("display");
+                            setFormEditable(false);
+                            syncActionMode();
+                        } else {
+                            resetForm();
+                        }
+                    }
+                });
+            }
+
+            function handleAddAction() { preEditAreaId = activeAreaId; resetForm(); areaNameInput.focus(); }
+            function handleModifyAction() {
+                const areaId = document.getElementById("area_id").value;
+                if (!areaId) { alert("Select an area to modify"); return; }
+                preEditAreaId = Number(areaId);
+                setMode("modify");
+                setFormEditable(true);
+                syncActionMode();
+            }
+            function cancelEditMode() {
+                if (preEditAreaId) {
+                    const previous = allAreas.find(function (a) { return Number(a.area_id) === Number(preEditAreaId); });
+                    if (previous) { fillForm(previous); preEditAreaId = null; return; }
+                }
+                const fallback = ensureActiveAreaSelection();
+                if (fallback) {
+                    fillForm(fallback);
+                    return;
+                }
+                setMode("display");
+                setFormEditable(false);
+                syncActionMode();
+                renderAreas();
+            }
+
+            function keepAreaNameActive() {
+                if (currentMode === "add" || currentMode === "modify") {
+                    setTimeout(function () { if (!areaForm.contains(document.activeElement)) areaNameInput.focus(); }, 0);
+                }
+            }
+
+            areaNameInput.addEventListener("input", function () { if (currentMode === "add" || currentMode === "modify") checkDuplicateAreaName(); });
+            areaForm.addEventListener("focusin", function (e) {
+                if (currentMode !== "modify") return;
+                const field = e.target;
+                if (field.tagName === "INPUT" && field.type !== "hidden" && !field.readOnly) { setTimeout(function () { field.select(); }, 0); }
+            });
+
+            document.getElementById("addBtn").addEventListener("click", handleAddAction);
+            document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+            document.getElementById("deleteBtn").addEventListener("click", deleteArea);
+            document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+            document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../../index.html"; });
+            document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+            document.getElementById("saveBtn").addEventListener("click", function () { if (currentMode === "modify") saveArea(true); else saveArea(false); });
+            let typeBuffer = "", typeTimer = null, lastMatchedIndex = -1;
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                if (e.ctrlKey || e.altKey || e.metaKey) return;
+                const rows = Array.from(areaList.querySelectorAll(".area-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                const isSearchBox = document.activeElement.id === "filterInput";
+
+                if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+                    if (isSearchBox) return;
+                    e.preventDefault();
+                    const letter = e.key.toLowerCase();
+                    if (typeTimer) clearTimeout(typeTimer);
+                    typeBuffer += letter;
+                    typeTimer = setTimeout(function () { typeBuffer = ""; lastMatchedIndex = -1; }, 700);
+
+                    let matchIndex = -1;
+                    if (typeBuffer.length === 1) {
+                        const startIndex = lastMatchedIndex + 1;
+                        matchIndex = rows.findIndex(function (row, index) { return index >= startIndex && row.textContent.trim().toLowerCase().startsWith(letter); });
+                        if (matchIndex === -1) matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(letter); });
+                    } else {
+                        matchIndex = rows.findIndex(function (row) { return row.textContent.trim().toLowerCase().startsWith(typeBuffer); });
+                    }
+
+                    if (matchIndex !== -1) {
+                        lastMatchedIndex = matchIndex;
+                        selectRow(rows[matchIndex]);
+                    }
+                }
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (currentMode !== "display") return;
+                const rows = Array.from(areaList.querySelectorAll(".area-row")).filter(function (r) { return r.dataset.id; });
+                if (!rows.length) return;
+                let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeAreaId); });
+                if (currentIndex === -1) currentIndex = 0;
+
+                if (e.key === "ArrowDown") {
+                    e.preventDefault(); // activate keyboard visual state
+                    if (currentIndex < rows.length - 1) currentIndex++; selectRow(rows[currentIndex]);
+                }
+                if (e.key === "ArrowUp") {
+                    e.preventDefault(); // activate keyboard visual state
+                    if (currentIndex > 0) currentIndex--; selectRow(rows[currentIndex]);
+                }
+            });
+
+            document.addEventListener("mousedown", function (e) { if (currentMode === "add" || currentMode === "modify") { if (!areaForm.contains(e.target)) keepAreaNameActive(); } });
+
+            /* Requested capture-phase Escape behavior */(function () {
+                let navMode = false, mainIndex = 0, subIndex = -1;
+                const topNavItems = function () { return Array.from(document.querySelectorAll(".top-nav > li, .main-nav > li, nav > ul > li")).filter(function (li) { return li.offsetParent !== null; }); };
+                function getSubItems(li) { return Array.from(li.querySelectorAll("ul li")).filter(function (item) { return item.offsetParent !== null; }); }
+                function highlightMain(index) { const items = topNavItems(); items.forEach(function (i) { i.classList.remove("nav-active"); }); if (!items[index]) return; items[index].classList.add("nav-active"); if (items[index].focus) items[index].focus(); }
+                function highlightSub(subItems, index) { subItems.forEach(function (i) { i.classList.remove("nav-sub-active"); }); if (!subItems[index]) return; subItems[index].classList.add("nav-sub-active"); subItems[index].scrollIntoView({ block: "nearest" }); }
+                function resetNav() { navMode = false; mainIndex = 0; subIndex = -1; document.querySelectorAll(".nav-active").forEach(function (el) { el.classList.remove("nav-active"); }); document.querySelectorAll(".nav-sub-active").forEach(function (el) { el.classList.remove("nav-sub-active"); }); }
+
+                document.addEventListener("keydown", function (e) {
+                    if (e.key === "Alt" && !navMode) { e.preventDefault(); navMode = true; mainIndex = 0; subIndex = -1; highlightMain(mainIndex); return; }
+                    if (!navMode) return;
+
+                    const items = topNavItems();
+                    const currentMain = items[mainIndex];
+                    const subItems = currentMain ? getSubItems(currentMain) : [];
+
+                    if (e.key === "Escape") { e.preventDefault(); resetNav(); return; }
+                    if (e.key === "ArrowRight") { e.preventDefault(); mainIndex = (mainIndex + 1) % items.length; subIndex = -1; highlightMain(mainIndex); }
+                    if (e.key === "ArrowLeft") { e.preventDefault(); mainIndex = (mainIndex - 1 + items.length) % items.length; subIndex = -1; highlightMain(mainIndex); }
+                    if (e.key === "ArrowDown") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = 0; else subIndex = (subIndex + 1) % subItems.length; highlightSub(subItems, subIndex); }
+                    if (e.key === "ArrowUp") { e.preventDefault(); if (!subItems.length) return; if (subIndex < 0) subIndex = subItems.length - 1; else subIndex = (subIndex - 1 + subItems.length) % subItems.length; highlightSub(subItems, subIndex); }
+                    if (e.key === "Enter") { e.preventDefault(); if (subIndex >= 0 && subItems[subIndex]) subItems[subIndex].click(); else if (currentMain) currentMain.click(); resetNav(); }
+                });
+            })();
+
+            setMode("display");
+            setFormEditable(false);
+            syncActionMode();
+
+            (async function init() {
+                await loadAreas();
+                if (allAreas.length) {
+                    const first = ensureActiveAreaSelection();
+                    if (first) fillFormWithoutRender(first);
+                    renderAreas();
+                }
+            })();
+        </script>
+
+</body>
+
+</html>
+

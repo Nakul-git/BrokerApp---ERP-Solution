@@ -1,0 +1,957 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Group Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 28px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 52px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 10px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel .label {
+    font-size: 18px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 34px;
+    padding: 6px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 8px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 64px);
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.group-row {
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.group-row:hover { background: rgba(0, 0, 0, 0.08); }
+.group-row.active { background: #0074d9; color: #fff; }
+
+.group-row-sub {
+    font-size: 12px;
+    font-weight: 400;
+    opacity: 0.95;
+}
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 10px;
+    padding: 2px 8px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+#groupForm {
+    border: 1px solid #d7d7d7;
+    padding: 8px;
+    background: #efefef;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 12px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group.full { grid-column: 1 / -1; }
+
+.form-group label {
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    color: #2d2d2d;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    height: 30px;
+    padding: 4px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.dropdown-wrapper {
+    position: relative;
+}
+
+.dropdown-input {
+    width: 100%;
+    height: 30px;
+    padding: 4px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.dropdown-input:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    max-height: 160px;
+    overflow-y: auto;
+    background: #22e2e8;
+    border: 2px solid #18c7cf;
+    display: none;
+    z-index: 400;
+}
+
+.dropdown-list.open {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+}
+
+.dropdown-item:hover,
+.dropdown-item.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.dropdown-empty {
+    padding: 6px 8px;
+    font-size: 12px;
+    color: #000;
+}
+
+.split-pair {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 10px;
+}
+
+.right-panel.display-mode input,
+.right-panel.display-mode select {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    pointer-events: none;
+}
+
+.action-row {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.action-row.hidden {
+    display: none;
+}
+
+.btn {
+    min-width: 104px;
+    padding: 4px 10px;
+    height: 32px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn:hover { filter: brightness(0.98); }
+.btn.primary, .btn.danger { background: #ea7ce8; color: #000; border-color: #efc9f0; }
+
+@media (max-width: 1100px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .split-pair { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+    const appRoot = (function(){
+        const path = String(location.pathname || "").replace(/\\/g, "/");
+        const lower = path.toLowerCase();
+        const marker = "/brokerapp/";
+        const idx = lower.indexOf(marker);
+        if (idx !== -1) {
+            return location.origin + path.slice(0, idx + marker.length);
+        }
+        return location.origin + "/";
+    })();
+    (async function () {
+        const res = await fetch(appRoot + "api/check_auth.php");
+        const data = await res.json();
+        if (!data.logged_in) window.location.replace(appRoot + "login.html");
+    })();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../../selection-mode.js" defer></script>
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Group Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search group...">
+<div class="list-wrap">
+<div class="list-head">Name</div>
+<div id="groupList"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="groupForm" autocomplete="off">
+<input type="hidden" id="group_id" name="group_id">
+
+<div class="form-grid">
+<div class="form-group">
+<label for="sort_order">Order</label>
+<div class="split-pair">
+<input id="sort_order" name="sort_order" type="number" step="1" min="0" value="0">
+<div class="dropdown-wrapper">
+<input id="main_group_input" class="dropdown-input" type="text" autocomplete="off" placeholder="Select Main Group" data-enter-next>
+<div id="mainGroupDropdown" class="dropdown-list"></div>
+</div>
+<input type="hidden" id="main_group_name" name="main_group_name">
+</div>
+</div>
+
+<div class="form-group">
+<label for="group_name" class="label-with-error"><span>Group Name</span><span id="groupNameError" class="error-text" style="display:none;"></span></label>
+<input id="group_name" name="group_name" required data-add-first>
+</div>
+
+<div class="form-group">
+<label for="group_type">Group Type</label>
+<div class="dropdown-wrapper">
+<input id="group_type_input" class="dropdown-input" type="text" autocomplete="off" required placeholder="Select Group Type" data-enter-next>
+<div id="groupTypeDropdown" class="dropdown-list"></div>
+</div>
+<input type="hidden" id="group_type" name="group_type" value="Liabilities">
+</div>
+
+<div class="form-group">
+<label for="maintain_bill_outstanding">Maintain Bill to Bill Outstanding</label>
+<select id="maintain_bill_outstanding" name="maintain_bill_outstanding">
+<option value="Y">Y</option>
+<option value="N" selected>N</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="suppress_trial_balance">Suppress in Group Wise Trial Balance</label>
+<select id="suppress_trial_balance" name="suppress_trial_balance">
+<option value="Y">Y</option>
+<option value="N" selected>N</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="address_details_req">Address Details Req. Y/N</label>
+<select id="address_details_req" name="address_details_req">
+<option value="Y">Y</option>
+<option value="N" selected>N</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="general_ledger">General Ledger Y/N</label>
+<select id="general_ledger" name="general_ledger">
+<option value="Y">Y</option>
+<option value="N" selected>N</option>
+</select>
+</div>
+</div>
+</form>
+
+                    <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">&#128194; F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">&#128221; F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">&#10060; F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">&#128202; F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">&#10060; Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">&#10060; Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">&#128190; F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+</div>
+<script>
+let allGroups = [];
+let primaryGroups = [];
+let activeGroupId = null;
+let currentMode = "display";
+let preEditGroupId = null;
+const GROUP_TYPE_OPTIONS = ["Income", "Expenditure", "Liabilities", "Assets"];
+
+const filterInput = document.getElementById("filterInput");
+const groupList = document.getElementById("groupList");
+const groupForm = document.getElementById("groupForm");
+const modeTag = document.getElementById("modeTag");
+const rightPanel = document.querySelector(".right-panel");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const groupNameInput = document.getElementById("group_name");
+const groupNameError = document.getElementById("groupNameError");
+const mainGroupInput = document.getElementById("main_group_input");
+const mainGroupHidden = document.getElementById("main_group_name");
+const mainGroupDropdown = document.getElementById("mainGroupDropdown");
+const groupTypeInput = document.getElementById("group_type_input");
+const groupTypeHidden = document.getElementById("group_type");
+const groupTypeDropdown = document.getElementById("groupTypeDropdown");
+let mainGroupIndex = -1;
+let groupTypeIndex = -1;
+
+function esc(v) {
+    return (v ?? "").toString().replace(/[&<>"']/g, function (m) {
+        return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m];
+    });
+}
+
+function closeMainGroupDropdown() {
+    mainGroupDropdown.classList.remove("open");
+    mainGroupIndex = -1;
+}
+
+function setMainGroupValue(value) {
+    const val = (value || '').toString();
+    mainGroupHidden.value = val;
+    mainGroupInput.value = val;
+}
+
+function findMainGroupIndex(value, list) {
+    const target = (value || "").toString().trim().toLowerCase();
+    if (!target) return -1;
+    return list.findIndex(function (g) {
+        return (g.group_name || "").toString().trim().toLowerCase() === target;
+    });
+}
+
+function renderPrimaryGroupsOptions(term, activeValue) {
+    const q = (term || "").trim().toLowerCase();
+    const list = primaryGroups.filter(function (g) {
+        const name = (g.group_name || "").toLowerCase();
+        return !q || name.includes(q);
+    });
+    if (!list.length) {
+        mainGroupDropdown.innerHTML = "<div class='dropdown-empty'>No groups found</div>";
+        mainGroupDropdown.classList.add("open");
+        return;
+    }
+    mainGroupDropdown.innerHTML = list.map(function (g, index) {
+        const name = (g.group_name || '').toString();
+        const active = index === mainGroupIndex ? "active" : "";
+        return "<div class='dropdown-item " + active + "' data-value='" + esc(name) + "'>" + esc(name) + "</div>";
+    }).join("");
+    mainGroupDropdown.querySelectorAll(".dropdown-item").forEach(function (item) {
+        item.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+            setMainGroupValue(item.dataset.value || "");
+            closeMainGroupDropdown();
+        });
+    });
+    mainGroupDropdown.classList.add("open");
+}
+
+async function loadPrimaryGroups() {
+    const res = await fetch(appRoot + "api/group/get_primary_groups.php");
+    primaryGroups = await res.json();
+    renderPrimaryGroupsOptions(mainGroupInput.value || "");
+}
+
+function closeGroupTypeDropdown() {
+    groupTypeDropdown.classList.remove("open");
+    groupTypeIndex = -1;
+}
+
+function setGroupTypeValue(value) {
+    const val = (value || "").toString();
+    groupTypeHidden.value = val;
+    groupTypeInput.value = val;
+}
+
+function findGroupTypeIndex(value, list) {
+    const target = (value || "").toString().trim().toLowerCase();
+    if (!target) return -1;
+    return list.findIndex(function (opt) {
+        return (opt || "").toString().trim().toLowerCase() === target;
+    });
+}
+
+function renderGroupTypeOptions(term, activeValue) {
+    const q = (term || "").trim().toLowerCase();
+    const list = GROUP_TYPE_OPTIONS.filter(function (opt) {
+        return !q || opt.toLowerCase().includes(q);
+    });
+    if (!list.length) {
+        groupTypeDropdown.innerHTML = "<div class='dropdown-empty'>No types found</div>";
+        groupTypeDropdown.classList.add("open");
+        return;
+    }
+    groupTypeDropdown.innerHTML = list.map(function (opt, index) {
+        const active = index === groupTypeIndex ? "active" : "";
+        return "<div class='dropdown-item " + active + "' data-value='" + esc(opt) + "'>" + esc(opt) + "</div>";
+    }).join("");
+    groupTypeDropdown.querySelectorAll(".dropdown-item").forEach(function (item) {
+        item.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+            setGroupTypeValue(item.dataset.value || "");
+            closeGroupTypeDropdown();
+        });
+    });
+    groupTypeDropdown.classList.add("open");
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    closeMainGroupDropdown();
+    closeGroupTypeDropdown();
+    syncActionMode();
+}
+
+function syncActionMode() {
+    const isDisplay = currentMode === "display";
+    displayButtons.classList.toggle("hidden", !isDisplay);
+    addModeButtons.classList.toggle("hidden", isDisplay);
+    displayButtons.style.display = isDisplay ? "flex" : "none";
+    addModeButtons.style.display = isDisplay ? "none" : "flex";
+}
+
+function setFormEditable(editable) {
+    const fields = groupForm.querySelectorAll("input, select, textarea");
+    fields.forEach(function (el) {
+        if (editable) {
+            el.removeAttribute("tabindex");
+        } else {
+            el.setAttribute("tabindex", "-1");
+        }
+    });
+}
+
+function showGroupNameError(message) {
+    groupNameInput.classList.add("field-error");
+    groupNameError.textContent = message || "Required";
+    groupNameError.style.display = "inline";
+}
+
+function clearGroupNameError() {
+    groupNameInput.classList.remove("field-error");
+    groupNameError.textContent = "";
+    groupNameError.style.display = "none";
+}
+
+function checkDuplicateGroupName() {
+    const name = (groupNameInput.value || "").trim().toLowerCase();
+    if (!name) { clearGroupNameError(); return false; }
+    const currentId = Number(document.getElementById("group_id").value || 0);
+    const duplicate = allGroups.some(function (g) {
+        const sameName = (g.group_name || "").trim().toLowerCase() === name;
+        const sameId = Number(g.group_id) === currentId;
+        return sameName && !sameId;
+    });
+    if (duplicate) {
+        showGroupNameError("Already exists");
+        return true;
+    }
+    clearGroupNameError();
+    return false;
+}
+
+function resetForm() {
+    groupForm.reset();
+    document.getElementById("group_id").value = "";
+    document.getElementById("sort_order").value = "0";
+    setMainGroupValue("");
+    setGroupTypeValue("Liabilities");
+    document.getElementById("maintain_bill_outstanding").value = "N";
+    document.getElementById("suppress_trial_balance").value = "N";
+    document.getElementById("address_details_req").value = "N";
+    document.getElementById("general_ledger").value = "N";
+    activeGroupId = null;
+    clearGroupNameError();
+    renderGroups();
+    setMode("add");
+    setFormEditable(true);
+}
+
+function fillForm(g) {
+    document.getElementById("group_id").value = g.group_id || "";
+    document.getElementById("sort_order").value = g.sort_order ?? 0;
+    setMainGroupValue(g.main_group_name || "");
+    document.getElementById("group_name").value = g.group_name || "";
+    setGroupTypeValue(g.group_type || "Liabilities");
+    document.getElementById("maintain_bill_outstanding").value = g.maintain_bill_outstanding || "N";
+    document.getElementById("suppress_trial_balance").value = g.suppress_trial_balance || "N";
+    document.getElementById("address_details_req").value = g.address_details_req || "N";
+    document.getElementById("general_ledger").value = g.general_ledger || "N";
+    activeGroupId = Number(g.group_id);
+    clearGroupNameError();
+    renderGroups();
+    setMode("display");
+    setFormEditable(false);
+}
+
+function renderGroups() {
+    const keyword = filterInput.value.trim().toLowerCase();
+    const rows = allGroups.filter(function (g) {
+        if ((g.group_primary || "").toString().toUpperCase() === "Y") return false;
+        if (!keyword) return true;
+        return (g.group_name || "").toLowerCase().includes(keyword)
+            || (g.main_group_name || "").toLowerCase().includes(keyword);
+    });
+
+    if (!rows.length) {
+        groupList.innerHTML = "<div class='group-row'><div class='group-row-name'>No groups found</div></div>";
+        return;
+    }
+
+    groupList.innerHTML = rows.map(function (g) {
+        const active = Number(g.group_id) === activeGroupId ? "active" : "";
+        const sub = [g.group_type || "", "Ord: " + (g.sort_order ?? 0)].join(" | ");
+        return "<div class='group-row " + active + "' data-id='" + esc(g.group_id) + "'>"
+            + "<div class='group-row-name'>" + esc(g.group_name) + "</div>"
+            + "<div class='group-row-sub'>" + esc(sub) + "</div>"
+            + "</div>";
+    }).join("");
+
+    groupList.querySelectorAll(".group-row").forEach(function (row) {
+        row.addEventListener("click", function () {
+            const id = Number(this.dataset.id);
+            const g = allGroups.find(function (x) { return Number(x.group_id) === id; });
+            if (g) fillForm(g);
+        });
+    });
+}
+
+async function loadGroups() {
+    const res = await fetch(appRoot + "api/group/get_group.php");
+    allGroups = await res.json();
+    renderGroups();
+}
+
+async function saveGroup(isModify) {
+    const fd = new FormData(groupForm);
+    const groupId = fd.get("group_id");
+    const groupName = (fd.get("group_name") || "").trim();
+
+    if (checkDuplicateGroupName()) {
+        groupNameInput.focus();
+        groupNameInput.select();
+        return;
+    }
+
+    if (!groupName) {
+        showGroupNameError("Required");
+        return;
+    }
+
+    if (!isModify && typeof window.confirmAdd === "function") {
+        const ok = await window.confirmAdd("Are you sure you want to add this group?\n\n" + groupName);
+        if (!ok) return;
+    }
+
+    let url = appRoot + "api/group/add_group.php";
+    if (isModify) {
+        if (!groupId) {
+            alert("Select a group to modify");
+            return;
+        }
+        url = appRoot + "api/group/update_group.php";
+    }
+
+    const res = await fetch(url, { method: "POST", body: fd });
+    const data = await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+    if (data.status === "success") {
+        await loadGroups();
+        if (isModify && groupId) {
+            const updated = allGroups.find(function (g) { return Number(g.group_id) === Number(groupId); });
+            if (updated) fillForm(updated);
+        } else {
+            resetForm();
+        }
+    }
+}
+
+function handleAddAction() {
+    preEditGroupId = activeGroupId;
+    resetForm();
+    setMode("add");
+    setFormEditable(true);
+    setTimeout(function () { document.getElementById("group_name").focus(); }, 0);
+}
+
+function handleModifyAction() {
+    const groupId = document.getElementById("group_id").value;
+    if (!groupId) {
+        alert("Select group first");
+        return;
+    }
+    preEditGroupId = groupId;
+    setMode("modify");
+    setFormEditable(true);
+    setTimeout(function () { document.getElementById("group_name").focus(); }, 0);
+}
+
+mainGroupInput.addEventListener("focus", function () {
+    if (currentMode === "display") return;
+    renderPrimaryGroupsOptions("", mainGroupInput.value || "");
+    mainGroupDropdown.classList.add("open");
+});
+
+mainGroupInput.addEventListener("input", function () {
+    mainGroupHidden.value = "";
+    renderPrimaryGroupsOptions(mainGroupInput.value || "");
+});
+
+mainGroupInput.addEventListener("keydown", function (e) {
+    const items = Array.from(mainGroupDropdown.querySelectorAll(".dropdown-item"));
+    if (!mainGroupDropdown.classList.contains("open") || !items.length) return;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        mainGroupIndex = (mainGroupIndex + 1) % items.length;
+        renderPrimaryGroupsOptions(mainGroupInput.value || "");
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        mainGroupIndex = (mainGroupIndex - 1 + items.length) % items.length;
+        renderPrimaryGroupsOptions(mainGroupInput.value || "");
+    } else if (e.key === "Enter") {
+        e.preventDefault();
+        const item = items[mainGroupIndex >= 0 ? mainGroupIndex : 0];
+        if (item) {
+            setMainGroupValue(item.dataset.value || "");
+            closeMainGroupDropdown();
+        }
+    } else if (e.key === "Escape") {
+        closeMainGroupDropdown();
+    }
+});
+
+mainGroupInput.addEventListener("blur", function () {
+    setTimeout(closeMainGroupDropdown, 150);
+});
+
+groupTypeInput.addEventListener("focus", function () {
+    if (currentMode === "display") return;
+    renderGroupTypeOptions("", groupTypeInput.value || "");
+    groupTypeDropdown.classList.add("open");
+});
+
+groupTypeInput.addEventListener("input", function () {
+    groupTypeHidden.value = "";
+    renderGroupTypeOptions(groupTypeInput.value || "");
+});
+
+groupTypeInput.addEventListener("keydown", function (e) {
+    const items = Array.from(groupTypeDropdown.querySelectorAll(".dropdown-item"));
+    if (!groupTypeDropdown.classList.contains("open") || !items.length) return;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        groupTypeIndex = (groupTypeIndex + 1) % items.length;
+        renderGroupTypeOptions(groupTypeInput.value || "");
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        groupTypeIndex = (groupTypeIndex - 1 + items.length) % items.length;
+        renderGroupTypeOptions(groupTypeInput.value || "");
+    } else if (e.key === "Enter") {
+        e.preventDefault();
+        const item = items[groupTypeIndex >= 0 ? groupTypeIndex : 0];
+        if (item) {
+            setGroupTypeValue(item.dataset.value || "");
+            closeGroupTypeDropdown();
+        }
+    } else if (e.key === "Escape") {
+        closeGroupTypeDropdown();
+    }
+});
+
+groupTypeInput.addEventListener("blur", function () {
+    setTimeout(closeGroupTypeDropdown, 150);
+});
+
+document.addEventListener("click", function (e) {
+    if (!e.target.closest(".dropdown-wrapper")) {
+        closeMainGroupDropdown();
+        closeGroupTypeDropdown();
+    }
+});
+
+function cancelEditMode() {
+    if (preEditGroupId) {
+        const prev = allGroups.find(function (x) { return Number(x.group_id) === Number(preEditGroupId); });
+        if (prev) {
+            fillForm(prev);
+            preEditGroupId = null;
+            return;
+        }
+    }
+    if (allGroups.length) {
+        fillForm(allGroups[0]);
+        return;
+    }
+    resetForm();
+}
+
+async function deleteGroup() {
+    const groupId = document.getElementById("group_id").value;
+    if (!groupId) {
+        alert("Select a group to delete");
+        return;
+    }
+    const ok = await window.confirmDelete("Delete this group?");
+    if (!ok) return;
+
+    const body = new URLSearchParams();
+    body.set("group_id", groupId);
+
+    const res = await fetch(appRoot + "api/group/delete_group.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+    const data = await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+
+    if (data.status === "success") {
+        await loadGroups();
+        if (allGroups.length) {
+            fillForm(allGroups[0]);
+            return;
+        }
+        setMode("display");
+        setFormEditable(false);
+        groupForm.reset();
+        document.getElementById("group_id").value = "";
+        activeGroupId = null;
+        renderGroups();
+    }
+}
+
+document.getElementById("addBtn").addEventListener("click", handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click", deleteGroup);
+document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = appRoot + "index.html"; });
+document.getElementById("saveBtn").addEventListener("click", function () {
+    if (currentMode === "modify") saveGroup(true);
+    else saveGroup(false);
+});
+document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+filterInput.addEventListener("input", renderGroups);
+groupNameInput.addEventListener("input", function () {
+    if ((groupNameInput.value || "").trim()) {
+        checkDuplicateGroupName();
+    } else {
+        clearGroupNameError();
+    }
+});
+
+document.addEventListener("keydown", function (e) {
+    if (!rightPanel.classList.contains("display-mode")) return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const rows = Array.from(groupList.querySelectorAll(".group-row")).filter(function (r) {
+        if (!r.dataset || !r.dataset.id) return false;
+        if (r.offsetParent === null) return false;
+        return true;
+    });
+    if (!rows.length) return;
+    let currentIndex = rows.findIndex(function (row) {
+        return Number(row.dataset.id) === Number(activeGroupId);
+    });
+    if (currentIndex === -1) currentIndex = 0;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentIndex < rows.length - 1) currentIndex += 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentIndex > 0) currentIndex -= 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+});
+
+setMode("display");
+setFormEditable(false);
+(async function init() {
+    await loadPrimaryGroups();
+    await loadGroups();
+    if (allGroups.length) {
+        fillForm(allGroups[0]);
+        return;
+    }
+    resetForm();
+})();
+</script>
+</body>
+</html>

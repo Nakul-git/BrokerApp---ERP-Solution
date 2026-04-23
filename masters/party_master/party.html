@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Party Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../style.css?v=8">
+<link rel="stylesheet" href="../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../add-mode.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 28px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 52px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 10px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.left-panel .label {
+    font-size: 18px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 34px;
+    padding: 6px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 8px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 64px);
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
+    z-index: 1;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.party-row {
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.party-row:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.party-row.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.party-row-sub {
+    font-weight: 400;
+    font-size: 12px;
+}
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 3px;
+    padding: 2px 6px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.tab-shell {
+    border: 1px solid #d0d0d0;
+    background: #f6f6f6;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-top: 6px;
+    padding-top: 8px;
+}
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 0 0 8px;
+    margin-top: -1px;
+    margin-bottom: 0;
+    flex: 0 0 auto;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    background: transparent;
+    border-bottom: none;
+}
+
+.tab-btn {
+    display: inline-block;
+    width: auto;
+    min-width: 0;
+    height: 26px;
+    margin: 0;
+    padding: 3px 12px 4px;
+    border: 1px solid #d0d0d0;
+    border-bottom: none;
+    border-radius: 0;
+    background: #e9e9e9;
+    color: #222;
+    font-size: 14px;
+    line-height: 18px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    cursor: pointer;
+    white-space: nowrap;
+    vertical-align: bottom;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none;
+    outline: none;
+    position: relative;
+    top: 0;
+}
+
+.tab-btn.active {
+    background: #fff;
+}
+
+.tab-btn:focus,
+.tab-btn:hover {
+    background: #fff;
+}
+
+#partyForm {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.party-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px 6px 6px;
+}
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px 8px;
+    align-content: start;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.form-group.w2 { grid-column: span 2; }
+.form-group.full { grid-column: 1 / -1; }
+.pb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pb-grid .form-group { grid-column: span 1; }
+.pb-grid .pb-seller,
+.pb-grid .pb-buyer { grid-column: span 1; }
+.pb-grid .panel-box { width: 100%; }
+
+.pb-shortcuts {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 22px;
+    margin: 0 0 2px;
+    padding: 1px 8px;
+    border: 1px solid #37dbe7;
+    background: #1feaf1;
+    color: #000;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    text-transform: none;
+}
+
+#tab-pb .form-grid {
+    gap: 2px 4px;
+}
+
+#tab-pb .form-group label {
+    font-size: 10px;
+}
+
+.form-group label {
+    font-size: 12px;
+    line-height: 1;
+    font-family: "Times New Roman", serif;
+    color: #2d2d2d;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    max-width: 100%;
+    height: 22px;
+    padding: 1px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #f0f0f0;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.form-group textarea {
+    min-height: 34px;
+    resize: vertical;
+}
+
+.dropdown-hidden {
+    display: none;
+}
+
+.dropdown-wrapper {
+    position: relative;
+}
+
+.dropdown-input {
+    width: 100%;
+    max-width: 100%;
+    height: 22px;
+    padding: 1px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.dropdown-input:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    max-height: 160px;
+    overflow-y: auto;
+    overflow-x: visible;
+    background: #22e2e8;
+    border: 2px solid #18c7cf;
+    display: none;
+    z-index: 400;
+}
+
+.dropdown-list.open {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+}
+
+.dropdown-item:hover,
+.dropdown-item.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.dropdown-empty {
+    padding: 6px 8px;
+    font-size: 12px;
+    color: #000;
+}
+
+.inline-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.inline-checks label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.inline-checks input[type="checkbox"] {
+    width: 11px;
+    height: 11px;
+    margin: 0;
+}
+
+.panel-box {
+    border: 1px solid #bcbcbc;
+    background: #f3f3f3;
+    overflow: visible;
+}
+
+.panel-head {
+    padding: 4px 8px;
+    border-bottom: 1px solid #d0d0d0;
+    background: #fff;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.panel-body {
+    max-height: 160px;
+    overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
+    z-index: 1;
+    padding: 2px 4px;
+}
+
+.deals-box {
+    border: 1px solid #bcbcbc;
+    background: #f3f3f3;
+    overflow: visible;
+    min-height: 120px;
+}
+
+.deals-head,
+.deals-row {
+    display: grid;
+    grid-template-columns: 34px 44px 1fr;
+}
+
+.deals-head div {
+    background: #e3b07d;
+    border-right: 1px solid #7b7b7b;
+    padding: 3px 4px;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.deals-head div:last-child { border-right: 0; }
+
+.deals-body {
+    max-height: 110px;
+    min-height: 80px;
+    overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
+    z-index: 1;
+    background: #bffcff;
+}
+
+.deals-row > div {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 3px 4px;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+}
+
+.deals-row > div:last-child { border-right: 0; }
+
+.deals-sno { text-align: center; font-weight: 700; }
+.deals-sel { text-align: center; }
+.deals-sel input[type="checkbox"] { width: 11px; height: 11px; margin: 0; }
+.deals-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.bank-row.is-active > div,
+.condition-row.is-active > div,
+.pb-row.is-active > div {
+    background: rgba(0, 116, 217, 0.12);
+}
+
+.deals-group {
+    display: block !important;
+    grid-column: 3;
+    grid-row: 2 / span 6;
+    align-self: start;
+}
+
+.deals-group > label {
+    display: block;
+    white-space: nowrap;
+}
+
+.division-grid-wrap {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+}
+
+.division-grid {
+    border: 1px solid #bcbcbc;
+    background: #f3f3f3;
+    overflow: visible;
+    width: 100%;
+    min-width: 0;
+}
+
+.division-grid-head,
+.division-grid-row {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: stretch;
+}
+
+.division-grid-head > div,
+.division-grid-row > div {
+    flex: 0 0 auto;
+    width: 100%;
+}
+
+.division-grid-head div {
+    background: #e3b07d;
+    border-right: 1px solid #7b7b7b;
+    padding: 4px 5px;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    line-height: 1.05;
+    white-space: nowrap;
+}
+
+.division-grid-head > div:first-child,
+.division-grid-row > div:first-child {
+    flex-basis: 48px;
+    width: 48px;
+    flex-shrink: 0;
+}
+
+.division-grid-head > div:nth-child(2),
+.division-grid-row > div:nth-child(2) {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+}
+
+.division-grid-head > div:nth-child(3),
+.division-grid-row > div:nth-child(3) {
+    flex-basis: 96px;
+    width: 96px;
+    flex-shrink: 0;
+}
+
+.division-grid-head > div:nth-child(4),
+.division-grid-row > div:nth-child(4) {
+    flex-basis: 72px;
+    width: 72px;
+    flex-shrink: 0;
+}
+
+.division-grid-head > div:nth-child(5),
+.division-grid-row > div:nth-child(5) {
+    flex-basis: 96px;
+    width: 96px;
+    flex-shrink: 0;
+}
+
+.division-grid-head > div:nth-child(6),
+.division-grid-row > div:nth-child(6) {
+    flex-basis: 72px;
+    width: 72px;
+    flex-shrink: 0;
+}
+
+.division-grid-head > div:nth-child(7),
+.division-grid-row > div:nth-child(7) {
+    flex-basis: 60px;
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.division-grid-head > div:nth-child(7),
+.division-grid-row > div:nth-child(7) {
+    display: none;
+}
+
+.division-grid-head div:last-child { border-right: 0; }
+
+.division-grid-body {
+    max-height: 128px;
+    overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
+    z-index: 1;
+    background: #bffcff;
+    width: 100%;
+    min-width: 0;
+}
+
+.division-grid-row > div {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 3px 4px;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.division-grid-row > div:nth-child(2) {
+    min-width: 0;
+    display: block;
+}
+
+.division-grid-row > div:nth-child(2) .division-company {
+    width: 100%;
+    min-width: 0;
+    display: block;
+    box-sizing: border-box;
+}
+
+.division-grid-row > div:nth-child(2) .dropdown-wrapper,
+.division-grid-row > div:nth-child(2) .dropdown-input {
+    width: 100%;
+    min-width: 0;
+}
+
+.division-grid-row > div:nth-child(2) .dropdown-wrapper {
+    display: block;
+}
+
+.division-grid-row > div:nth-child(2) .dropdown-input {
+    display: block;
+    box-sizing: border-box;
+}
+
+.division-grid-row > div:last-child { border-right: 0; }
+
+.division-grid-row .division-display-cell {
+    width: 100%;
+    height: 22px;
+    border: 1px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    display: flex;
+    align-items: center;
+    padding: 0 5px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+}
+
+.division-grid-row .division-company {
+    font-weight: 700;
+    justify-content: flex-start;
+}
+
+.division-grid-row input,
+.division-grid-row select {
+    width: 100%;
+    height: 22px;
+    border: 1px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    box-sizing: border-box;
+}
+
+.division-grid-row select {
+    padding: 0 4px;
+}
+
+.division-grid-row .row-del {
+    height: 20px;
+    padding: 0 6px;
+}
+
+.division-grid-row .row-del,
+.division-grid-row .division-id,
+.division-grid-row .division-opening,
+.division-grid-row .division-dc,
+.division-grid-row .division-hb-opening,
+.division-grid-row .division-hb-dc {
+    align-self: stretch;
+}
+
+.check-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+}
+
+.grid-tools {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 2px;
+}
+
+.btn-xs {
+    padding: 2px 6px;
+    height: 20px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.grid-head, .grid-row { display: grid; }
+.bank-head, .bank-row { grid-template-columns: 60px 1.2fr 1fr 1.2fr 1fr 110px; }
+.pb-head, .pb-row { grid-template-columns: 46px minmax(140px, 1.2fr) minmax(140px, 1fr) 80px; }
+.condition-head, .condition-row { grid-template-columns: 44px 48px 1fr; }
+
+.grid-head div {
+    background: #e3b07d;
+    border-right: 1px solid #7b7b7b;
+    padding: 2px 4px;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+.grid-head div:last-child { border-right: 0; }
+
+.grid-body {
+    max-height: 70px;
+    overflow-y: auto;
+    overflow-x: visible;
+    background: #bffcff;
+}
+
+#tab-pb .grid-body {
+    overflow: auto;
+}
+
+#tab-pb,
+#tab-bank {
+    padding-bottom: 70px;
+}
+
+.grid-row > div {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 2px 4px;
+}
+
+.grid-row > div:last-child { border-right: 0; }
+
+.grid-row input, .grid-row select {
+    width: 100%;
+    height: 18px;
+    border: 1px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+}
+
+.grid-row .cell-text {
+    display: block;
+    min-height: 18px;
+    line-height: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.grid-row .bank-editor,
+.grid-row .pb-editor {
+    width: 100%;
+    height: 18px;
+    border: 1px solid #969696;
+    border-radius: 0;
+    background: #20e1ea;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    padding: 0 4px;
+}
+
+.bank-shortcuts {
+    margin-bottom: 2px;
+    padding: 2px 8px;
+    border: 1px solid #37dbe7;
+    background: #1feaf1;
+    color: #000;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    text-align: center;
+}
+
+.bank-row {
+    cursor: pointer;
+}
+
+.bank-row.is-active > div {
+    background: #0c78d3;
+    color: #fff;
+}
+
+.bank-row.is-active input,
+.bank-row.is-active select,
+.bank-row.is-active .dropdown-input {
+    background: #fff;
+    color: #000;
+}
+
+.bank-row .dropdown-wrapper,
+.bank-row .dropdown-input {
+    width: 100%;
+}
+
+.display-mode #bankShortcutBar {
+    display: none;
+}
+
+.division-grid-head.grid-head,
+.division-grid-row.grid-row {
+    display: flex !important;
+    width: 100%;
+    min-width: 0;
+    align-items: stretch;
+}
+
+.division-grid-head.grid-head > div,
+.division-grid-row.grid-row > div {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.division-grid-head.grid-head > div:nth-child(2),
+.division-grid-row.grid-row > div:nth-child(2) {
+    flex: 1 1 auto;
+    width: auto;
+}
+
+.division-grid-row.grid-row > div:nth-child(2) .dropdown-wrapper,
+.division-grid-row.grid-row > div:nth-child(2) .dropdown-input {
+    width: 100% !important;
+    min-width: 0;
+    display: block;
+    box-sizing: border-box;
+}
+
+.condition-box {
+    background: #fff;
+}
+
+.condition-body {
+    max-height: 70px;
+    min-height: 80px;
+    overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid #d0d0d0;
+    background: #bffcff;
+}
+
+.condition-row {
+    display: grid;
+    grid-template-columns: 44px 48px 1fr;
+    align-items: center;
+}
+
+.condition-row > div {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 2px 4px;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+}
+
+.condition-row > div:last-child { border-right: 0; }
+
+.condition-sno {
+    text-align: center;
+    font-weight: 700;
+}
+
+.condition-sel {
+    text-align: center;
+}
+
+.condition-sel input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+}
+
+.condition-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.condition-empty {
+    padding: 6px 8px;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+}
+
+/* Compact label-left layout for basic + office */
+#tab-basic .form-grid,
+#tab-office .form-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: row dense;
+    gap: 2px 4px;
+    margin-top: -4px;
+}
+
+#tab-basic .form-group,
+#tab-office .form-group {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 4px;
+    row-gap: 0;
+}
+
+#tab-basic .form-group:not(.full):not(.w2):not(.deals-group),
+#tab-office .form-group:not(.full):not(.w2) {
+    grid-column: span 1;
+}
+
+#tab-basic .customer-name {
+    grid-column: span 2;
+}
+
+#tab-basic .station-city,
+#tab-basic .state-view,
+#tab-basic .group-field,
+#tab-basic .category-field,
+#tab-basic .proprietor-field,
+#tab-basic .fssai-field,
+#tab-basic .gst-field,
+#tab-basic .pan-field,
+#tab-basic .email-field,
+#tab-basic .lock-date-field,
+#tab-basic .type-field,
+#tab-basic .cr-day-field,
+#tab-basic .comp-group-field,
+#tab-basic .co-name-field,
+#tab-basic .opening-balance-field,
+#tab-basic .balance-type-field {
+    grid-column: span 1;
+}
+
+#tab-basic .form-group.w2,
+#tab-office .form-group.w2,
+#tab-basic .form-group.full,
+#tab-office .form-group.full {
+    grid-column: 1 / -1;
+}
+
+#tab-basic .form-group.full .inline-checks,
+#tab-office .form-group.full .inline-checks {
+    grid-column: 1 / -1;
+}
+
+#tab-basic .form-group.full {
+    margin-bottom: 2px;
+}
+
+#tab-bank .form-grid {
+    margin-top: -8px;
+}
+
+#tab-bank .grid-tools {
+    margin-top: 0;
+    margin-bottom: 2px;
+}
+
+#tab-pb .form-grid {
+    align-items: start;
+}
+
+#tab-basic .customer-name {
+    grid-column: 1 / 3;
+}
+
+#tab-basic .station-city {
+    grid-column: 1 / 2;
+}
+
+#tab-basic .state-view {
+    grid-column: 2 / 3;
+}
+
+#tab-basic .deals-group {
+    display: block !important;
+    grid-column: 3 / 5;
+    grid-row: 2 / span 6;
+    align-self: start;
+}
+
+#tab-basic .customer-name input,
+#tab-basic .station-city select,
+#tab-basic .state-view input,
+#tab-basic .form-group input,
+#tab-basic .form-group select,
+#tab-basic .form-group textarea {
+    height: 20px;
+    padding: 0 4px;
+    font-size: 10px;
+}
+
+#tab-basic .form-group textarea {
+    min-height: 28px;
+}
+
+#tab-basic .form-group label,
+#tab-office .form-group label {
+    font-size: 10px;
+}
+
+#tab-basic .form-group.full .inline-checks,
+#tab-office .form-group.full .inline-checks {
+    gap: 10px;
+}
+
+#tab-basic .form-group.full .inline-checks label,
+#tab-office .form-group.full .inline-checks label {
+    font-size: 10px;
+}
+
+#tab-basic .customer-name {
+    grid-column: 1 / 3;
+}
+
+#tab-basic .customer-name label {
+    min-width: 74px;
+}
+
+#tab-basic .customer-name input {
+    width: 100%;
+}
+
+#tab-basic .form-group.address-wide,
+#tab-basic .form-group.address-wide input {
+    grid-column: 1 / 3;
+}
+
+#tab-basic .form-row-2 {
+    grid-column: 1 / 3;
+    gap: 2px 4px;
+}
+
+#tab-basic .form-row-2 .form-group {
+    grid-column: auto;
+}
+
+#tab-basic .form-row-2 .form-group label {
+    min-width: 74px;
+}
+
+.row-del {
+    width: 100%;
+    height: 18px;
+    border: 1px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 10px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pb-row .dropdown-wrapper,
+.pb-row .dropdown-input {
+    width: 100%;
+}
+
+.display-mode #pbShortcutBar {
+    display: none;
+}
+
+.bank-row > div:last-child {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 2px;
+}
+
+.right-panel.display-mode input,
+.right-panel.display-mode select,
+.right-panel.display-mode textarea {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    cursor: default;
+    pointer-events: none;
+    user-select: none;
+}
+
+.right-panel.display-mode input[type="checkbox"] {
+    pointer-events: none;
+}
+
+.action-row {
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.action-footer {
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding-top: 6px;
+    background: #efefef;
+}
+
+.btn {
+    min-width: 104px;
+    padding: 4px 10px;
+    height: 32px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn:hover { filter: brightness(0.98); }
+
+.btn.primary, .btn.danger {
+    background: #ea7ce8;
+    color: #000;
+    border-color: #efc9f0;
+}
+
+@media (max-width: 1220px) {
+    html, body { overflow: visible; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .pb-grid { grid-template-columns: 1fr; }
+    .list-wrap { height: 260px; }
+}
+
+@media (max-width: 760px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.w2, .form-group.full { grid-column: auto; }
+}
+
+</style>
+
+<script>
+(async function () {
+    const res = await fetch("../../api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace("../../login.html");
+})();
+</script>
+<script src="../../global-nav.js" defer></script>
+<script src="../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../selection-mode.js" defer></script>
+<script src="../../add-mode.js" defer></script>
+<script src="../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Party Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search party...">
+<div class="list-wrap">
+<div class="list-head">Name</div>
+<div id="partyList"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="partyForm" autocomplete="off">
+<input type="hidden" id="party_id" name="party_id">
+<input type="hidden" id="city" name="city">
+<input type="hidden" id="state" name="state">
+<div class="tab-shell">
+<div class="tabs">
+<button type="button" class="tab-btn active" data-tab="basic">Basic Details</button>
+<button type="button" class="tab-btn" data-tab="office">Office Address</button>
+<button type="button" class="tab-btn" data-tab="bank">Bank & Conditions</button>
+<button type="button" class="tab-btn" data-tab="pb">Product & Brand Setup</button>
+</div>
+<div class="party-scroll">
+
+<div class="tab-pane active" id="tab-basic">
+<div class="form-grid">
+<div class="form-group full"><div class="inline-checks">
+<label><input type="checkbox" id="party_role_byr" name="party_role_byr" checked>BYR</label>
+<label><input type="checkbox" id="party_role_slr" name="party_role_slr" checked>SLR</label>
+<label><input type="checkbox" id="party_role_sb" name="party_role_sb">SB</label>
+<label><input type="checkbox" id="party_role_bb" name="party_role_bb">BB</label>
+<label><input type="checkbox" id="is_active" name="is_active" checked>Active</label>
+<label><input type="checkbox" id="multiple_sms_session" name="multiple_sms_session">Multiple SMS Session</label>
+</div></div>
+
+<div class="form-group customer-name">
+<label for="party_name" class="label-with-error"><span>Customer Name</span><span id="partyNameError" class="error-text" style="display:none;"></span></label>
+<input id="party_name" name="party_name" required data-add-first>
+</div>
+<div class="form-group station-city">
+<label for="city_id" class="label-with-error"><span>Station (City)</span><span id="cityError" class="error-text" style="display:none;"></span></label>
+<select id="city_id"></select>
+</div>
+<div class="form-group state-view"><label for="state_view">State</label><input id="state_view" readonly tabindex="-1"></div>
+<div class="form-group"><label for="group_name">Group</label><select id="group_name" name="group_name"></select></div>
+<div class="form-group"><label for="area">Area</label><select id="area" name="area"></select></div>
+<div class="form-group"><label for="zone_area">Zone / Area</label><select id="zone_area" name="zone_area"></select></div>
+<div class="form-group"><label for="category">Category</label><input id="category" name="category"></div>
+<div class="form-group deals-group">
+<label>Division Wise Opening Balance</label>
+<div class="division-grid-wrap" style="margin-bottom:6px;">
+<div class="division-grid">
+<div class="division-grid-head">
+<div>Sno.</div><div>Company Name</div><div>A/C OP.</div><div>D/C</div><div>HB OP.</div><div>D/C</div><div>Action</div>
+</div>
+<div id="divisionBalanceBody" class="division-grid-body"></div>
+</div>
+</div>
+<div class="deals-box">
+<div class="deals-head"><div>S.</div><div>SEL</div><div>DEALS IN</div></div>
+<div id="dealsBody" class="deals-body"></div>
+</div>
+</div>
+<div class="form-group"><label for="address1">Address 1</label><input id="address1" name="address1"></div>
+<div class="form-group"><label for="address2">Address 2</label><input id="address2" name="address2"></div>
+<div class="form-group"><label for="address3">Address 3</label><input id="address3" name="address3"></div>
+<div class="form-group"><label for="address4">Address 4</label><input id="address4" name="address4"></div>
+<div class="form-group"><label for="pin_code">Pin Code</label><input type="number" id="pin_code" name="pin_code"></div>
+<div class="form-group"><label for="contact_no">Phone (O)</label><input type="number" id="contact_no" name="contact_no"></div>
+<div class="form-group"><label for="sms_ac">SMS A/C</label><input type="number" id="sms_ac" name="sms_ac"></div>
+<div class="form-group"><label for="mobile_no">Mobile</label><input type="number" id="mobile_no" name="mobile_no"></div>
+<div class="form-group"><label for="sms_ow">SMS OW</label><input type="number" id="sms_ow" name="sms_ow"></div>
+<div class="form-group"><label for="wp1">Wp1</label><input type="number" id="wp1" name="wp1"></div>
+<div class="form-group"><label for="wp2">Wp2</label><input type="number" id="wp2" name="wp2"></div>
+<div class="form-group"><label for="wp3">Wp3</label><input type="number" id="wp3" name="wp3"></div>
+<div class="form-group"><label for="wp4">Wp4</label><input type="number" id="wp4" name="wp4"></div>
+<div class="form-group full"><label for="trans">Trans.</label><input id="trans" name="trans"></div>
+<div class="form-group"><label for="proprietor">Prop.</label><input id="proprietor" name="proprietor"></div>
+<div class="form-group"><label for="fssai_no">FSSAI</label><input id="fssai_no" name="fssai_no"></div>
+<div class="form-group"><label for="gst_no">GST</label><input id="gst_no" name="gst_no"></div>
+<div class="form-group"><label for="pan_no">PAN</label><input id="pan_no" name="pan_no"></div>
+<div class="form-group"><label for="email">Email</label><input id="email" name="email"></div>
+<div class="form-group"><label for="lock_date">Lck Date</label><input id="lock_date" name="lock_date" type="date"></div>
+<div class="form-group"><label for="party_type">Type</label><input id="party_type" name="party_type"></div>
+<div class="form-group"><label for="cr_day">Cr. Day</label><input id="cr_day" name="cr_day" type="number" step="1" value="0"></div>
+<div class="form-group"><label for="comp_group">Comp G.</label><input id="comp_group" name="comp_group"></div>
+<div class="form-group"><label for="co_name">C/O</label><input id="co_name" name="co_name"></div>
+<div class="form-group"><label for="opening_balance">Opening Balance</label><input id="opening_balance" name="opening_balance" type="number" step="0.01" value="0"></div>
+<div class="form-group"><label for="balance_type">D/C</label><select id="balance_type" name="balance_type"><option value="DB">Debit</option><option value="CR">Credit</option></select></div>
+<div class="form-group full"><label for="remarks">Remarks</label><textarea id="remarks" name="remarks"></textarea></div>
+</div>
+</div>
+
+<div class="tab-pane" id="tab-office">
+<div class="form-grid">
+<div class="form-group w2"><label for="office_address1">Office Address 1</label><input id="office_address1" name="office_address1"></div>
+<div class="form-group w2"><label for="office_address2">Office Address 2</label><input id="office_address2" name="office_address2"></div>
+<div class="form-group w2"><label for="office_address3">Office Address 3</label><input id="office_address3" name="office_address3"></div>
+<div class="form-group"><label for="office_city">Office Station</label><input id="office_city" name="office_city" readonly tabindex="-1"></div>
+<div class="form-group"><label for="office_state">Office State</label><input id="office_state" name="office_state" readonly tabindex="-1"></div>
+<div class="form-group"><label for="office_pin">Office Pin</label><input type="number" id="office_pin" name="office_pin"></div>
+<div class="form-group"><label for="office_phone">Office Phone</label><input type="number" id="office_phone" name="office_phone"></div>
+<div class="form-group"><label for="office_mobile">Office Mobile</label><input type="number" id="office_mobile" name="office_mobile"></div>
+<div class="form-group full"><div class="inline-checks">
+<label><input type="checkbox" id="sms_reg" name="sms_reg">Sms Reg.</label>
+<label><input type="checkbox" id="wp_reg" name="wp_reg">Wp Reg.</label>
+<label><input type="checkbox" id="email_reg" name="email_reg">Email Reg.</label>
+</div></div>
+</div>
+</div>
+
+<div class="tab-pane" id="tab-bank">
+<div class="form-grid">
+<div class="form-group full">
+<div class="bank-shortcuts" id="bankShortcutBar" tabindex="-1">A - Add&nbsp;&nbsp;E - Edit&nbsp;&nbsp;D - Delete&nbsp;&nbsp;F1 - Move Back</div>
+<div class="panel-box">
+<div class="grid-head bank-head"><div>Sno.</div><div>A/C Holder</div><div>A/C Number</div><div>Bank Name</div><div>IFSC</div><div>Pin</div></div>
+<div id="bankBody" class="grid-body" tabindex="0"></div>
+</div>
+</div>
+<div class="form-group w2">
+<div class="panel-box condition-box">
+<div class="grid-head condition-head"><div>S.</div><div>Sel</div><div>Payment Condition (Seller Side)</div></div>
+<div id="paymentConditionBody" class="grid-body condition-body"></div>
+</div>
+</div>
+<div class="form-group w2">
+<div class="panel-box condition-box">
+<div class="grid-head condition-head"><div>S.</div><div>Sel</div><div>Packing Condition (Buyer Side)</div></div>
+<div id="packingConditionBody" class="grid-body condition-body"></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="tab-pane" id="tab-pb">
+<div class="form-grid pb-grid">
+<div class="form-group"><label for="default_product_id">Def. Item</label><select id="default_product_id" name="default_product_id"></select></div>
+<div class="form-group"><label for="default_brand_id">Def. Brand</label><select id="default_brand_id" name="default_brand_id"></select></div>
+<div class="pb-shortcuts" id="pbShortcutBar" tabindex="-1">A - Add&nbsp;&nbsp;E - Edit&nbsp;&nbsp;D - Delete&nbsp;&nbsp;F1 - Move Back</div>
+<div class="form-group w2 pb-seller">
+<label>Product & Brand Setup [SELLER]</label>
+<div class="panel-box">
+<div class="grid-head pb-head"><div>SNC</div><div>PRODUCT</div><div>BRAND</div><div>PACK</div></div>
+<div id="sellerBody" class="grid-body" tabindex="0"></div>
+</div>
+</div>
+<div class="form-group w2 pb-buyer">
+<label>Product & Brand Setup [BUYER]</label>
+<div class="panel-box">
+<div class="grid-head pb-head"><div>SNC</div><div>PRODUCT</div><div>BRAND</div><div>PACK</div></div>
+<div id="buyerBody" class="grid-body" tabindex="0"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</form>
+
+<div class="action-footer">
+<div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+                    </div>
+</div>
+</div>
+</div>
+</div>
+
+<script src="party_master.js?v=4"></script>
+</body>
+</html>

@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Account Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../style.css?v=8">
+<link rel="stylesheet" href="../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../add-mode.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 2px 4px 4px;
+    height: calc(100vh - 94px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 3px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0;
+    text-align: center;
+    font-size: 15px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.page-subtitle {
+    text-align: center;
+    font-size: 10px;
+    margin: 0 0 1px;
+    font-family: "Times New Roman", serif;
+    color: #4a4a4a;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 192px minmax(0, 1fr);
+    gap: 4px;
+    align-items: start;
+    height: calc(100% - 18px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 3px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel .label {
+    font-size: 13px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 3px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 24px;
+    padding: 2px 6px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 4px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 42px);
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.account-row {
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1.15;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.account-row:hover { background: rgba(0, 0, 0, 0.08); }
+.account-row.active { background: #0074d9; color: #fff; }
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 3px;
+    padding: 0 6px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+#accountForm {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-shell {
+    border: 1px solid #d0d0d0;
+    background: #f6f6f6;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-top: 2px;
+    padding-top: 2px;
+}
+
+.tabs {
+    display: flex;
+    gap: 3px;
+    padding: 0 0 0 4px;
+    margin-top: -1px;
+    margin-bottom: 0;
+    align-items: flex-end;
+    flex: 0 0 auto;
+}
+
+.tab-btn {
+    display: inline-block;
+    width: auto;
+    min-width: 0;
+    height: 21px;
+    margin: 0;
+    padding: 1px 8px 2px;
+    border: 1px solid #d0d0d0;
+    border-bottom: none;
+    border-radius: 0;
+    background: #e9e9e9;
+    color: #222;
+    font-size: 12px;
+    line-height: 15px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    cursor: pointer;
+    white-space: nowrap;
+    vertical-align: bottom;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none;
+    outline: none;
+}
+
+.tab-btn.active {
+    background: #fff;
+}
+
+.tab-btn:focus,
+.tab-btn:hover {
+    background: #fff;
+}
+
+.tab-panel {
+    border: 0;
+    background: transparent;
+    padding: 5px 4px 4px;
+    overflow: hidden;
+    min-height: 0;
+    flex: 1;
+}
+
+.tab-panel.hidden { display: none; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px 6px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.form-group.full { grid-column: 1 / -1; }
+
+.form-group.span-2 { grid-column: span 2; }
+
+.form-group label {
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    color: #2d2d2d;
+    line-height: 1.1;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    height: 20px;
+    padding: 1px 4px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.form-group textarea {
+    height: 36px;
+    resize: vertical;
+}
+
+.division-panel {
+    display: grid;
+    grid-template-columns: 118px minmax(0, 1fr);
+    gap: 4px;
+    align-items: start;
+}
+
+.division-list {
+    border: 1px solid #bdbdbd;
+    background: #fff;
+    padding: 2px;
+    max-height: 78px;
+    overflow: auto;
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+}
+
+.division-item {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 1px;
+}
+
+.division-balance {
+    border: 1px solid #bdbdbd;
+    background: #fff;
+    padding: 2px;
+    overflow: auto;
+}
+
+.balance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+    table-layout: fixed;
+}
+
+.balance-table th, .balance-table td {
+    border: 1px solid #bdbdbd;
+    padding: 1px 2px;
+    text-align: left;
+}
+
+.balance-table th { background: #f1f1f1; }
+
+.balance-table input, .balance-table select {
+    width: 100%;
+    height: 18px;
+    border: 1px solid #969696;
+    font-family: "Times New Roman", serif;
+    font-size: 11px;
+}
+
+.bank-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+    table-layout: fixed;
+}
+
+.bank-table th, .bank-table td {
+    border: 1px solid #bdbdbd;
+    padding: 1px 2px;
+}
+
+.bank-table th { background: #e0b77f; }
+
+.bank-table input {
+    width: 100%;
+    height: 18px;
+    border: 1px solid #969696;
+    font-family: "Times New Roman", serif;
+    font-size: 11px;
+}
+
+.bank-actions {
+    margin: 3px 0 0;
+    display: flex;
+    gap: 6px;
+}
+
+.check-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+    min-height: 20px;
+}
+
+.check-row label { display: inline-flex; gap: 6px; align-items: center; }
+
+.right-panel.display-mode input,
+.right-panel.display-mode select,
+.right-panel.display-mode textarea {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #000;
+    -webkit-text-fill-color: #000;
+    opacity: 1;
+    pointer-events: none;
+}
+
+.action-row {
+    margin-top: 3px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.action-row.hidden { display: none; }
+
+.btn {
+    min-width: 82px;
+    padding: 1px 8px;
+    height: 22px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 11px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn:hover { filter: brightness(0.98); }
+
+.total-row {
+    margin-top: 2px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.total-row span { background: #f2c28b; padding: 1px 5px; border: 1px solid #b58b59; }
+
+.address-details {
+    margin-top: 3px;
+    padding-top: 4px;
+    border-top: 1px solid #d0d0d0;
+}
+
+.address-details.hidden { display: none; }
+
+.address-details-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1fr;
+    gap: 4px 10px;
+}
+
+.address-details-col {
+    display: grid;
+    gap: 3px;
+    align-content: start;
+}
+
+.address-details .form-group {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    align-items: center;
+    gap: 2px 6px;
+}
+
+.address-details .form-group label {
+    font-size: 11px;
+    margin: 0;
+}
+
+.address-details .form-group textarea {
+    height: 34px;
+    resize: none;
+}
+
+.address-details .form-group textarea,
+.address-details .form-group input,
+.address-details .form-group select {
+    grid-column: 2;
+}
+
+.address-details .form-group.address-stack {
+    grid-template-columns: 1fr;
+}
+
+.address-details .form-group.address-stack label,
+.address-details .form-group.address-stack textarea {
+    grid-column: 1;
+}
+
+.address-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 8px;
+}
+
+.compact-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 8px;
+}
+
+
+.label-with-error { display: flex; gap: 6px; align-items: center; }
+
+.field-error { border-color: #c21818 !important; background: #fff5f5; }
+
+.error-text { color: #c21818; font-weight: 700; font-size: 13px; }
+
+@media (max-width: 1100px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .division-panel { grid-template-columns: 1fr; }
+    .address-details-grid { grid-template-columns: 1fr; }
+    .address-inline { grid-template-columns: 1fr; }
+    .compact-pair { grid-template-columns: 1fr; }
+    .address-details .form-group { grid-template-columns: 1fr; }
+    .address-details .form-group textarea,
+    .address-details .form-group input,
+    .address-details .form-group select,
+    .address-details .form-group label { grid-column: 1; }
+    
+}
+</style>
+
+<script>
+    const appRoot = (function(){
+        const path = String(location.pathname || "").replace(/\\/g, "/");
+        const lower = path.toLowerCase();
+        const marker = "/brokerapp/";
+        const idx = lower.indexOf(marker);
+        if (idx !== -1) {
+            return location.origin + path.slice(0, idx + marker.length);
+        }
+        return location.origin + "/";
+    })();
+    (async function () {
+        const res = await fetch(appRoot + "api/check_auth.php");
+        const data = await res.json();
+        if (!data.logged_in) window.location.replace(appRoot + "login.html");
+    })();
+</script>
+<script src="../../global-nav.js" defer></script>
+<script src="../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../selection-mode.js" defer></script>
+<script src="../../add-mode.js" defer></script>
+<script src="../../permissions-catalog.js"></script>
+<script src="../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+    <h2 class="page-title">Account Master</h2>
+    <div class="page-subtitle"></div>
+
+    <div class="master-layout">
+        <div class="left-panel">
+            <div class="label">Selection Mode</div>
+            <input id="filterInput" type="text" autocomplete="off" placeholder="Search account...">
+            <div class="list-wrap">
+                <div class="list-head">Name</div>
+                <div id="accountList"></div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <span id="modeTag" class="mode-tag">Display Mode</span>
+            <form id="accountForm" autocomplete="off">
+                <input type="hidden" id="account_id" name="account_id">
+                <div class="tab-shell">
+                <div class="tabs">
+                    <button class="tab-btn active" type="button" data-tab="basicTab">Basic Info</button>
+                    <button class="tab-btn" type="button" data-tab="bankTab">Bank Details</button>
+                </div>
+
+                <div id="basicTab" class="tab-panel">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="group_name" class="label-with-error"><span>Select Group</span><span id="groupError" class="error-text" style="display:none;">Required</span></label>
+                            <select id="group_name" name="group_name" required data-add-first>
+                                <option value="">Select Group</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="account_name" class="label-with-error"><span>Account Name</span><span id="accountNameError" class="error-text" style="display:none;">Required</span></label>
+                            <input id="account_name" name="account_name" type="text" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="account_name_hi">Account Name (Local)</label>
+                            <input id="account_name_hi" name="account_name_hi" type="text">
+                        </div>
+
+                        <div class="form-group full">
+                            <label>Applicable Divisions</label>
+                            <div class="division-panel">
+                                <div class="division-list" id="divisionList"></div>
+                                <div class="division-balance">
+                                    <div style="font-weight:700;margin-bottom:4px;">Division Wise Opening Balance</div>
+                                    <table class="balance-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:50px;">Sno.</th>
+                                                <th>Division Name</th>
+                                                <th style="width:120px;">Op. Balance</th>
+                                                <th style="width:90px;">D/C</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="divisionBalanceBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lock_date">Lock Date</label>
+                            <input id="lock_date" name="lock_date" type="date">
+                        </div>
+                        <div class="form-group">
+                            <label for="other_info">Other Info</label>
+                            <input id="other_info" name="other_info" type="text">
+                        </div>
+                        <div class="form-group span-2">
+                            <label> </label>
+                            <div class="check-row">
+                                <label><input id="is_active" name="is_active" type="checkbox" checked> Active</label>
+                                <label><input id="is_default" name="is_default" type="checkbox"> Select Default</label>
+                                <label><input id="hand_book_ac" name="hand_book_ac" type="checkbox"> Hand Book A/c</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="total-row">
+                        <span>TOTAL</span>
+                        <span id="totalDr">0.00 Dr</span>
+                        <span id="totalCr">0.00 Cr</span>
+                    </div>
+
+                    <div id="addressDetailsSection" class="address-details hidden">
+                        <div class="address-details-grid">
+                            <div class="address-details-col">
+                                <div class="form-group address-stack">
+                                    <label for="other_details_address">Other Details Address</label>
+                                    <textarea id="other_details_address" name="other_details_address"></textarea>
+                                </div>
+
+                                <div class="address-inline">
+                                    <div class="form-group">
+                                        <label for="city_name">City Name</label>
+                                        <input id="city_name" name="city_name" type="text">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="state_name">State</label>
+                                        <input id="state_name" name="state_name" type="text">
+                                    </div>
+                                </div>
+
+                                <div class="address-inline">
+                                    <div class="form-group">
+                                        <label for="pin_code">Pincode</label>
+                                        <input id="pin_code" name="pin_code" type="text">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="category">Category</label>
+                                        <select id="category" name="category">
+                                            <option value="">Select</option>
+                                            <option value="GENERAL">GENERAL</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="contact_person">Contact Person</label>
+                                    <input id="contact_person" name="contact_person" type="text">
+                                </div>
+                            </div>
+
+                            <div class="address-details-col">
+                                <div class="form-group">
+                                    <label for="broker">Broker</label>
+                                    <input id="broker" name="broker" type="text">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trans">Trans.</label>
+                                    <input id="trans" name="trans" type="text">
+                                </div>
+                                <div class="form-group">
+                                    <label for="prop">Prop.</label>
+                                    <input id="prop" name="prop" type="text">
+                                </div>
+                                <div class="form-group">
+                                    <label for="office_phone">Office</label>
+                                    <input id="office_phone" name="office_phone" type="text">
+                                </div>
+                                <div class="form-group">
+                                    <label for="fax">Fax</label>
+                                    <input id="fax" name="fax" type="text">
+                                </div>
+                                <div class="form-group">
+                                    <label for="mobile">Mobile</label>
+                                    <input id="mobile" name="mobile" type="text">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sms">SMS</label>
+                                    <input id="sms" name="sms" type="text">
+                                </div>
+                            </div>
+
+                            <div class="address-details-col">
+                                <div class="compact-pair">
+                                    <div class="form-group">
+                                        <label for="tin">TIN</label>
+                                        <input id="tin" name="tin" type="text">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cst">C.S.T.</label>
+                                        <input id="cst" name="cst" type="text">
+                                    </div>
+                                </div>
+                                <div class="compact-pair">
+                                    <div class="form-group">
+                                        <label for="gst">GST</label>
+                                        <input id="gst" name="gst" type="text">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pan">PAN</label>
+                                        <input id="pan" name="pan" type="text">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email_id">Email Id</label>
+                                    <input id="email_id" name="email_id" type="email">
+                                </div>
+                                <div class="form-group">
+                                    <label for="acc_type">Acc. Type</label>
+                                    <select id="acc_type" name="acc_type">
+                                        <option value="">Select</option>
+                                        <option value="LOCAL">LOCAL</option>
+                                        <option value="INTER-STATE">INTER-STATE</option>
+                                    </select>
+                                </div>
+                                <div class="compact-pair">
+                                    <div class="form-group">
+                                        <label for="credit_d">Credit (D)</label>
+                                        <input id="credit_d" name="credit_d" type="number" step="0.01" value="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="credit_limit">Credit Limit</label>
+                                        <input id="credit_limit" name="credit_limit" type="number" step="0.01" value="0.00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="bankTab" class="tab-panel hidden">
+                    <table class="bank-table">
+                        <thead>
+                            <tr>
+                                <th style="width:60px;">Sno.</th>
+                                <th>A/c Holder</th>
+                                <th style="width:180px;">A/c Number</th>
+                                <th>Bank Name</th>
+                                <th style="width:70px;">Del</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bankBody"></tbody>
+                    </table>
+                    <div class="bank-actions">
+                        <button class="btn" type="button" id="addBankRowBtn">Add Row</button>
+                    </div>
+                </div>
+                </div>
+            </form>
+
+            <div id="displayButtons" class="action-row">
+                <button class="btn primary" type="button" id="addBtn">&#128194; F2-Add</button>
+                <button class="btn" type="button" id="modifyBtn">&#128221; F3-Modify</button>
+                <button class="btn danger" type="button" id="deleteBtn">&#10060; F5-Delete</button>
+                <button class="btn" type="button" id="printBtn">&#128202; F7-Print</button>
+                <button class="btn" type="button" id="exitBtn">&#10060; Esc-Exit</button>
+            </div>
+
+            <div id="addModeButtons" class="action-row hidden">
+                <button class="btn danger" type="button" id="cancelBtn">&#10060; Esc-Cancel</button>
+                <button class="btn primary" type="button" id="saveBtn">&#128190; F6-Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+let allAccounts = [];
+let allGroups = [];
+let allDivisions = [];
+let activeAccountId = null;
+let currentMode = "display";
+let preEditAccountId = null;
+let bankRows = [];
+let divisionMap = {};
+let isDetailLoading = false;
+
+const filterInput = document.getElementById("filterInput");
+const accountList = document.getElementById("accountList");
+const accountForm = document.getElementById("accountForm");
+const modeTag = document.getElementById("modeTag");
+const rightPanel = document.querySelector(".right-panel");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const accountNameInput = document.getElementById("account_name");
+const accountNameError = document.getElementById("accountNameError");
+const groupSelect = document.getElementById("group_name");
+const groupError = document.getElementById("groupError");
+const divisionList = document.getElementById("divisionList");
+const divisionBalanceBody = document.getElementById("divisionBalanceBody");
+const bankBody = document.getElementById("bankBody");
+const totalDr = document.getElementById("totalDr");
+const totalCr = document.getElementById("totalCr");
+const addressDetailsSection = document.getElementById("addressDetailsSection");
+function esc(v) {
+    return (v ?? "").toString().replace(/[&<>\"']/g, function (m) {
+        return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m];
+    });
+}
+
+function showDebug() { }
+
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    syncActionMode();
+    updateAddressDetailsVisibility();
+}
+
+function syncActionMode() {
+    const isDisplay = currentMode === "display";
+    displayButtons.classList.toggle("hidden", !isDisplay);
+    addModeButtons.classList.toggle("hidden", isDisplay);
+    displayButtons.style.display = isDisplay ? "flex" : "none";
+    addModeButtons.style.display = isDisplay ? "none" : "flex";
+}
+
+function setFormEditable(editable) {
+    const fields = accountForm.querySelectorAll("input, select, textarea, button");
+    fields.forEach(function (el) {
+        if (el.closest(".action-row")) return;
+        if (el.type === "button") {
+            const isTabButton = el.classList.contains("tab-btn") || !!el.dataset.tab;
+            el.disabled = !editable && !isTabButton;
+            return;
+        }
+        if (!editable) {
+            el.setAttribute("tabindex", "-1");
+            if (el.type === "checkbox" || el.type === "radio") {
+                el.disabled = true;
+            } else if (el.tagName === "SELECT") {
+                el.disabled = true;
+            } else {
+                el.readOnly = true;
+            }
+        } else {
+            el.removeAttribute("tabindex");
+            if (el.type === "checkbox" || el.type === "radio") {
+                el.disabled = false;
+            } else if (el.tagName === "SELECT") {
+                el.disabled = false;
+            } else {
+                el.readOnly = false;
+            }
+        }
+    });
+    document.getElementById("addBankRowBtn").disabled = !editable;
+    updateAddressDetailsVisibility();
+}
+
+function showAccountError(message) {
+    accountNameInput.classList.add("field-error");
+    accountNameError.textContent = message || "Required";
+    accountNameError.style.display = "inline";
+}
+
+function clearAccountError() {
+    accountNameInput.classList.remove("field-error");
+    accountNameError.textContent = "";
+    accountNameError.style.display = "none";
+}
+
+function showGroupError(message) {
+    groupSelect.classList.add("field-error");
+    groupError.textContent = message || "Required";
+    groupError.style.display = "inline";
+}
+
+function clearGroupError() {
+    groupSelect.classList.remove("field-error");
+    groupError.textContent = "";
+    groupError.style.display = "none";
+}
+
+function renderGroups() {
+    let options = '<option value="">Select Group</option>';
+    if (allGroups.length) {
+        options += allGroups.map(function (g) {
+            const name = (g.group_name || '').toString();
+            return '<option value="' + esc(name) + '">' + esc(name) + '</option>';
+        }).join('');
+    }
+    groupSelect.innerHTML = options;
+    updateAddressDetailsVisibility();
+}
+
+function getSelectedGroup() {
+    const groupName = (groupSelect.value || '').trim();
+    if (!groupName || !allGroups.length) return null;
+    const lower = groupName.toLowerCase();
+    return allGroups.find(function (g) {
+        return String(g.group_name || '').toLowerCase() === lower;
+    }) || null;
+}
+
+function updateAddressDetailsVisibility() {
+    if (!addressDetailsSection) return;
+    const group = getSelectedGroup();
+    const required = !!(group && String(group.address_details_req || 'N').toUpperCase() === 'Y');
+    addressDetailsSection.classList.toggle('hidden', !required);
+    addressDetailsSection.querySelectorAll('input, select, textarea').forEach(function (el) {
+        el.disabled = !required || currentMode === 'display';
+    });
+}
+
+function renderAccounts() {
+    const keyword = filterInput.value.trim().toLowerCase();
+    const rows = allAccounts.filter(function (a) {
+        if (!keyword) return true;
+        return (a.account_name || '').toLowerCase().includes(keyword);
+    });
+
+    if (!activeAccountId && rows.length) {
+        activeAccountId = Number(rows[0].account_id);
+    }
+
+    if (!rows.length) {
+        accountList.innerHTML = "<div class='account-row'>No accounts found</div>";
+        return;
+    }
+
+    accountList.innerHTML = rows.map(function (a) {
+        const active = Number(a.account_id) === activeAccountId ? "active" : "";
+        return "<div class='account-row " + active + "' data-id='" + esc(a.account_id) + "'>" + esc(a.account_name) + "</div>";
+    }).join("");
+
+    accountList.querySelectorAll(".account-row").forEach(function (row) {
+        row.addEventListener("click", function () {
+            const id = Number(this.dataset.id);
+            const acc = allAccounts.find(function (x) { return Number(x.account_id) === id; });
+            if (acc) loadAccountDetail(id);
+        });
+    });
+
+    const currentId = Number(document.getElementById("account_id").value || 0);
+    if (currentMode === "display" && activeAccountId && currentId !== Number(activeAccountId)) {
+        loadAccountDetail(activeAccountId);
+    }
+}
+
+function setTab(activeId) {
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.tab === activeId);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function (panel) {
+        panel.classList.toggle('hidden', panel.id !== activeId);
+    });
+}
+
+function renderDivisionList() {
+    divisionList.innerHTML = '';
+    allDivisions.forEach(function (d) {
+        const item = document.createElement('label');
+        item.className = 'division-item';
+        item.innerHTML = '<input type="checkbox" data-division-id="' + esc(d.division_id) + '"> <span>' + esc(d.div_name || '') + '</span>';
+        const checkbox = item.querySelector('input');
+        checkbox.addEventListener('change', function () {
+            const id = Number(this.dataset.divisionId);
+            if (this.checked) {
+                if (!divisionMap[id]) divisionMap[id] = { division_id: id, div_name: d.div_name, opening_balance: 0, dc: 'D' };
+            } else {
+                delete divisionMap[id];
+            }
+            renderDivisionBalances();
+        });
+        divisionList.appendChild(item);
+    });
+}
+
+function renderDivisionBalances() {
+    const rows = Object.values(divisionMap);
+    divisionBalanceBody.innerHTML = rows.map(function (row, idx) {
+        return '<tr data-division-id="' + esc(row.division_id) + '">'
+            + '<td>' + (idx + 1) + '</td>'
+            + '<td>' + esc(row.div_name || '') + '</td>'
+            + '<td><input type="number" step="0.01" value="' + esc(row.opening_balance ?? 0) + '" data-field="opening_balance"></td>'
+            + '<td><select data-field="dc">'
+            + '<option value="D"' + (row.dc === 'D' ? ' selected' : '') + '>Debit</option>'
+            + '<option value="C"' + (row.dc === 'C' ? ' selected' : '') + '>Credit</option>'
+            + '</select></td>'
+            + '</tr>';
+    }).join('');
+
+    divisionBalanceBody.querySelectorAll('input, select').forEach(function (el) {
+        el.addEventListener('change', function () {
+            const tr = this.closest('tr');
+            if (!tr) return;
+            const id = Number(tr.dataset.divisionId);
+            if (!divisionMap[id]) return;
+            if (this.dataset.field === 'opening_balance') {
+                divisionMap[id].opening_balance = parseFloat(this.value || '0') || 0;
+            } else if (this.dataset.field === 'dc') {
+                divisionMap[id].dc = this.value === 'C' ? 'C' : 'D';
+            }
+            computeTotals();
+        });
+    });
+
+    computeTotals();
+}
+
+function computeTotals() {
+    let dr = 0;
+    let cr = 0;
+    Object.values(divisionMap).forEach(function (row) {
+        const amt = parseFloat(row.opening_balance || 0) || 0;
+        if (row.dc === 'C') cr += amt; else dr += amt;
+    });
+    totalDr.textContent = dr.toFixed(2) + ' Dr';
+    totalCr.textContent = cr.toFixed(2) + ' Cr';
+}
+
+function renderBankRows() {
+    if (!bankRows.length) {
+        bankRows = [{ ac_holder: '', ac_number: '', bank_name: '' }];
+    }
+    bankBody.innerHTML = bankRows.map(function (row, idx) {
+        return '<tr data-index="' + idx + '">'
+            + '<td>' + (idx + 1) + '</td>'
+            + '<td><input type="text" value="' + esc(row.ac_holder || '') + '" data-field="ac_holder"></td>'
+            + '<td><input type="text" value="' + esc(row.ac_number || '') + '" data-field="ac_number"></td>'
+            + '<td><input type="text" value="' + esc(row.bank_name || '') + '" data-field="bank_name"></td>'
+            + '<td><button type="button" class="btn" data-remove="1">Del</button></td>'
+            + '</tr>';
+    }).join('');
+
+    bankBody.querySelectorAll('input').forEach(function (input) {
+        input.addEventListener('input', function () {
+            const tr = this.closest('tr');
+            if (!tr) return;
+            const idx = Number(tr.dataset.index);
+            const field = this.dataset.field;
+            if (bankRows[idx]) bankRows[idx][field] = this.value;
+        });
+    });
+
+    bankBody.querySelectorAll('[data-remove="1"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (currentMode === 'display') return;
+            const tr = this.closest('tr');
+            if (!tr) return;
+            const idx = Number(tr.dataset.index);
+            bankRows.splice(idx, 1);
+            renderBankRows();
+        });
+    });
+}
+
+function resetForm() {
+    accountForm.reset();
+    document.getElementById('account_id').value = '';
+    divisionMap = {};
+    bankRows = [{ ac_holder: '', ac_number: '', bank_name: '' }];
+    renderDivisionList();
+    renderDivisionBalances();
+    renderBankRows();
+    clearAccountError();
+    clearGroupError();
+    activeAccountId = null;
+    setMode('add');
+    setFormEditable(true);
+    renderAccounts();
+    updateAddressDetailsVisibility();
+}
+
+function fillForm(data) {
+    document.getElementById('account_id').value = data.account_id || '';
+    document.getElementById('other_details_address').value = data.other_details_address || '';
+    document.getElementById('city_name').value = data.city_name || '';
+    document.getElementById('state_name').value = data.state_name || '';
+    document.getElementById('pin_code').value = data.pin_code || '';
+    document.getElementById('category').value = data.category || '';
+    document.getElementById('contact_person').value = data.contact_person || '';
+    document.getElementById('office_phone').value = data.office_phone || '';
+    document.getElementById('fax').value = data.fax || '';
+    document.getElementById('mobile').value = data.mobile || '';
+    document.getElementById('sms').value = data.sms || '';
+    document.getElementById('broker').value = data.broker || '';
+    document.getElementById('trans').value = data.trans || '';
+    document.getElementById('prop').value = data.prop || '';
+    document.getElementById('tin').value = data.tin || '';
+    document.getElementById('cst').value = data.cst || '';
+    document.getElementById('gst').value = data.gst || '';
+    document.getElementById('pan').value = data.pan || '';
+    document.getElementById('email_id').value = data.email_id || '';
+    document.getElementById('acc_type').value = data.acc_type || '';
+    document.getElementById('credit_d').value = data.credit_d || 0;
+    document.getElementById('credit_limit').value = data.credit_limit || 0;
+    groupSelect.value = data.group_name || '';
+    accountNameInput.value = data.account_name || '';
+    document.getElementById('account_name_hi').value = data.account_name_hi || '';
+    document.getElementById('lock_date').value = data.lock_date || '';
+    document.getElementById('other_info').value = data.other_info || '';
+    document.getElementById('is_active').checked = String(data.is_active || 'Y') === 'Y';
+    document.getElementById('is_default').checked = String(data.is_default || 'N') === 'Y';
+    document.getElementById('hand_book_ac').checked = String(data.hand_book_ac || 'N') === 'Y';
+
+    divisionMap = {};
+    if (Array.isArray(data.divisions)) {
+        data.divisions.forEach(function (d) {
+            divisionMap[Number(d.division_id)] = {
+                division_id: Number(d.division_id),
+                div_name: d.div_name || '',
+                opening_balance: parseFloat(d.opening_balance || 0) || 0,
+                dc: (d.dc === 'C' ? 'C' : 'D')
+            };
+        });
+    }
+    renderDivisionList();
+    Object.values(divisionMap).forEach(function (d) {
+        const checkbox = divisionList.querySelector('input[data-division-id="' + d.division_id + '"]');
+        if (checkbox) checkbox.checked = true;
+    });
+    renderDivisionBalances();
+
+    bankRows = Array.isArray(data.bank_details) && data.bank_details.length
+        ? data.bank_details.map(function (b) { return { ac_holder: b.ac_holder || '', ac_number: b.ac_number || '', bank_name: b.bank_name || '' }; })
+        : [{ ac_holder: '', ac_number: '', bank_name: '' }];
+    renderBankRows();
+
+    activeAccountId = Number(data.account_id);
+    clearAccountError();
+    clearGroupError();
+    renderAccounts();
+    setMode('display');
+    setFormEditable(false);
+    updateAddressDetailsVisibility();
+}
+
+
+async function loadAccounts() {
+    const res = await fetch(appRoot + 'api/account_master/get_accounts.php');
+    allAccounts = await res.json();
+    if (!activeAccountId && allAccounts.length) {
+        activeAccountId = Number(allAccounts[0].account_id);
+    }
+    renderAccounts();
+}
+
+async function loadGroups() {
+    const res = await fetch(appRoot + 'api/group/get_group.php');
+    allGroups = await res.json();
+    renderGroups();
+}
+
+async function loadDivisions() {
+    const res = await fetch(appRoot + 'api/division/get_division.php');
+    allDivisions = await res.json();
+    renderDivisionList();
+}
+
+async function loadAccountDetail(id) {
+    if (!id || isDetailLoading) return;
+    isDetailLoading = true;
+    try {
+        const res = await fetch(appRoot + 'api/account_master/get_account.php?account_id=' + encodeURIComponent(id));
+        const raw = await res.text();
+        showDebug("HTTP " + res.status + " " + res.statusText + "\nRAW:\n" + raw);
+        let data = null;
+        try {
+            data = raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            showDebug("JSON PARSE FAILED\n" + (e && e.message ? e.message : String(e)) + "\nRAW:\n" + raw);
+            return;
+        }
+        showDebug("RAW RESPONSE:\n" + JSON.stringify(data, null, 2));
+        const account = data && data.account
+            ? data.account
+            : (data && (data.account_id || data.account_name) ? data : null)
+                || (Array.isArray(data) && data.length ? data[0] : null);
+        if (account) {
+            const merged = Object.assign({}, account, {
+                divisions: (data && data.divisions) || account.divisions || [],
+                bank_details: (data && data.bank_details) || account.bank_details || []
+            });
+            fillForm(merged);
+            showDebug("USING ACCOUNT:\n" + JSON.stringify(merged, null, 2));
+        } else if (data && data.status === "error") {
+            alert(data.message || "Failed to load account");
+        }
+    } finally {
+        isDetailLoading = false;
+    }
+}
+
+function gatherPayload() {
+    const divisions = Object.values(divisionMap).map(function (d) {
+        return {
+            division_id: d.division_id,
+            opening_balance: d.opening_balance || 0,
+            dc: d.dc || 'D'
+        };
+    });
+    const banks = bankRows.filter(function (b) {
+        return (b.ac_holder || '').trim() || (b.ac_number || '').trim() || (b.bank_name || '').trim();
+    });
+    return { divisions: divisions, bank_details: banks };
+}
+
+async function saveAccount(isModify) {
+    const groupName = (groupSelect.value || '').trim();
+    const accountName = (accountNameInput.value || '').trim();
+
+    clearAccountError();
+    clearGroupError();
+
+    if (!groupName) {
+        showGroupError('Required');
+        groupSelect.focus();
+        return;
+    }
+    if (!accountName) {
+        showAccountError('Required');
+        accountNameInput.focus();
+        return;
+    }
+
+    if (!isModify) {
+        const ok = await window.confirmAdd('Are you sure you want to add this account?\\n\\n' + accountName);
+        if (!ok) return;
+    }
+
+    const fd = new FormData(accountForm);
+    const extra = gatherPayload();
+    fd.append('divisions', JSON.stringify(extra.divisions));
+    fd.append('bank_details', JSON.stringify(extra.bank_details));
+
+    let url = appRoot + 'api/account_master/add_account.php';
+    if (isModify) {
+        const id = fd.get('account_id');
+        if (!id) { alert('Select an account to modify'); return; }
+        url = appRoot + 'api/account_master/update_account.php';
+    }
+
+    const res = await fetch(url, { method: 'POST', body: fd });
+    const raw = await res.text();
+    let data = null;
+    try {
+        data = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        alert('Request failed: ' + raw);
+        return;
+    }
+    if (!data || data.status !== 'success') {
+        const msg = data && data.message ? data.message : 'Request failed';
+        const extra = data && data.error ? ' (' + data.error + ')' : '';
+        alert(msg + extra);
+        return;
+    }
+
+    await loadAccounts();
+    if (isModify) {
+        const id = Number(fd.get('account_id'));
+        if (id) loadAccountDetail(id);
+    } else {
+        resetForm();
+    }
+}
+
+function handleAddAction() {
+    preEditAccountId = activeAccountId;
+    resetForm();
+    setMode('add');
+    setFormEditable(true);
+    setTimeout(function () { accountNameInput.focus(); }, 0);
+}
+
+function handleModifyAction() {
+    const id = document.getElementById('account_id').value;
+    if (!id) { alert('Select an account first'); return; }
+    preEditAccountId = id;
+    setMode('modify');
+    setFormEditable(true);
+    setTimeout(function () { accountNameInput.focus(); }, 0);
+}
+
+function cancelEditMode() {
+    if (preEditAccountId) {
+        loadAccountDetail(preEditAccountId);
+        preEditAccountId = null;
+        setMode('display');
+        setFormEditable(false);
+        return;
+    }
+    if (allAccounts.length) {
+        loadAccountDetail(allAccounts[0].account_id);
+        setMode('display');
+        setFormEditable(false);
+        return;
+    }
+    resetForm();
+    setMode('display');
+    setFormEditable(false);
+}
+
+async function deleteAccount() {
+    const id = document.getElementById('account_id').value;
+    if (!id) { alert('Select an account to delete'); return; }
+    const ok = await window.confirmDelete('Delete this account?');
+    if (!ok) return;
+
+    const body = new URLSearchParams();
+    body.set('account_id', id);
+
+    const res = await fetch(appRoot + 'api/account_master/delete_account.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+    });
+    const data = await res.json();
+    if (!data || data.status !== 'success') { alert((data && data.message) || 'Request failed'); return; }
+
+    await loadAccounts();
+    if (allAccounts.length) {
+        loadAccountDetail(allAccounts[0].account_id);
+    } else {
+        resetForm();
+        setMode('display');
+        setFormEditable(false);
+    }
+}
+
+filterInput.addEventListener('input', renderAccounts);
+accountNameInput.addEventListener('input', function () { if (accountNameInput.value.trim()) clearAccountError(); });
+groupSelect.addEventListener('change', function () {
+    if (groupSelect.value) clearGroupError();
+    updateAddressDetailsVisibility();
+});
+
+Array.from(document.querySelectorAll('.tab-btn')).forEach(function (btn) {
+    btn.addEventListener('click', function () { setTab(btn.dataset.tab); });
+});
+
+document.getElementById('addBankRowBtn').addEventListener('click', function () {
+    if (currentMode === 'display') return;
+    bankRows.push({ ac_holder: '', ac_number: '', bank_name: '' });
+    renderBankRows();
+});
+
+document.getElementById('addBtn').addEventListener('click', handleAddAction);
+document.getElementById('modifyBtn').addEventListener('click', handleModifyAction);
+document.getElementById('deleteBtn').addEventListener('click', deleteAccount);
+document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+document.getElementById('exitBtn').addEventListener('click', function () { window.location.href = appRoot + 'index.html'; });
+document.getElementById('saveBtn').addEventListener('click', function () { if (currentMode === 'modify') saveAccount(true); else saveAccount(false); });
+document.getElementById('cancelBtn').addEventListener('click', cancelEditMode);
+
+document.addEventListener('keydown', function (e) {
+    if (e.key !== 'F2') return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (document.querySelector('.add-mode-modal, .edit-mode-modal, .simple-modal')) return;
+    if (currentMode !== 'display') return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    handleAddAction();
+}, true);
+
+setMode('display');
+setFormEditable(false);
+
+(async function init() {
+    showDebug("INIT OK. Waiting for account load...");
+    await loadGroups();
+    await loadDivisions();
+    await loadAccounts();
+    if (allAccounts.length) {
+        loadAccountDetail(allAccounts[0].account_id);
+    } else {
+        resetForm();
+    }
+})();
+</script>
+</body>
+</html>

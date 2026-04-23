@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brand Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../style.css?v=8">
+<link rel="stylesheet" href="../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../add-mode.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    max-width: 100%;
+    overflow: hidden;
+    height: 100%;
+}
+
+.content {
+    padding: 8px 10px 10px;
+    height: calc(100vh - 116px);
+    overflow: hidden;
+}
+
+.feature-box {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+    padding: 8px;
+    border: 1px solid #d8d8d8;
+    background: #efefef;
+    overflow: hidden;
+}
+
+.page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 28px;
+    font-family: "Times New Roman", serif;
+    font-weight: 400;
+    color: #0b8d2f;
+    line-height: 1;
+}
+
+.master-layout {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    height: calc(100% - 52px);
+    min-height: 0;
+}
+
+.left-panel, .right-panel {
+    background: #efefef;
+    border: 1px solid #d0d0d0;
+    padding: 10px;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel .label {
+    font-size: 18px;
+    font-family: "Times New Roman", serif;
+    color: #2f2f2f;
+    margin-bottom: 4px;
+}
+
+#filterInput {
+    width: 100%;
+    max-width: 100%;
+    height: 34px;
+    padding: 6px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+#filterInput:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6;
+}
+
+.list-wrap {
+    margin-top: 8px;
+    border: 2px solid #18c7cf;
+    background: #22e2e8;
+    height: calc(100% - 64px);
+    max-height: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.list-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.brand-row {
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    scroll-margin-top: 30px;
+}
+
+.brand-row:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.brand-row.active {
+    background: #0074d9;
+    color: #fff;
+}
+
+.mode-tag {
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 10px;
+    padding: 2px 8px;
+    border: 1px solid #c5b800;
+    background: #ffef1c;
+    color: #000;
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+}
+
+#brandForm {
+    border: 1px solid #d7d7d7;
+    padding: 8px;
+    background: #efefef;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px 12px;
+    align-content: start;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 16px;
+    line-height: 1;
+    font-family: "Times New Roman", serif;
+    color: #2d2d2d;
+}
+
+.form-group input {
+    width: 100%;
+    max-width: 100%;
+    height: 32px;
+    padding: 4px 8px;
+    border: 2px solid #969696;
+    border-radius: 0;
+    background: #fff;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    color: #000;
+}
+
+.right-panel.display-mode input {
+    background: #e6e6e6;
+    border-color: #c2c2c2;
+    color: #444;
+    cursor: default;
+    pointer-events: none;
+    user-select: none;
+}
+
+.action-row {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.btn {
+    min-width: 104px;
+    padding: 4px 10px;
+    height: 32px;
+    border-radius: 2px;
+    border: 2px solid #efc9f0;
+    background: #ea7ce8;
+    color: #000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn:hover { filter: brightness(0.98); }
+
+.btn.primary, .btn.danger {
+    background: #ea7ce8;
+    color: #000;
+    border-color: #efc9f0;
+}
+
+@media (max-width: 900px) {
+    html, body { overflow: auto; height: auto; }
+    .content { padding: 10px 8px 16px; height: auto; overflow: visible; }
+    .feature-box { height: auto; overflow: visible; }
+    .master-layout { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .list-wrap { height: 260px; }
+}
+</style>
+
+<script>
+(async function () {
+    const res = await fetch("../../api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace("../../login.html");
+})();
+</script>
+<script src="../../global-nav.js" defer></script>
+<script src="../../global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="../../selection-mode.js" defer></script>
+<script src="../../add-mode.js" defer></script>
+<script src="../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Brand Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search brand...">
+<div class="list-wrap">
+<div class="list-head">Name</div>
+<div id="brandList"></div>
+</div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="brandForm" autocomplete="off">
+<input type="hidden" id="brand_id" name="brand_id">
+<div class="form-grid">
+<div class="form-group full">
+<label for="brand_name" class="label-with-error"><span>Description</span><span id="brandNameError" class="error-text" style="display:none;"></span></label>
+<input id="brand_name" name="brand_name" required data-add-first>
+</div>
+<div class="form-group">
+<label for="sort_order">Order</label>
+<input id="sort_order" name="sort_order" type="number" step="1" min="0" value="0">
+</div>
+</div>
+</form>
+
+<div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let allBrands = [];
+let activeBrandId = null;
+let currentMode = "display";
+let preEditBrandId = null;
+
+const filterInput = document.getElementById("filterInput");
+const brandList = document.getElementById("brandList");
+const brandForm = document.getElementById("brandForm");
+const modeTag = document.getElementById("modeTag");
+const displayButtons = document.getElementById("displayButtons");
+const addModeButtons = document.getElementById("addModeButtons");
+const rightPanel = document.querySelector(".right-panel");
+const brandNameInput = document.getElementById("brand_name");
+const brandNameError = document.getElementById("brandNameError");
+
+function esc(v) {
+    return (v ?? "").toString().replace(/[&<>"']/g, function (m) {
+        return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m];
+    });
+}
+
+function showBrandNameError(message) {
+    brandNameInput.classList.add("field-error");
+    brandNameError.textContent = message || "Required";
+    brandNameError.style.display = "inline";
+}
+
+function clearBrandNameError() {
+    brandNameInput.classList.remove("field-error");
+    brandNameError.textContent = "";
+    brandNameError.style.display = "none";
+}
+
+function checkDuplicateBrandName() {
+    const name = (brandNameInput.value || "").trim().toLowerCase();
+    if (!name) { clearBrandNameError(); return false; }
+    const currentId = Number(document.getElementById("brand_id").value || 0);
+    const duplicate = allBrands.some(function (b) {
+        const sameName = (b.brand_name || "").trim().toLowerCase() === name;
+        const sameId = Number(b.brand_id) === currentId;
+        return sameName && !sameId;
+    });
+    if (duplicate) {
+        showBrandNameError("Already exists");
+        return true;
+    }
+    clearBrandNameError();
+    return false;
+}
+
+function hasAnyOtherFieldValue() {
+    const inputs = brandForm.querySelectorAll("input");
+    for (let i = 0; i < inputs.length; i += 1) {
+        const field = inputs[i];
+        if (field.id === "brand_name") continue;
+        if (field.type === "hidden") continue;
+        if ((field.value || "").trim()) return true;
+    }
+    return false;
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    rightPanel.classList.remove("add-mode", "modify-mode", "display-mode");
+    if (mode === "add") {
+        modeTag.textContent = "Add Mode";
+        rightPanel.classList.add("add-mode");
+    } else if (mode === "modify") {
+        modeTag.textContent = "Edit Mode";
+        rightPanel.classList.add("modify-mode");
+    } else {
+        modeTag.textContent = "Display Mode";
+        rightPanel.classList.add("display-mode");
+    }
+    syncActionMode();
+}
+
+function syncActionMode() {
+    const isDisplay = currentMode === "display";
+    displayButtons.style.display = isDisplay ? "flex" : "none";
+    addModeButtons.style.display = isDisplay ? "none" : "flex";
+}
+
+function setFormEditable(editable) {
+    const fields = brandForm.querySelectorAll("input");
+    fields.forEach(function (field) {
+        if (field.type === "hidden") return;
+        field.readOnly = !editable;
+        if (!editable) field.setAttribute("tabindex", "-1");
+        else field.removeAttribute("tabindex");
+    });
+}
+
+function resetForm() {
+    brandForm.reset();
+    document.getElementById("brand_id").value = "";
+    document.getElementById("sort_order").value = "0";
+    activeBrandId = null;
+    clearBrandNameError();
+    setMode("add");
+    setFormEditable(true);
+    renderBrands();
+}
+
+function fillForm(b) {
+    document.getElementById("brand_id").value = b.brand_id || "";
+    document.getElementById("brand_name").value = b.brand_name || "";
+    document.getElementById("sort_order").value = b.sort_order ?? 0;
+    activeBrandId = Number(b.brand_id);
+    clearBrandNameError();
+    setMode("display");
+    setFormEditable(false);
+    renderBrands();
+}
+
+function renderBrands() {
+    const keyword = filterInput.value.trim().toLowerCase();
+    const rows = allBrands.filter(function (b) {
+        if (!keyword) return true;
+        return (b.brand_name || "").toLowerCase().includes(keyword);
+    });
+
+    if (!rows.length) {
+        brandList.innerHTML = "<div class='brand-row'>No records found</div>";
+        return;
+    }
+
+    brandList.innerHTML = rows.map(function (b) {
+        const active = Number(b.brand_id) === activeBrandId ? "active" : "";
+        return "<div class='brand-row " + active + "' data-id='" + esc(b.brand_id) + "'>"
+            + esc(b.brand_name || "")
+            + "</div>";
+    }).join("");
+
+    brandList.querySelectorAll(".brand-row").forEach(function (row) {
+        row.addEventListener("click", function () {
+            const id = Number(this.dataset.id);
+            const b = allBrands.find(function (x) { return Number(x.brand_id) === id; });
+            if (b) fillForm(b);
+        });
+    });
+}
+
+async function loadBrands() {
+    const res = await fetch("../../api/brand/get_brand.php");
+    allBrands = await res.json();
+    renderBrands();
+}
+
+async function saveBrand(isModify) {
+    const fd = new FormData(brandForm);
+    const brandId = fd.get("brand_id");
+    const brandName = (fd.get("brand_name") || "").trim();
+
+    if (checkDuplicateBrandName()) {
+        brandNameInput.focus();
+        brandNameInput.select();
+        return;
+    }
+
+    if (!brandName) {
+        if (hasAnyOtherFieldValue()) {
+            showBrandNameError("Required");
+            brandNameInput.focus();
+        }
+        return;
+    }
+    clearBrandNameError();
+
+    let url = "../../api/brand/add_brand.php";
+    if (isModify) {
+        if (!brandId) {
+            alert("Select brand first");
+            return;
+        }
+        url = "../../api/brand/update_brand.php";
+    } else if (typeof window.confirmAdd === "function") {
+        const ok = await window.confirmAdd("Are you sure you want to add this brand?\n\n" + brandName);
+        if (!ok) return;
+    }
+
+    const res = await fetch(url, { method: "POST", body: fd });
+    const data = await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if (data.status === "success") {
+        await loadBrands();
+        if (!isModify) {
+            resetForm();
+            return;
+        }
+        const updated = allBrands.find(function (x) { return Number(x.brand_id) === Number(brandId); });
+        if (updated) fillForm(updated);
+    }
+}
+
+async function deleteBrand() {
+    const brandId = Number(document.getElementById("brand_id").value || 0);
+    if (!brandId) {
+        alert("Select brand first");
+        return;
+    }
+    const ok = await window.confirmDelete("Delete this brand?");
+    if (!ok) return;
+    const body = new URLSearchParams();
+    body.set("brand_id", String(brandId));
+    const res = await fetch("../../api/brand/delete_brand.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+    });
+    const data = await res.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if (data.status === "success") {
+        await loadBrands();
+        if (allBrands.length) {
+            fillForm(allBrands[0]);
+        } else {
+            brandForm.reset();
+            document.getElementById("brand_id").value = "";
+            document.getElementById("sort_order").value = "0";
+            clearBrandNameError();
+            setMode("display");
+            setFormEditable(false);
+            renderBrands();
+        }
+    }
+}
+
+function handleAddAction() {
+    preEditBrandId = activeBrandId;
+    resetForm();
+    setMode("add");
+    setFormEditable(true);
+    setTimeout(function () {
+        brandNameInput.focus();
+    }, 0);
+}
+
+function handleModifyAction() {
+    const brandId = document.getElementById("brand_id").value;
+    if (!brandId) {
+        alert("Select brand first");
+        return;
+    }
+    preEditBrandId = Number(brandId);
+    setMode("modify");
+    setFormEditable(true);
+    setTimeout(function () {
+        brandNameInput.focus();
+    }, 0);
+}
+
+function cancelEditMode() {
+    if (preEditBrandId) {
+        const prev = allBrands.find(function (b) { return Number(b.brand_id) === Number(preEditBrandId); });
+        if (prev) {
+            fillForm(prev);
+            preEditBrandId = null;
+            return;
+        }
+    }
+    if (allBrands.length) {
+        fillForm(allBrands[0]);
+        return;
+    }
+    resetForm();
+}
+
+brandNameInput.addEventListener("input", function () {
+    if ((brandNameInput.value || "").trim()) {
+        checkDuplicateBrandName();
+    } else {
+        clearBrandNameError();
+    }
+});
+
+document.getElementById("addBtn").addEventListener("click", handleAddAction);
+document.getElementById("modifyBtn").addEventListener("click", handleModifyAction);
+document.getElementById("deleteBtn").addEventListener("click", deleteBrand);
+document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+document.getElementById("exitBtn").addEventListener("click", function () { window.location.href = "../../index.html"; });
+filterInput.addEventListener("input", renderBrands);
+document.getElementById("saveBtn").addEventListener("click", function () {
+    if (currentMode === "modify") saveBrand(true);
+    else saveBrand(false);
+});
+document.getElementById("cancelBtn").addEventListener("click", cancelEditMode);
+
+document.addEventListener("keydown", function (e) {
+    if (currentMode !== "display") return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const rows = Array.from(brandList.querySelectorAll(".brand-row")).filter(function (r) { return r.dataset.id; });
+    if (!rows.length) return;
+    let currentIndex = rows.findIndex(function (row) { return Number(row.dataset.id) === Number(activeBrandId); });
+    if (currentIndex === -1) currentIndex = 0;
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentIndex < rows.length - 1) currentIndex += 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentIndex > 0) currentIndex -= 1;
+        rows[currentIndex].scrollIntoView({ block: "nearest" });
+        rows[currentIndex].click();
+    }
+});
+
+setMode("display");
+setFormEditable(false);
+(async function init() {
+    await loadBrands();
+    if (allBrands.length) {
+        fillForm(allBrands[0]);
+    } else {
+        resetForm();
+    }
+})();
+</script>
+</body>
+</html>

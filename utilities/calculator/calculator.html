@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="../../">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CALCULATOR | SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<script>
+(async function () {
+    const res = await fetch("./api/check_auth.php");
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace("login.html");
+})();
+</script>
+<style>
+.page-name { margin: 0; text-align: center; font-size: 34px; letter-spacing: .04em; }
+</style>
+<script src="global-nav.js" defer></script>
+<script src="delete-mode.js" defer data-delete-mode="1"></script>
+<script src="edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="content">
+    <div class="feature-box">
+        <h1 class="page-name">CALCULATOR</h1>
+    </div>
+</div>
+</body>
+</html>
+

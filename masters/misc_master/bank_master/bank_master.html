@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bank Master | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../../../style.css?v=8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot=(function(){const path=String(location.pathname||'').replace(/\\\\/g,'/');const lower=path.toLowerCase();const marker='/brokerapp/';const idx=lower.indexOf(marker);if(idx!==-1){return location.origin+path.slice(0,idx+marker.length);}return location.origin+'/';})();
+(async function(){
+    const res=await fetch(appRoot + "api/check_auth.php");
+    const data=await res.json();
+    if(!data.logged_in)window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="../../../global-nav.js" defer></script>
+<script src="../../../global-keyboard.js" defer data-global-keyboard="1"></script>
+
+<link rel="stylesheet" href="../../../selection-mode.css?v=1">
+<link rel="stylesheet" href="../../../add-mode.css?v=1">
+<script src="../../../add-mode.js" defer></script>
+<script src="../../../permissions-catalog.js"></script>
+<script src="../../../selection-mode.js" defer></script>
+    <link rel="stylesheet" href="./style.css?v=1">
+<script src="../../../delete-mode.js" defer data-delete-mode="1"></script>
+<script src="../../../edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+
+<div class="content">
+<div class="feature-box">
+<h2 class="page-title">Bank Master</h2>
+
+<div class="master-layout">
+<div class="left-panel">
+<div class="label">Selection Mode</div>
+<input id="filterInput" type="text" autocomplete="off" placeholder="Search bank...">
+<div class="list-wrap"><div class="list-head">Name</div><div id="bankList"></div></div>
+</div>
+
+<div class="right-panel">
+<span id="modeTag" class="mode-tag">Display Mode</span>
+<form id="bankForm" autocomplete="off">
+<input type="hidden" id="bank_id" name="bank_id">
+<div class="form-grid">
+<div class="form-group full">
+<label for="bank_name" class="label-with-error">
+<span>Bank Name</span>
+<span id="bankNameError" class="error-text" style="display:none;"></span>
+</label>
+<input id="bank_name" name="bank_name" required data-add-first data-duplicate-check="checkDuplicateBankName">
+</div>
+<div class="form-group full">
+<label for="branch">Branch</label>
+<input id="branch" name="branch">
+</div>
+<div class="form-group">
+<label for="ifsc_code">IFSC Code</label>
+<input id="ifsc_code" name="ifsc_code" maxlength="20">
+</div>
+<div class="form-group">
+<label for="pin">Pin</label>
+<input id="pin" name="pin" maxlength="10">
+</div>
+</div>
+</form>
+
+ <div id="displayButtons" class="action-row">
+                        <button class="btn primary" type="button" id="addBtn">📂 F2-Add</button>
+                        <button class="btn" type="button" id="modifyBtn">📝 F3-Modify</button>
+                        <button class="btn danger" type="button" id="deleteBtn">❌ F5-Delete</button>
+                        <button class="btn" type="button" id="printBtn">📊 F7-Print</button>
+                        <button class="btn" type="button" id="exitBtn">❌ Esc-Exit</button>
+                    </div>
+
+                    <div id="addModeButtons" class="action-row hidden">
+                        <button class="btn danger" type="button" id="cancelBtn">❌ Esc-Cancel</button>
+                        <button class="btn primary" type="button" id="saveBtn">💾 F6-Save</button>
+                    </div>
+</div>
+</div>
+</div>
+
+<script>
+let allBanks=[];
+let activeBankId=null;
+let currentMode="display";
+let preEditBankId=null;
+
+const filterInput=document.getElementById("filterInput");
+const bankList=document.getElementById("bankList");
+const bankForm=document.getElementById("bankForm");
+const modeTag=document.getElementById("modeTag");
+const displayButtons=document.getElementById("displayButtons");
+const addModeButtons=document.getElementById("addModeButtons");
+const bankNameInput=document.getElementById("bank_name");
+const bankNameError=document.getElementById("bankNameError");
+const ifscInput=document.getElementById("ifsc_code");
+
+function esc(v){return (v??"").toString().replace(/[&<>\"']/g,function(m){return({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[m];});}
+function bankNameOf(row){return (row?.bank_name??"").toString();}
+
+function showBankNameError(message){bankNameInput.classList.add("field-error");bankNameError.textContent=message;bankNameError.style.display="inline";}
+function clearBankNameError(){bankNameInput.classList.remove("field-error");bankNameError.textContent="";bankNameError.style.display="none";}
+
+function checkDuplicateBankName(){
+    const name=bankNameInput.value.trim().toLowerCase();
+    if(!name){clearBankNameError();return false;}
+    const currentId=Number(document.getElementById("bank_id").value||0);
+    const duplicate=allBanks.some(function(row){
+        const sameName=bankNameOf(row).trim().toLowerCase()===name;
+        const sameId=Number(row.bank_id)===currentId;
+        return sameName&&!sameId;
+    });
+    if(duplicate){showBankNameError("Already exists");return true;}
+    clearBankNameError();
+    return false;
+}
+
+function setFormEditable(editable){
+    const fields=bankForm.querySelectorAll("input");
+    fields.forEach(function(field){
+        if(field.id==="bank_id")return;
+        if(!editable)field.setAttribute("tabindex","-1");
+        else field.removeAttribute("tabindex");
+        field.readOnly=!editable;
+    });
+}
+
+function syncActionMode(){
+    const isDisplay=currentMode==="display";
+    displayButtons.classList.toggle("hidden",!isDisplay);
+    addModeButtons.classList.toggle("hidden",isDisplay);
+    displayButtons.style.display=isDisplay?"flex":"none";
+    addModeButtons.style.display=isDisplay?"none":"flex";
+}
+
+function setMode(mode){
+    currentMode=mode;
+    const rightPanel=document.querySelector(".right-panel");
+    rightPanel.classList.remove("add-mode","modify-mode","display-mode");
+
+    if(mode==="add"){
+        modeTag.textContent="Add Mode";
+        rightPanel.classList.add("add-mode");
+        setTimeout(function(){bankNameInput.focus();},0);
+    }
+    if(mode==="modify"){
+        modeTag.textContent="Edit Mode";
+        rightPanel.classList.add("modify-mode");
+        setTimeout(function(){bankNameInput.focus();},0);
+    }
+    if(mode==="display"){
+        modeTag.textContent="Display Mode";
+        rightPanel.classList.add("display-mode");
+        preEditBankId=null;
+        clearBankNameError();
+        syncSelectionHighlight();
+    }
+    syncActionMode();
+}
+
+function ensureActiveSelection(){
+    if(!allBanks.length){activeBankId=null;return null;}
+    let active=allBanks.find(function(row){return Number(row.bank_id)===Number(activeBankId);});
+    if(!active){active=allBanks[0];activeBankId=Number(active.bank_id);}
+    return active;
+}
+
+function fillFormWithoutRender(row){
+    document.getElementById("bank_id").value=row.bank_id||"";
+    document.getElementById("bank_name").value=row.bank_name||"";
+    document.getElementById("branch").value=row.branch||"";
+    document.getElementById("ifsc_code").value=row.ifsc_code||"";
+    document.getElementById("pin").value=row.pin||"";
+    activeBankId=Number(row.bank_id);
+    clearBankNameError();
+}
+
+function fillForm(row){
+    fillFormWithoutRender(row);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    renderBanks();
+}
+
+function resetForm(){
+    bankForm.reset();
+    document.getElementById("bank_id").value="";
+    clearBankNameError();
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+    renderBanks();
+}
+
+function renderBanks(){
+    ensureActiveSelection();
+    const keyword = "";
+    const rows=allBanks.filter(function(row){
+        if(!keyword)return true;
+        return (row.bank_name||"").toLowerCase().includes(keyword)
+            || (row.branch||"").toLowerCase().includes(keyword)
+            || (row.ifsc_code||"").toLowerCase().includes(keyword)
+            || (row.pin||"").toLowerCase().includes(keyword);
+    });
+
+    if(!rows.length){bankList.innerHTML="<div class='bank-row'>No records found</div>";return;}
+
+    bankList.innerHTML=rows.map(function(row){
+        const active=Number(row.bank_id)===activeBankId?"active":"";
+        return "<div class='bank-row "+active+"' data-id='"+esc(row.bank_id)+"'>"+esc(bankNameOf(row))+"</div>";
+    }).join("");
+
+    bankList.querySelectorAll(".bank-row").forEach(function(item){item.addEventListener("click",function(){selectRow(this);});});
+    syncSelectionHighlight();
+}
+
+function syncSelectionHighlight(){
+    const rows=Array.from(bankList.querySelectorAll(".bank-row")).filter(function(r){return r.dataset.id;});
+    rows.forEach(function(r){r.classList.remove("active");});
+    const activeRow=rows.find(function(r){return Number(r.dataset.id)===Number(activeBankId);});
+    if(activeRow){activeRow.classList.add("active");activeRow.scrollIntoView({block:"nearest"});}
+}
+
+function selectRow(row){
+    bankList.querySelectorAll(".bank-row").forEach(function(r){r.classList.remove("active");});
+    row.classList.add("active");
+    const id=Number(row.dataset.id);
+    activeBankId=id;
+    const selected=allBanks.find(function(x){return Number(x.bank_id)===id;});
+    if(!selected)return;
+    fillFormWithoutRender(selected);
+    setMode("display");
+    setFormEditable(false);
+    syncActionMode();
+    row.scrollIntoView({block:"center"});
+}
+
+async function loadBanks(preferredId){
+    const res=await fetch("../../../api/bank/get_bank.php");
+    allBanks=await res.json();
+    if(!Array.isArray(allBanks))allBanks=[];
+
+    if(allBanks.length){
+        if(preferredId && allBanks.some(function(row){return Number(row.bank_id)===Number(preferredId);})){activeBankId=Number(preferredId);}        
+        const selected=ensureActiveSelection();
+        renderBanks();
+        if(selected)fillFormWithoutRender(selected);
+        setMode("display");
+        setFormEditable(false);
+        syncActionMode();
+    }else{
+        bankList.innerHTML="<div class='bank-row'>No records found</div>";
+        resetForm();
+    }
+}
+
+function startAddMode(){
+    bankForm.reset();
+    document.getElementById("bank_id").value="";
+    clearBankNameError();
+    setMode("add");
+    setFormEditable(true);
+    syncActionMode();
+}
+
+function startModifyMode(){
+    const selected=ensureActiveSelection();
+    if(!selected){alert("No bank selected");return;}
+    preEditBankId=Number(selected.bank_id);
+    fillFormWithoutRender(selected);
+    setMode("modify");
+    setFormEditable(true);
+    syncActionMode();
+}
+
+function cancelEditMode(){
+    if(currentMode==="add"){
+        const selected=ensureActiveSelection();
+        if(selected){fillForm(selected);}else{resetForm();}
+        return;
+    }
+    if(currentMode==="modify"){
+        const selected=allBanks.find(function(row){return Number(row.bank_id)===Number(preEditBankId);}) || ensureActiveSelection();
+        if(selected){fillForm(selected);}else{resetForm();}
+        return;
+    }
+}
+
+function nextByName(name){
+    const n=(name||"").trim().toLowerCase();
+    if(!n)return null;
+    return allBanks.find(function(row){return bankNameOf(row).trim().toLowerCase()===n;}) || null;
+}
+
+async function saveRecord(){
+    const formData=new FormData(bankForm);
+    const bankName=(formData.get("bank_name")||"").trim();
+    if(!bankName){showBankNameError("Required");bankNameInput.focus();return;}
+    if(checkDuplicateBankName()){bankNameInput.focus();return;}
+
+    formData.set("bank_name",bankName);
+    formData.set("ifsc_code",(formData.get("ifsc_code")||"").toString().trim().toUpperCase());
+
+    if(currentMode!=="modify"){
+        const confirmAdd=await window.confirmAdd("Are you sure you want to add this bank?\n\n"+bankName);
+        if(!confirmAdd)return;
+    }
+
+    let apiUrl="../../../api/bank/add_bank.php";
+    if(currentMode==="modify")apiUrl="../../../api/bank/update_bank.php";
+
+    const preserveId=currentMode==="modify"?Number(formData.get("bank_id")||0):null;
+    const preserveName=bankName;
+
+    const response=await fetch(apiUrl,{method:"POST",body:formData});
+    const data=await response.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status!=="success")return;
+
+    await loadBanks(preserveId);
+    if(!preserveId){
+        const created=nextByName(preserveName);
+        if(created){activeBankId=Number(created.bank_id);fillForm(created);}
+    }
+    if(preserveId){
+        const updated=allBanks.find(function(row){return Number(row.bank_id)===Number(preserveId);});
+        if(updated){fillForm(updated);}
+    }
+}
+
+async function deleteRecord(){
+    const selected=ensureActiveSelection();
+    if(!selected){alert("No bank selected");return;}
+    if(!(await confirmDelete("Delete this bank?")))return;
+
+    const body=new URLSearchParams();
+    body.set("bank_id",selected.bank_id);
+
+    const response=await fetch("../../../api/bank/delete_bank.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:body.toString()
+    });
+    const data=await response.json();
+    if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+    if(data.status!=="success")return;
+
+    const currentIdx=allBanks.findIndex(function(row){return Number(row.bank_id)===Number(selected.bank_id);});
+    await loadBanks();
+    if(!allBanks.length)return;
+
+    const fallback=allBanks[Math.min(Math.max(currentIdx,0),allBanks.length-1)] || allBanks[0];
+    activeBankId=Number(fallback.bank_id);
+    fillForm(fallback);
+}
+
+function moveSelection(direction){
+    if(currentMode!=="display")return;
+    const visibleRows=Array.from(bankList.querySelectorAll(".bank-row")).filter(function(row){return row.dataset.id;});
+    if(!visibleRows.length)return;
+    let index=visibleRows.findIndex(function(row){return Number(row.dataset.id)===Number(activeBankId);});
+    if(index<0)index=0;
+    index=index+direction;
+    if(index<0)index=0;
+    if(index>=visibleRows.length)index=visibleRows.length-1;
+    selectRow(visibleRows[index]);
+}
+
+document.getElementById("addBtn").addEventListener("click",startAddMode);
+document.getElementById("modifyBtn").addEventListener("click",startModifyMode);
+document.getElementById("deleteBtn").addEventListener("click",deleteRecord);
+document.getElementById("printBtn").addEventListener("click",function(){window.print();});
+document.getElementById("exitBtn").addEventListener("click",function(){window.location.href = appRoot + "index.html";});
+document.getElementById("cancelBtn").addEventListener("click",cancelEditMode);
+document.getElementById("saveBtn").addEventListener("click",saveRecord);
+
+function keepBankNameActive(){
+    if(currentMode==="add"||currentMode==="modify"){
+        setTimeout(function(){if(!bankForm.contains(document.activeElement))bankNameInput.focus();},0);
+    }
+}
+
+bankNameInput.addEventListener("input",function(){clearBankNameError();if(currentMode!=="display")checkDuplicateBankName();});
+bankForm.addEventListener("focusin",function(e){
+    if(currentMode!=="modify")return;
+    const field=e.target;
+    if(field.tagName==="INPUT"&&field.type!=="hidden"&&!field.readOnly){
+        setTimeout(function(){field.select();},0);
+    }
+});let typeBuffer="",typeTimer=null,lastMatchedIndex=-1;
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    if(e.ctrlKey||e.altKey||e.metaKey)return;
+    const rows=Array.from(bankList.querySelectorAll(".bank-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    const isSearchBox=document.activeElement.id==="filterInput";
+
+    if(e.key.length===1&&/^[a-zA-Z]$/.test(e.key)){
+        if(isSearchBox)return;
+        e.preventDefault();
+        const letter=e.key.toLowerCase();
+        if(typeTimer)clearTimeout(typeTimer);
+        typeBuffer+=letter;
+        typeTimer=setTimeout(function(){typeBuffer="";lastMatchedIndex=-1;},700);
+
+        let matchIndex=-1;
+        if(typeBuffer.length===1){
+            const startIndex=lastMatchedIndex+1;
+            matchIndex=rows.findIndex(function(row,index){
+                return index>=startIndex&&row.textContent.trim().toLowerCase().startsWith(letter);
+            });
+            if(matchIndex===-1){
+                matchIndex=rows.findIndex(function(row){
+                    return row.textContent.trim().toLowerCase().startsWith(letter);
+                });
+            }
+        }else{
+            matchIndex=rows.findIndex(function(row){
+                return row.textContent.trim().toLowerCase().startsWith(typeBuffer);
+            });
+        }
+
+        if(matchIndex!==-1){
+            lastMatchedIndex=matchIndex;
+            selectRow(rows[matchIndex]);
+        }
+    }
+});
+
+document.addEventListener("keydown",function(e){
+    if(currentMode!=="display")return;
+    const rows=Array.from(bankList.querySelectorAll(".bank-row")).filter(function(r){return r.dataset.id;});
+    if(!rows.length)return;
+    let currentIndex=rows.findIndex(function(row){return Number(row.dataset.id)===Number(activeBankId);});
+    if(currentIndex===-1)currentIndex=0;
+
+    if(e.key==="ArrowDown"){
+        e.preventDefault();
+        if(currentIndex<rows.length-1)currentIndex++;
+        selectRow(rows[currentIndex]);
+    }
+    if(e.key==="ArrowUp"){
+        e.preventDefault();
+        if(currentIndex>0)currentIndex--;
+        selectRow(rows[currentIndex]);
+    }
+});
+
+document.addEventListener("mousedown",function(e){
+    if(currentMode==="add"||currentMode==="modify"){
+        if(!bankForm.contains(e.target))keepBankNameActive();
+    }
+});setMode("display");
+setFormEditable(false);
+syncActionMode();
+
+(async function init(){
+    await loadBanks();
+    if(allBanks.length){
+        const first=ensureActiveSelection();
+        if(first)fillFormWithoutRender(first);
+        renderBanks();
+    }
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
