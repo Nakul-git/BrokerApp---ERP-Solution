@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company Selection | SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#efefef;font-family:"Times New Roman",serif;overflow:hidden}
+.top-bar{display:flex;justify-content:flex-end;padding:18px 24px 0}
+.logout-link{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(0,0,0,.08);color:#111;text-decoration:none;font-size:20px;border:1px solid rgba(0,0,0,.08)}
+.logout-link:hover{background:rgba(0,0,0,.12)}
+.master-wrapper{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.master-split{display:flex;align-items:stretch;justify-content:center;gap:18px;width:100%;max-width:1320px;flex-wrap:nowrap}
+.master-box{background:#efefef;border:1px solid #bbb;padding:20px;flex:1 1 0;min-width:0;max-width:980px}
+.division-modal{position:fixed;inset:0;background:rgba(0,0,0,.25);display:none;align-items:center;justify-content:center;z-index:9999}
+.division-box{width:360px;max-width:90vw;background:#efefef;border:1px solid #bbb;padding:16px 18px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.division-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.division-header h3{margin:0;font-size:16px;text-align:left;color:#111}
+.division-close{border:1px solid #999;background:#fff;width:28px;height:28px;line-height:26px;border-radius:6px;cursor:pointer;font-size:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.division-close:hover{background:#f0f0f0}
+.master-title{text-align:center;color:green;font-size:30px;margin:0 0 18px}
+.master-sub{text-align:center;font-size:18px;color:#222;margin:0 0 16px}
+.status-note{margin:0 0 14px;text-align:center;font-size:16px;color:#8a0000;font-weight:700}
+.filter-row{display:flex;justify-content:center;align-items:center;gap:12px;margin:0 0 12px;font-size:16px;color:#111}
+.filter-row label{font-weight:700}
+.filter-row select{min-width:180px;padding:4px 6px;font-size:15px;font-family:"Times New Roman",serif}
+.grid-box{background:#f4b6b6;border:1px solid #444;min-height:320px;max-height:420px;overflow:auto}
+.master-table{width:100%;border-collapse:collapse;background:#fff}
+.master-table th,.master-table td{border:1px solid #999;padding:6px 8px;font-size:15px}
+.master-table th{position:sticky;top:0;background:#f5f5f5}
+.master-table tr.selected{background:#0074d9;color:#fff}
+.master-table tr{cursor:pointer}
+.division-panel{margin-top:14px;padding:10px 12px;border:1px solid #bbb;background:#f8f8f8;display:none}
+.division-panel h3{margin:0 0 8px;font-size:16px;text-align:center;color:#111}
+.division-grid{background:#f4b6b6;border:1px solid #444;min-height:180px;max-height:220px;overflow:auto}
+.division-table{width:100%;border-collapse:collapse;background:#fff}
+.division-table th,.division-table td{border:1px solid #999;padding:6px 8px;font-size:15px}
+.division-table th{position:sticky;top:0;background:#f5f5f5}
+.division-table tr.selected{background:#0074d9;color:#fff}
+.division-table tr{cursor:pointer}
+.division-actions{margin-top:10px;display:flex;justify-content:center}
+.bottom-bar{margin-top:14px;display:flex;justify-content:center}
+.btn{padding:8px 18px;background:#d46cc9;border:1px solid #8f4a88;cursor:pointer;font-size:15px;font-family:"Times New Roman",serif;font-weight:700}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+</style>
+<script src="global-keyboard.js" defer data-global-keyboard="1"></script>
+<script src="delete-mode.js" defer data-delete-mode="1"></script>
+<script src="edit-mode.js" defer data-edit-mode="1"></script>
+</head>
+<body>
+<div class="top-bar">
+<a href="auth/logout.php" class="logout-link" data-logout-link="1" title="Logout">&#10162;</a>
+</div>
+<div class="master-wrapper">
+<div class="master-split" id="masterSplit">
+<div class="master-box">
+<h2 class="master-title">Company Master</h2>
+<p class="master-sub">Select Company To Continue</p>
+<p id="statusNote" class="status-note" style="display:none;"></p>
+<div class="filter-row">
+    <label for="financialYearSelect">Select Financial Year</label>
+    <select id="financialYearSelect"></select>
+</div>
+<div class="grid-box">
+<table class="master-table" id="companyTable">
+<thead>
+<tr>
+<th>Code</th>
+<th>Company Name</th>
+<th>Start Date</th>
+<th>End Date</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+<div class="division-modal" id="divisionModal">
+<div class="division-box" id="divisionPanel">
+    <div class="division-header">
+        <h3>Select Division</h3>
+        <button type="button" class="division-close" id="divisionCloseBtn">X</button>
+    </div>
+    <p id="divisionNote" class="status-note" style="display:none;margin:0 0 8px;"></p>
+    <div class="division-grid">
+        <table class="division-table" id="divisionTable">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Division Name</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="division-actions">
+        <button class="btn" type="button" id="selectDivisionBtn" disabled>Enter - Selection</button>
+    </div>
+</div>
+</div>
+<div class="bottom-bar">
+<button class="btn" type="button" id="selectCompanyBtn" disabled>Enter - Selection</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+(async function () {
+    const authRes = await fetch("./api/check_auth.php", { cache: "no-store" });
+    const authData = await authRes.json();
+    if (!authData.logged_in) {
+        window.location.replace("login.html");
+        return;
+    }
+    
+    // Clear division selection when user comes back to change company
+    try {
+        await fetch("./api/division/clear_selection.php", { 
+            method: "POST",
+            cache: "no-store"
+        });
+    } catch(e) {
+        console.log("Division cleared");
+    }
+})();
+
+let selectedId = 0;
+let companies = [];
+let financialYears = [];
+let selectedYear = "";
+let hasInitializedSelection = false;
+let hasYearFilterBeenTouched = false;
+let yearFilterArmed = false;
+let divisions = [];
+let selectedDivisionId = 0;
+let isDivisionOpen = false;
+
+const companyTable = document.getElementById("companyTable");
+const companyGrid = document.querySelector(".grid-box");
+const tbody = document.querySelector("#companyTable tbody");
+const statusNote = document.getElementById("statusNote");
+const selectCompanyBtn = document.getElementById("selectCompanyBtn");
+const financialYearSelect = document.getElementById("financialYearSelect");
+const divisionPanel = document.getElementById("divisionPanel");
+const divisionModal = document.getElementById("divisionModal");
+const divisionCloseBtn = document.getElementById("divisionCloseBtn");
+const divisionNote = document.getElementById("divisionNote");
+const selectDivisionBtn = document.getElementById("selectDivisionBtn");
+const divisionTable = document.getElementById("divisionTable");
+const divisionTableBody = document.querySelector("#divisionTable tbody");
+const divisionGrid = document.querySelector(".division-grid");
+
+function formatDate(dateStr) {
+    if (!dateStr) return "";
+    // accept formats like YYYY-MM-DD or full ISO, take the date part
+    const datePart = String(dateStr).split(' ')[0];
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+}
+
+function extractYear(dateStr) {
+    if (!dateStr) return "";
+    const datePart = String(dateStr).split(" ")[0];
+    const parts = datePart.split("-");
+    if (parts.length === 3) {
+        if (parts[0].length === 4) return parts[0];
+        if (parts[2].length === 4) return parts[2];
+    }
+    return "";
+}
+
+function getFinancialYear(row) {
+    const startYear = extractYear(row.start_date);
+    const endYear = extractYear(row.end_date);
+    if (startYear && endYear) return `${startYear}-${endYear}`;
+    return "";
+}
+
+function getFilteredCompanies() {
+    if (!hasYearFilterBeenTouched) return companies.slice();
+    if (!selectedYear) return companies.slice();
+    return companies.filter(function (row) {
+        return getFinancialYear(row) === selectedYear;
+    });
+}
+
+function renderCompanies() {
+    const list = getFilteredCompanies();
+
+    if (list.length === 0) {
+        tbody.innerHTML = "";
+        selectCompanyBtn.disabled = true;
+        selectedId = 0;
+        return;
+    }
+
+    if (hasYearFilterBeenTouched) {
+        selectedId = Number(list[0].company_id);
+    } else if (!list.some(row => Number(row.company_id) === selectedId)) {
+        if (!hasInitializedSelection) {
+            const defaultRow = list.find(row => Number(row.is_default) === 1);
+            selectedId = defaultRow ? Number(defaultRow.company_id) : Number(list[0].company_id);
+            hasInitializedSelection = true;
+        } else {
+            selectedId = Number(list[0].company_id);
+        }
+    }
+
+    selectCompanyBtn.disabled = false;
+    tbody.innerHTML = "";
+
+    list.forEach(function (row) {
+        const tr = document.createElement("tr");
+        if (selectedId === Number(row.company_id)) tr.classList.add("selected");
+        tr.innerHTML = `
+            <td>${row.code ?? ""}</td>
+            <td>${row.company_name ?? ""}</td>
+            <td>${formatDate(row.start_date) ?? ""}</td>
+            <td>${formatDate(row.end_date) ?? ""}</td>
+        `;
+        tr.addEventListener("click", function () {
+            selectedId = Number(row.company_id);
+            selectCompanyBtn.disabled = false;
+            hideDivisionPanel();
+            renderCompanies();
+        });
+        tbody.appendChild(tr);
+    });
+    const selectedRow = tbody.querySelector("tr.selected");
+    if (selectedRow && companyGrid) {
+        const headerHeight = companyTable?.querySelector("thead")?.offsetHeight || 0;
+        const rowTop = selectedRow.offsetTop;
+        const rowBottom = rowTop + selectedRow.offsetHeight;
+        const viewTop = companyGrid.scrollTop + headerHeight;
+        const viewBottom = companyGrid.scrollTop + companyGrid.clientHeight;
+        if (rowTop < viewTop) {
+            companyGrid.scrollTop = Math.max(0, rowTop - headerHeight);
+        } else if (rowBottom > viewBottom) {
+            companyGrid.scrollTop = rowBottom - companyGrid.clientHeight;
+        }
+    }
+}
+
+function getVisibleCompanies() {
+    return getFilteredCompanies();
+}
+
+function moveCompanySelection(delta) {
+    const list = getVisibleCompanies();
+    if (!list.length) return;
+    const currentIndex = list.findIndex(r => Number(r.company_id) === selectedId);
+    const nextIndex = currentIndex === -1 ? 0 : Math.max(0, Math.min(list.length - 1, currentIndex + delta));
+    selectedId = Number(list[nextIndex].company_id);
+    renderCompanies();
+}
+
+function populateFinancialYears() {
+    const yearSet = new Set();
+    companies.forEach(function (row) {
+        const fy = getFinancialYear(row);
+        if (fy) yearSet.add(fy);
+    });
+
+    financialYears = Array.from(yearSet).sort(function (a, b) {
+        const aStart = parseInt(a.split("-")[0], 10);
+        const bStart = parseInt(b.split("-")[0], 10);
+        return aStart - bStart;
+    });
+
+    const defaultCompany = companies.find(c => Number(c.is_default) === 1);
+    const defaultFy = defaultCompany ? getFinancialYear(defaultCompany) : "";
+
+    financialYearSelect.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = defaultFy || "Select";
+    placeholder.disabled = true;
+    placeholder.hidden = true;
+    placeholder.selected = true;
+    financialYearSelect.appendChild(placeholder);
+
+    financialYears.forEach(function (fy) {
+        const option = document.createElement("option");
+        option.value = fy;
+        option.textContent = fy;
+        financialYearSelect.appendChild(option);
+    });
+
+    if (!financialYears.length) {
+        financialYearSelect.disabled = true;
+        selectedYear = "";
+        return;
+    }
+
+    financialYearSelect.disabled = financialYears.length <= 1;
+    selectedYear = "";
+    financialYearSelect.value = "";
+}
+
+function hideDivisionPanel() {
+    divisionModal.style.display = "none";
+    isDivisionOpen = false;
+    divisionNote.style.display = "none";
+    divisionNote.textContent = "";
+    divisions = [];
+    selectedDivisionId = 0;
+    divisionTableBody.innerHTML = "";
+    selectDivisionBtn.disabled = true;
+}
+
+function showDivisionPanel() {
+    divisionModal.style.display = "flex";
+    isDivisionOpen = true;
+}
+
+function renderDivisions(list) {
+    divisionTableBody.innerHTML = "";
+    list.forEach(function (row) {
+        const tr = document.createElement("tr");
+        if (selectedDivisionId === Number(row.division_id)) tr.classList.add("selected");
+        tr.innerHTML = `
+            <td>${row.div_code ?? ""}</td>
+            <td>${row.div_name ?? ""}</td>
+        `;
+        tr.addEventListener("click", function () {
+            selectedDivisionId = Number(row.division_id);
+            selectDivisionBtn.disabled = false;
+            renderDivisions(list);
+        });
+        divisionTableBody.appendChild(tr);
+    });
+    const selectedRow = divisionTableBody.querySelector("tr.selected");
+    if (!selectedRow || !divisionGrid) return;
+    const headerHeight = divisionTable?.querySelector("thead")?.offsetHeight || 0;
+    const rowTop = selectedRow.offsetTop;
+    const rowBottom = rowTop + selectedRow.offsetHeight;
+    const viewTop = divisionGrid.scrollTop + headerHeight;
+    const viewBottom = divisionGrid.scrollTop + divisionGrid.clientHeight;
+    if (rowTop < viewTop) {
+        divisionGrid.scrollTop = Math.max(0, rowTop - headerHeight);
+    } else if (rowBottom > viewBottom) {
+        divisionGrid.scrollTop = rowBottom - divisionGrid.clientHeight;
+    }
+}
+
+function moveDivisionSelection(delta) {
+    if (!divisions.length) return;
+    const currentIndex = divisions.findIndex(r => Number(r.division_id) === selectedDivisionId);
+    const nextIndex = currentIndex === -1 ? 0 : Math.max(0, Math.min(divisions.length - 1, currentIndex + delta));
+    selectedDivisionId = Number(divisions[nextIndex].division_id);
+    selectDivisionBtn.disabled = false;
+    renderDivisions(divisions);
+}
+
+async function loadDivisions() {
+    const res = await fetch("api/division/get_allowed_divisions.php", { cache: "no-store" });
+    const data = await res.json();
+    if (data.status !== "success") {
+        throw new Error(data.message || "Unable to load divisions");
+    }
+    return Array.isArray(data.divisions) ? data.divisions : [];
+}
+
+async function selectDivisionAndContinue(divisionId) {
+    const formData = new FormData();
+    formData.append("division_id", divisionId);
+
+    const res = await fetch("api/division/select_division.php", {
+        method: "POST",
+        body: formData
+    });
+    const data = await res.json();
+
+    if (data.status !== "success") {
+        throw new Error(data.message || "Unable to select division");
+    }
+
+    window.location.href = "index.html";
+}
+
+async function loadCompanies() {
+    try {
+        const res = await fetch("api/company/get_allowed_companies.php", { cache: "no-store" });
+        const data = await res.json();
+        companies = Array.isArray(data.companies) ? data.companies : [];
+
+        if (!companies.length) {
+            statusNote.textContent = "No company is associated with this user. Contact administrator.";
+            statusNote.style.display = "";
+            selectCompanyBtn.disabled = true;
+        } else {
+            statusNote.style.display = "none";
+        }
+
+        populateFinancialYears();
+        renderCompanies();
+    } catch (e) {
+        statusNote.textContent = "Unable to load companies.";
+        statusNote.style.display = "";
+        selectCompanyBtn.disabled = true;
+    }
+}
+
+async function selectCompany() {
+    if (!selectedId) return;
+    hideDivisionPanel();
+    statusNote.style.display = "none";
+
+    let data;
+    try {
+        const formData = new FormData();
+        formData.append("company_id", selectedId);
+
+        const res = await fetch("api/company/select_company.php", {
+            method: "POST",
+            body: formData
+        });
+        data = await res.json();
+    } catch (e) {
+        statusNote.textContent = "Unable to select company.";
+        statusNote.style.display = "";
+        return;
+    }
+
+    if (data.status !== "success") {
+        alert(data.message || "Unable to select company");
+        return;
+    }
+
+    const selectedCompany = companies.find(c => Number(c.company_id) === selectedId);
+    const askDivision = Number(data.ask_division ?? selectedCompany?.ask_division ?? 0) === 1;
+    if (askDivision) {
+        try {
+            divisions = await loadDivisions();
+            if (!divisions.length) {
+                divisionNote.textContent = "User is not assigned to any division.";
+                divisionNote.style.display = "";
+                showDivisionPanel();
+                selectDivisionBtn.disabled = true;
+                return;
+            }
+
+            const defaultDivision = divisions.find(d => Number(d.is_default) === 1);
+            selectedDivisionId = Number((defaultDivision || divisions[0]).division_id);
+            renderDivisions(divisions);
+            selectDivisionBtn.disabled = false;
+            showDivisionPanel();
+        } catch (e) {
+            divisionNote.textContent = e.message || "Unable to load divisions.";
+            divisionNote.style.display = "";
+            showDivisionPanel();
+        }
+        return;
+    }
+
+    try {
+        divisions = await loadDivisions();
+        if (!divisions.length) {
+            statusNote.textContent = "User is not assigned to any division.";
+            statusNote.style.display = "";
+            return;
+        }
+
+        const defaultDivision = divisions.find(d => Number(d.is_default) === 1);
+        const chosenDivision = defaultDivision || divisions[0];
+        await selectDivisionAndContinue(Number(chosenDivision.division_id));
+    } catch (e) {
+        statusNote.textContent = e.message || "Unable to continue.";
+        statusNote.style.display = "";
+    }
+}
+
+selectCompanyBtn.addEventListener("click", selectCompany);
+financialYearSelect.addEventListener("change", function () {
+    selectedYear = financialYearSelect.value;
+    hasYearFilterBeenTouched = true;
+    hideDivisionPanel();
+    renderCompanies();
+});
+
+financialYearSelect.addEventListener("focus", function () {
+    yearFilterArmed = true;
+});
+
+financialYearSelect.addEventListener("blur", function () {
+    if (!yearFilterArmed) return;
+    yearFilterArmed = false;
+    if (!hasYearFilterBeenTouched) {
+        hasYearFilterBeenTouched = true;
+        hideDivisionPanel();
+        renderCompanies();
+    }
+});
+
+selectDivisionBtn.addEventListener("click", async function () {
+    if (!selectedDivisionId) return;
+    try {
+        await selectDivisionAndContinue(selectedDivisionId);
+    } catch (e) {
+        divisionNote.textContent = e.message || "Unable to select division.";
+        divisionNote.style.display = "";
+    }
+});
+
+divisionCloseBtn.addEventListener("click", function () {
+    hideDivisionPanel();
+});
+
+divisionModal.addEventListener("click", function (e) {
+    if (e.target === divisionModal) hideDivisionPanel();
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+        if (isDivisionOpen) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            hideDivisionPanel();
+            return;
+        }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+    }
+
+    if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (isDivisionOpen) {
+            if (selectedDivisionId) selectDivisionBtn.click();
+        } else {
+            if (selectedId) selectCompanyBtn.click();
+        }
+        return;
+    }
+
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const delta = e.key === "ArrowUp" ? -1 : 1;
+        if (isDivisionOpen) {
+            moveDivisionSelection(delta);
+        } else {
+            moveCompanySelection(delta);
+        }
+    }
+}, true);
+
+window.addEventListener("popstate", function () {
+    history.pushState(null, "", location.href);
+});
+history.pushState(null, "", location.href);
+
+const logoutLink = document.querySelector('.logout-link[data-logout-link="1"]');
+if (logoutLink) {
+    logoutLink.addEventListener("click", async function (e) {
+        e.preventDefault();
+        const ok = await window.confirmDelete("Are you sure you want to logout?");
+        if (ok) window.location.href = logoutLink.getAttribute("href");
+    });
+}
+
+loadCompanies();
+</script>
+</body>
+</html>

@@ -1,0 +1,546 @@
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #e9eef5, #fdfdfd);
+    color: #000; /* ALWAYS BLACK TEXT */
+}
+
+/* NAVBAR */
+.navbar {
+    display: flex;
+    align-items: center;
+    padding: 20px 40px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-left {
+    display: flex;
+    gap: 30px;
+}
+
+.logo {
+    flex: 1;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: #000;
+}
+
+.logo span {
+    color: #000;
+}
+
+/* DROPDOWN */
+.dropdown {
+    position: relative;
+}
+
+.dropdown > a {
+    cursor: pointer;
+    font-weight: 500;
+    color: #000;
+    transition: 0.2s ease;
+}
+
+.dropdown > a:hover {
+    opacity: 0.7;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 42px;
+    left: 0;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(15px);
+    border-radius: 14px;
+    min-width: 220px;
+    padding: 8px 0;
+    box-shadow:
+        0 15px 35px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dropdown.open .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 12px 18px;
+    text-decoration: none;
+    color: #000;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.dropdown-menu a:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* CONTENT */
+.content {
+    padding: 60px 40px;
+}
+
+.feature-box {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    padding: 40px;
+    border-radius: 20px;
+    max-width: 950px;
+    margin: auto;
+    color: #000;
+    box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.feature-box h2 {
+    margin-top: 0;
+    font-size: 24px;
+    color: #000;
+}
+
+/* FORMS */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 26px;
+    margin-top: 30px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #000;
+}
+
+/* INPUTS */
+input,
+select {
+    padding: 13px 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    color: #000;
+    transition: 0.25s ease;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    background: #ffffff;
+    box-shadow:
+        0 0 0 3px rgba(0, 0, 0, 0.05),
+        0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* DR / CR */
+.dc-box {
+    display: flex;
+    gap: 12px;
+}
+
+.dc-box select {
+    width: 70px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* BUTTON */
+button {
+    margin-top: 35px;
+    padding: 14px 22px;
+    width: 200px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: #000;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.9),
+        rgba(230, 230, 230, 0.9)
+    );
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.1),
+        inset 0 2px 4px rgba(255, 255, 255, 0.9);
+    transition: all 0.25s ease;
+}
+
+button:hover {
+    transform: translateY(-3px);
+    box-shadow:
+        0 12px 25px rgba(0, 0, 0, 0.12),
+        inset 0 2px 4px rgba(255, 255, 255, 1);
+}
+
+/* FOOTER */
+footer {
+    text-align: center;
+    padding: 30px;
+    font-size: 14px;
+    color: #000;
+    opacity: 0.6;
+}
+
+/* STATE MASTER LAYOUT */
+.state-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 30px;
+}
+
+.state-layout form,
+.state-list {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(18px);
+    padding: 30px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+        0 15px 35px rgba(0, 0, 0, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    color: #000;
+}
+
+.state-list h3 {
+    margin-top: 0;
+    color: #000;
+}
+
+.state-list li {
+    padding: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 14px;
+    color: #000;
+}
+
+.state-list li:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+/* Industrial global ERP nav (white/black theme) */
+.global-erp-nav {
+    padding: 10px 16px;
+    gap: 12px;
+    flex-wrap: nowrap;
+}
+
+.global-erp-nav a,
+.global-erp-nav a:visited,
+.global-erp-quick a,
+.global-erp-quick a:visited {
+    color: #111;
+    text-decoration: none;
+}
+
+.global-erp-nav a.is-active,
+.global-erp-quick a.is-active {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+}
+
+body.kb-navbar-active .global-erp-nav {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.global-erp-nav .kb-nav-item-active {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+}
+
+body.kb-navbar-active .global-erp-nav .kb-nav-item-active {
+    background: #111;
+    color: #fff;
+}
+
+body.kb-content-active .kb-content-item-active {
+    outline: 2px solid #111;
+    outline-offset: -1px;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.global-erp-nav .dropdown-menu a.kb-content-item-active,
+.global-erp-nav .erp-submenu > a.kb-content-item-active,
+.global-erp-nav .submenu-menu > a.kb-content-item-active {
+    background: #111;
+    color: #fff;
+}
+
+.global-erp-nav .erp-top-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: visible;
+    white-space: normal;
+    flex-wrap: wrap;
+    padding-bottom: 2px;
+}
+
+.global-erp-nav .erp-top-links > .dropdown {
+    position: relative;
+}
+
+.global-erp-nav .erp-top-links > .dropdown > a,
+.global-erp-nav .erp-top-links > a {
+    display: inline-block;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 5px 7px;
+    border-radius: 8px;
+}
+
+.global-erp-nav .logo {
+    flex: 0 0 auto;
+    margin: 0 6px;
+}
+
+.global-erp-nav .erp-nav-right {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.erp-exit-btn {
+    min-width: 82px;
+    height: 34px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.erp-exit-btn .exit-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.erp-exit-btn .exit-text {
+    line-height: 1;
+}
+
+.erp-exit-btn:hover {
+    background: #111;
+    color: #fff !important;
+}
+
+.global-erp-nav .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 280px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    padding: 6px 0;
+    z-index: 300;
+    max-height: none;
+    overflow: visible;
+}
+
+.global-erp-nav .dropdown.open > .dropdown-menu {
+    display: block;
+}
+
+/* Long list handling for Utilities (same scrolling behavior as Misc. Masters) */
+.global-erp-nav .dropdown-menu.utilities-menu {
+    max-height: none;
+    overflow: visible;
+}
+
+
+.global-erp-nav .dropdown-menu > a,
+.global-erp-nav .erp-submenu > a {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    line-height: 1.2;
+}
+
+.global-erp-nav .tx-menu > a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.global-erp-nav .menu-shortcut {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.8;
+}
+
+.global-erp-nav .dropdown-menu > a:hover,
+.global-erp-nav .erp-submenu > a:hover,
+.global-erp-nav .submenu-menu > a:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.global-erp-nav .erp-submenu {
+    position: relative;
+}
+
+.global-erp-nav .erp-submenu .submenu-menu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 260px;
+    display: none;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    padding: 6px 0;
+}
+
+/* Long list handling for Misc. Masters */
+.global-erp-nav .erp-submenu.misc-masters .submenu-menu {
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    min-width: 300px;
+}
+
+.global-erp-nav .erp-submenu.open .submenu-menu {
+    display: block;
+}
+
+.global-erp-nav .submenu-menu > a {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 8px 12px;
+}
+
+.global-erp-quick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.global-erp-quick a {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+    .global-erp-nav {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .global-erp-nav .erp-top-links {
+        gap: 8px;
+        padding-bottom: 0;
+    }
+
+    .global-erp-nav .erp-top-links > .dropdown > a,
+    .global-erp-nav .erp-top-links > a {
+        font-size: 11px;
+        padding: 4px 6px;
+        letter-spacing: 0.03em;
+    }
+
+    .global-erp-nav .dropdown-menu {
+        min-width: 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    .global-erp-nav {
+        position: static;
+        padding: 8px 10px;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .global-erp-nav .logo {
+        order: 1;
+        flex: 1 1 100%;
+        text-align: center;
+        font-size: 18px;
+        margin: 2px 0 6px;
+    }
+
+    .global-erp-nav .erp-top-links {
+        order: 2;
+        flex: 1 1 100%;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .global-erp-nav .erp-nav-right,
+    .global-erp-nav > div[style*="margin-left:auto"] {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .global-erp-nav .dropdown-menu,
+    .global-erp-nav .erp-submenu .submenu-menu {
+        position: static;
+        min-width: 0;
+        width: 100%;
+        box-shadow: none;
+        border-radius: 10px;
+    }
+
+    .global-erp-nav .erp-submenu {
+        position: static;
+    }
+
+    .global-erp-nav .menu-shortcut {
+        font-size: 10px;
+    }
+
+    .global-erp-quick {
+        gap: 6px;
+        padding: 6px 8px;
+    }
+
+    .global-erp-quick a {
+        font-size: 11px;
+    }
+}
+

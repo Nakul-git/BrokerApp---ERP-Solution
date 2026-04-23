@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daily Sauda | SoftBrokerage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="transactions/transaction-workspace.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+const appRoot = (function () {
+    const path = String(location.pathname || "").replace(/\\/g, "/");
+    const lower = path.toLowerCase();
+    const marker = "/brokerapp/";
+    const idx = lower.indexOf(marker);
+    if (idx !== -1) {
+        return location.origin + path.slice(0, idx + marker.length);
+    }
+    return location.origin + "/";
+})();
+
+(async function () {
+    const res = await fetch(appRoot + "api/check_auth.php", { cache: "no-store" });
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace(appRoot + "login.html");
+})();
+</script>
+<script src="global-nav.js" defer></script>
+<script src="global-keyboard.js" defer data-global-keyboard="1"></script>
+<style>
+.transaction-content {
+    padding: 4px 8px 6px;
+}
+.transaction-feature {
+    padding: 6px 8px 8px;
+    border-radius: 14px;
+}
+.transaction-shell {
+    min-height: auto;
+    padding: 6px 8px 8px;
+}
+.transaction-header {
+    min-height: 24px;
+    margin-bottom: 4px;
+}
+.transaction-title {
+    font-size: 21px;
+    line-height: 1;
+}
+.mode-chip {
+    min-width: 136px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+.transaction-grid {
+    gap: 6px;
+}
+.entry-layout {
+    grid-template-columns: minmax(680px, 1fr) 240px;
+}
+.entry-main {
+    padding: 4px 6px 6px;
+    min-height: auto;
+}
+.entry-aside {
+    padding-top: 100px;
+}
+.field-grid {
+    gap: 4px 6px;
+}
+.field-grid.sauda-top {
+    grid-template-columns: 84px 102px 78px 240px 1fr;
+}
+.field-label {
+    font-size: 12px;
+}
+.field-input,
+.field-select,
+.field-textarea {
+    min-height: 22px;
+    padding: 0 5px;
+    font-size: 12px;
+    border-radius: 2px;
+}
+.ref-wrap,
+.inline-row {
+    gap: 4px;
+}
+.ref-wrap .field-select {
+    width: 66px;
+}
+.ref-wrap .mini,
+.inline-row .mini {
+    width: 38px;
+}
+.check-label {
+    gap: 4px;
+    font-size: 11px;
+}
+.hero-line {
+    gap: 6px;
+    margin-top: 4px;
+}
+.hero-line.two-col {
+    grid-template-columns: 84px 1fr;
+}
+.hero-line.three-col {
+    grid-template-columns: 84px 1fr 250px;
+}
+.helper-strip {
+    margin: 4px 0 6px;
+    padding: 1px 8px;
+    font-size: 11px;
+}
+.erp-table-wrap {
+    min-height: 96px;
+}
+.erp-table th,
+.erp-table td {
+    padding: 2px 4px;
+    font-size: 11px;
+}
+.summary-strip {
+    grid-template-columns: 1fr 88px 88px 1fr 112px;
+    gap: 6px;
+    margin: 6px 4px 0;
+}
+.summary-label,
+.summary-total {
+    font-size: 11px;
+}
+.summary-box {
+    min-height: 20px;
+    padding: 1px 5px;
+    font-size: 11px;
+    border-radius: 0;
+}
+.remarks-row {
+    grid-template-columns: 84px 1fr;
+    gap: 6px;
+    margin: 8px 4px 6px;
+}
+.action-row.erp-actions {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(92px, 1fr));
+    gap: 4px;
+    margin: 6px 4px 0;
+    align-items: center;
+}
+.erp-btn {
+    min-width: 0;
+    width: 100%;
+    height: 24px;
+    font-size: 10px;
+    border-width: 1px;
+}
+.recent-box {
+    min-height: 146px;
+}
+.info-note {
+    display: none;
+}
+.party-wrap { position: relative; }
+.party-menu {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #1ba7af;
+    background: #fff;
+    display: none;
+    z-index: 80;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.party-item {
+    padding: 3px 6px;
+    cursor: pointer;
+    font-size: 11px;
+}
+.party-item:hover,
+.party-item.active { background: #b9f3f6; }
+.grid-input,
+.grid-select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-family: "Times New Roman", serif;
+    font-size: 11px;
+    outline: none;
+}
+.grid-select option { color: #000; }
+.erp-table tbody tr.active-row .grid-select option { color: #000; }
+.product-input {
+    text-transform: uppercase;
+}
+.recent-box .erp-table td,
+.recent-box .erp-table th {
+    white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="content transaction-content">
+    <div class="feature-box transaction-feature">
+        <div class="transaction-shell">
+            <div class="transaction-header">
+                <h1 class="transaction-title">Daily Sauda</h1>
+                <div id="modeChip" class="mode-chip">Display Mode</div>
+            </div>
+            <div class="transaction-grid entry-layout">
+                <div class="entry-main">
+                    <div class="field-grid sauda-top">
+                        <div class="field-label">Entry Date</div>
+                        <input id="entryDate" class="field-input" type="date">
+                        <div class="field-label">DiviSion</div>
+                        <input id="divisionName" class="field-input readonly" type="text" readonly>
+                        <div></div>
+                    </div>
+
+                    <div class="hero-line two-col">
+                        <div class="field-label">Ref No.</div>
+                        <div class="ref-wrap">
+                            <select id="bookCode" class="field-select">
+                                <option value="SUD">SUD</option>
+                            </select>
+                            <input id="entryChr" class="field-input mini" type="text" value="A">
+                            <input id="entryNo" class="field-input mini" type="number" min="1" value="">
+                            <label class="check-label">
+                                <input id="loadingRequired" type="checkbox">
+                                <span>Loading Required</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="hero-line two-col">
+                        <div class="field-label">Buyer (SD)</div>
+                        <div class="party-wrap">
+                            <input id="buyerName" class="field-input" type="text" autocomplete="off">
+                            <div id="buyerMenu" class="party-menu"></div>
+                        </div>
+                        <input id="buyerId" type="hidden">
+                    </div>
+
+                    <div class="hero-line two-col">
+                        <div class="field-label">Seller (SD)</div>
+                        <div class="party-wrap">
+                            <input id="sellerName" class="field-input" type="text" autocomplete="off">
+                            <div id="sellerMenu" class="party-menu"></div>
+                        </div>
+                        <input id="sellerId" type="hidden">
+                    </div>
+
+                    <div class="hero-line three-col">
+                        <div class="field-label">Sub Broker</div>
+                        <div class="inline-row">
+                            <select id="subBrokerType" class="field-select" style="width:90px;">
+                                <option value="SLR">SLR</option>
+                                <option value="BYR">BYR</option>
+                            </select>
+                            <div class="party-wrap" style="flex:1;">
+                                <input id="subBrokerName" class="field-input" type="text" autocomplete="off">
+                                <div id="subBrokerMenu" class="party-menu"></div>
+                            </div>
+                            <input id="subBrokerId" type="hidden">
+                        </div>
+                        <div id="weightSummary" class="summary-box">0.000 QTL</div>
+                    </div>
+
+                    <div class="helper-strip">A - Add E - Edit D - Delete F1 - Move Back</div>
+
+                    <div class="erp-table-wrap">
+                        <table class="erp-table" id="itemTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:48px;">SNO</th>
+                                    <th style="width:240px;">PRODUCT NAME</th>
+                                    <th style="width:110px;">BRAND</th>
+                                    <th style="width:70px;">QTY</th>
+                                    <th style="width:70px;">UNIT</th>
+                                    <th style="width:82px;">PACK</th>
+                                    <th style="width:96px;">WEIGHT</th>
+                                    <th style="width:70px;">UNIT</th>
+                                    <th style="width:96px;">RATE</th>
+                                    <th style="width:64px;">Q/W</th>
+                                    <th style="width:90px;">TERM</th>
+                                    <th>AMOUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="summary-strip">
+                        <div class="summary-label">Loading No. 1</div>
+                        <div id="totalQty" class="summary-box">0</div>
+                        <div id="totalWeight" class="summary-box">0.000</div>
+                        <div class="summary-total">Total</div>
+                        <div id="totalAmount" class="summary-box">0.00</div>
+                    </div>
+
+                    <div class="remarks-row">
+                        <div class="field-label">Remarks</div>
+                        <input id="remarks" class="field-input" type="text">
+                    </div>
+
+                    <div class="action-row erp-actions">
+                        <button id="addBtn" class="erp-btn" type="button">F2-Add</button>
+                        <button id="modifyBtn" class="erp-btn" type="button">F3-Modify</button>
+                        <button id="saveBtn" class="erp-btn" type="button">F6-Save</button>
+                        <button id="printBtn" class="erp-btn" type="button">F7-Print</button>
+                        <button id="exitBtn" class="erp-btn" type="button">Esc-Exit</button>
+                        <button id="topBtn" class="erp-btn" type="button">F4 - Top</button>
+                        <button id="bottomBtn" class="erp-btn" type="button">F8 - Bot</button>
+                        <button id="findBtn" class="erp-btn" type="button">F - Find</button>
+                    </div>
+                </div>
+
+                <div class="entry-aside">
+                    <div class="recent-box">
+                        <table class="erp-table">
+                            <thead>
+                                <tr><th style="width:40%;">DATE</th><th style="width:35%;">BOOK</th><th>NO</th></tr>
+                            </thead>
+                            <tbody id="recentBody"></tbody>
+                        </table>
+                    </div>
+                    <p class="info-note">Source reference: `frmsauda` and related sauda forms. This page now saves and loads through the new transaction path.</p>
+                </div>
+</div>
+</div>
+</div>
+</div>
+<datalist id="productChoices"></datalist>
+
+<script>
+let parties = [];
+let products = [];
+let recentRows = [];
+let activeVoucherNo = null;
+let activeRowIndex = 0;
+let isLoadedEntry = false;
+
+const entryDate = document.getElementById("entryDate");
+const divisionName = document.getElementById("divisionName");
+const bookCode = document.getElementById("bookCode");
+const entryChr = document.getElementById("entryChr");
+const entryNo = document.getElementById("entryNo");
+const loadingRequired = document.getElementById("loadingRequired");
+const buyerName = document.getElementById("buyerName");
+const buyerId = document.getElementById("buyerId");
+const sellerName = document.getElementById("sellerName");
+const sellerId = document.getElementById("sellerId");
+const subBrokerName = document.getElementById("subBrokerName");
+const subBrokerId = document.getElementById("subBrokerId");
+const remarks = document.getElementById("remarks");
+const itemTable = document.getElementById("itemTable").tBodies[0];
+const totalQty = document.getElementById("totalQty");
+const totalWeight = document.getElementById("totalWeight");
+const totalAmount = document.getElementById("totalAmount");
+const weightSummary = document.getElementById("weightSummary");
+const recentBody = document.getElementById("recentBody");
+const modeChip = document.getElementById("modeChip");
+
+function money(value) { return Number(value || 0).toFixed(2); }
+function weight(value) { return Number(value || 0).toFixed(3); }
+function safeText(value) {
+    return String(value ?? "").replace(/[&<>"']/g, function (char) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
+    });
+}
+function apiRows(payload) {
+    return Array.isArray(payload) ? payload : Array.isArray(payload?.rows) ? payload.rows : [];
+}
+async function fetchJson(url, options) {
+    const response = await fetch(url, options);
+    const payload = await response.json();
+    if (!response.ok || payload?.status === "error" || payload?.success === false) {
+        throw new Error(payload?.message || "Request failed");
+    }
+    return payload;
+}
+function selectedDivisionName() {
+    return document.body.dataset.selectedDivisionName || document.body.dataset.selectedCompanyName || "";
+}
+function displayDate(value) {
+    if (!value) return "";
+    const parts = String(value).split("-");
+    return parts.length === 3 ? [parts[2], parts[1], parts[0]].join("/") : value;
+}
+
+function activateRow(index) {
+    activeRowIndex = index;
+    Array.from(itemTable.rows).forEach(function (row, rowIndex) {
+        row.classList.toggle("active-row", rowIndex === index);
+    });
+}
+
+function productOptions(selectedValue) {
+    return "<option value=''>SELECT PRODUCT</option>" + products.map(function (product) {
+        const isSelected = String(product.product_name || "") === String(selectedValue || "") ? " selected" : "";
+        return "<option value='" + safeText(product.product_name) + "' data-id='" + safeText(product.product_id || 0) + "' data-rate='" + safeText(product.sales_rate || 0) + "' data-unit='" + safeText(product.pack_unit || "BGS") + "' data-qw='" + safeText(product.rate_type || "W") + "'" + isSelected + ">" + safeText(product.product_name) + "</option>";
+    }).join("");
+}
+
+function syncProductChoices() {
+    document.getElementById("productChoices").innerHTML = products.map(function (product) {
+        return "<option value='" + safeText(product.product_name || "") + "'></option>";
+    }).join("");
+}
+
+function findProductByName(name) {
+    const lower = String(name || "").trim().toLowerCase();
+    return products.find(function (product) {
+        return String(product.product_name || "").trim().toLowerCase() === lower;
+    }) || null;
+}
+
+function addItemRow(seed) {
+    const row = seed || {};
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+        "<td class='sno'></td>" +
+        "<td><input class='grid-input product-input product' type='text' list='productChoices' value='" + safeText(row.product_name || "") + "' autocomplete='off'></td>" +
+        "<td><input class='grid-input brand' type='text' value='" + safeText(row.brand_name || "") + "'></td>" +
+        "<td><input class='grid-input qty' type='number' min='0' step='0.01' value='" + safeText(row.qty || 0) + "'></td>" +
+        "<td><input class='grid-input unit' type='text' value='" + safeText(row.unit_name || "BGS") + "'></td>" +
+        "<td><input class='grid-input pack' type='number' min='0' step='0.01' value='" + safeText(row.pack || 0) + "'></td>" +
+        "<td><input class='grid-input wght' type='number' min='0' step='0.001' value='" + safeText(weight(row.weight || 0)) + "'></td>" +
+        "<td><input class='grid-input wunit' type='text' value='" + safeText(row.weight_unit_name || "QTL") + "'></td>" +
+        "<td><input class='grid-input rate' type='number' min='0' step='0.01' value='" + safeText(row.rate || 0) + "'></td>" +
+        "<td><input class='grid-input qw' type='text' value='" + safeText(row.rate_qw || "W") + "'></td>" +
+        "<td><input class='grid-input term' type='text' value='" + safeText(row.term || "SPOT") + "'></td>" +
+        "<td><input class='grid-input amount' type='number' value='" + safeText(money(row.amount || 0)) + "' readonly></td>";
+    itemTable.appendChild(tr);
+
+    tr.addEventListener("click", function () {
+        activateRow(Array.from(itemTable.rows).indexOf(tr));
+    });
+
+    const product = tr.querySelector(".product");
+    const qty = tr.querySelector(".qty");
+    const rate = tr.querySelector(".rate");
+    const wght = tr.querySelector(".wght");
+    const unit = tr.querySelector(".unit");
+    const qw = tr.querySelector(".qw");
+
+    function recalc() {
+        const qtyValue = Number(qty.value || 0);
+        const rateValue = Number(rate.value || 0);
+        tr.querySelector(".amount").value = money(qtyValue * rateValue);
+        calculateTotals();
+    }
+
+    product.addEventListener("input", function () {
+        product.value = product.value.toUpperCase();
+    });
+    product.addEventListener("change", function () {
+        const match = findProductByName(product.value);
+        if (match) {
+            if (!Number(rate.value || 0)) rate.value = match.sales_rate || "0";
+            if (!unit.value.trim()) unit.value = match.pack_unit || "BGS";
+            if (!qw.value.trim()) qw.value = match.rate_type || "W";
+        }
+        recalc();
+    });
+    qty.addEventListener("input", function () {
+        if (Number(wght.value || 0) === 0 && Number(qty.value || 0) > 0) {
+            wght.value = weight(qty.value || 0);
+        }
+        recalc();
+    });
+    rate.addEventListener("input", recalc);
+    tr.querySelector(".pack").addEventListener("input", calculateTotals);
+    tr.querySelector(".wght").addEventListener("input", calculateTotals);
+
+    refreshRowState();
+    recalc();
+}
+
+function refreshRowState() {
+    Array.from(itemTable.rows).forEach(function (row, index) {
+        row.querySelector(".sno").textContent = index + 1;
+    });
+    if (itemTable.rows.length) {
+        activateRow(Math.min(activeRowIndex, itemTable.rows.length - 1));
+    }
+}
+
+function calculateTotals() {
+    let qtySum = 0;
+    let weightSum = 0;
+    let amountSum = 0;
+    Array.from(itemTable.rows).forEach(function (row) {
+        qtySum += Number(row.querySelector(".qty").value || 0);
+        weightSum += Number(row.querySelector(".wght").value || 0);
+        amountSum += Number(row.querySelector(".amount").value || 0);
+    });
+    totalQty.textContent = qtySum ? money(qtySum).replace(/\.00$/, "") : "0";
+    totalWeight.textContent = weight(weightSum);
+    totalAmount.textContent = money(amountSum);
+    weightSummary.textContent = weight(weightSum) + " QTL";
+}
+
+function clearRows() {
+    itemTable.innerHTML = "";
+    activeRowIndex = 0;
+}
+
+async function loadNextVoucher() {
+    if (isLoadedEntry) return;
+    const params = new URLSearchParams({
+        entry_date: entryDate.value || new Date().toISOString().split("T")[0],
+        book_code: bookCode.value || "SUD",
+        entry_chr: entryChr.value.trim() || "A"
+    });
+    const data = await fetchJson(appRoot + "api/daily_sauda/get_next_voucher.php?" + params.toString(), { cache: "no-store" });
+    entryNo.value = data.next_no || "";
+}
+
+async function loadParties() {
+    const data = await fetchJson(appRoot + "api/daily_sauda/get_buyers.php", { cache: "no-store" });
+    parties = apiRows(data);
+}
+
+async function loadProducts() {
+    const data = await fetch(appRoot + "api/daily_sauda/get_products.php", { cache: "no-store" });
+    products = apiRows(await data.json());
+    syncProductChoices();
+}
+
+async function loadRecent() {
+    const params = new URLSearchParams({
+        entry_date: entryDate.value || new Date().toISOString().split("T")[0],
+        book_code: bookCode.value || "SUD"
+    });
+    const data = await fetchJson(appRoot + "api/daily_sauda/get_recent.php?" + params.toString(), { cache: "no-store" });
+    recentRows = apiRows(data);
+    renderRecent();
+}
+
+function renderRecent() {
+    if (!recentRows.length) {
+        recentBody.innerHTML = "<tr><td colspan='3'>No entries</td></tr>";
+        return;
+    }
+    recentBody.innerHTML = recentRows.map(function (row) {
+        const active = Number(row.vouc_code) === Number(activeVoucherNo) ? " class='active-row'" : "";
+        return "<tr data-entry='" + safeText(row.vouc_code) + "' data-date='" + safeText(row.entry_date || "") + "' data-book='" + safeText(row.c_j_s_p || "SUD") + "' data-chr='" + safeText(row.vouc_chr || "A") + "'" + active + ">" +
+            "<td>" + safeText(displayDate(row.entry_date || "")) + "</td>" +
+            "<td>" + safeText(row.c_j_s_p || "SUD") + "</td>" +
+            "<td>" + safeText(row.vouc_code || "") + "</td></tr>";
+    }).join("");
+    recentBody.querySelectorAll("tr[data-entry]").forEach(function (row) {
+        row.addEventListener("click", function () {
+            loadEntry(this.dataset.entry, this.dataset.date, this.dataset.book, this.dataset.chr);
+        });
+    });
+}
+
+function bindPartyField(inputEl, hiddenEl, menuEl) {
+    function filteredRows(term) {
+        const lower = String(term || "").trim().toLowerCase();
+        return parties.filter(function (party) {
+            return !lower || String(party.party_name || "").toLowerCase().includes(lower);
+        }).slice(0, 40);
+    }
+
+    function showMenu(rows) {
+        if (!rows.length) {
+            menuEl.style.display = "none";
+            menuEl.innerHTML = "";
+            return;
+        }
+        menuEl.innerHTML = rows.map(function (party) {
+            const meta = [party.city, party.state].filter(Boolean).join(" | ");
+            return "<div class='party-item' data-id='" + safeText(party.party_id) + "' data-name='" + safeText(party.party_name) + "'>" +
+                "<div>" + safeText(party.party_name) + "</div>" +
+                (meta ? "<div style='font-size:12px;color:#555;'>" + safeText(meta) + "</div>" : "") +
+            "</div>";
+        }).join("");
+        menuEl.querySelectorAll(".party-item").forEach(function (item) {
+            item.addEventListener("mousedown", function (event) {
+                event.preventDefault();
+                hiddenEl.value = this.dataset.id;
+                inputEl.value = this.dataset.name;
+                menuEl.style.display = "none";
+            });
+        });
+        menuEl.style.display = "block";
+    }
+
+    inputEl.addEventListener("focus", function () {
+        showMenu(filteredRows(inputEl.value));
+    });
+    inputEl.addEventListener("input", function () {
+        hiddenEl.value = "";
+        showMenu(filteredRows(inputEl.value));
+    });
+}
+
+async function checkDuplicate() {
+    if (isLoadedEntry) return false;
+    if (!entryNo.value.trim()) return false;
+    const params = new URLSearchParams({
+        entry_no: entryNo.value.trim(),
+        entry_date: entryDate.value || new Date().toISOString().split("T")[0],
+        book_code: bookCode.value || "SUD",
+        entry_chr: entryChr.value.trim() || "A"
+    });
+    const data = await fetchJson(appRoot + "api/daily_sauda/check_entry.php?" + params.toString(), { cache: "no-store" });
+    return !!data.exists;
+}
+
+function currentItems() {
+    return Array.from(itemTable.rows).map(function (row) {
+        const productName = row.querySelector(".product").value.trim();
+        const match = findProductByName(productName);
+        return {
+            product_id: match ? Number(match.product_id || 0) : 0,
+            product_name: productName,
+            brand_name: row.querySelector(".brand").value.trim(),
+            qty: row.querySelector(".qty").value,
+            unit_name: row.querySelector(".unit").value.trim() || "BGS",
+            pack: row.querySelector(".pack").value,
+            weight: row.querySelector(".wght").value,
+            weight_unit_name: row.querySelector(".wunit").value.trim() || "QTL",
+            rate: row.querySelector(".rate").value,
+            rate_qw: row.querySelector(".qw").value.trim() || "W",
+            term: row.querySelector(".term").value.trim() || "SPOT",
+            amount: row.querySelector(".amount").value
+        };
+    }).filter(function (item) {
+        return item.product_name || Number(item.qty || 0) > 0 || Number(item.rate || 0) > 0;
+    });
+}
+
+async function saveEntry() {
+    if (!entryDate.value) { alert("Entry date is required"); return; }
+    if (!entryNo.value.trim()) { alert("Entry number is required"); return; }
+    if (!buyerId.value) { alert("Select a valid buyer"); return; }
+    if (!sellerId.value) { alert("Select a valid seller"); return; }
+    if (buyerId.value === sellerId.value) { alert("Buyer and seller must be different"); return; }
+    const items = currentItems();
+    if (!items.length) { alert("Add at least one item row"); return; }
+    if (await checkDuplicate()) { alert("Entry already exists"); return; }
+
+    await fetchJson(appRoot + "api/daily_sauda/save_daily_sauda.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            header: {
+                entry_date: entryDate.value,
+                book_code: bookCode.value || "SUD",
+                entry_chr: entryChr.value.trim() || "A",
+                entry_no: entryNo.value.trim(),
+                buyer_id: buyerId.value,
+                buyer_name: buyerName.value.trim(),
+                seller_id: sellerId.value,
+                seller_name: sellerName.value.trim(),
+                sub_broker_id: subBrokerId.value || 0,
+                sub_broker_name: subBrokerName.value.trim(),
+                remarks: remarks.value.trim(),
+                loading_required: loadingRequired.checked ? "Y" : "N"
+            },
+            items: items
+        })
+    });
+
+    alert("Daily Sauda saved");
+    await resetForm();
+    await loadRecent();
+}
+
+async function loadEntry(voucherNo, voucherDate, voucherBook, voucherChr) {
+    const params = new URLSearchParams({
+        entry_no: voucherNo,
+        entry_date: voucherDate || entryDate.value,
+        book_code: voucherBook || "SUD",
+        entry_chr: voucherChr || "A"
+    });
+    const data = await fetchJson(appRoot + "api/daily_sauda/get_entry.php?" + params.toString(), { cache: "no-store" });
+    const header = data.header || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    isLoadedEntry = true;
+    modeChip.textContent = "Loaded Entry";
+    activeVoucherNo = header.entry_no || voucherNo;
+    entryDate.value = header.entry_date || entryDate.value;
+    bookCode.value = header.book_code || "SUD";
+    entryChr.value = header.entry_chr || "A";
+    entryNo.value = header.entry_no || voucherNo;
+    buyerId.value = header.buyer_id || "";
+    buyerName.value = header.buyer_name || "";
+    sellerId.value = header.seller_id || "";
+    sellerName.value = header.seller_name || "";
+    subBrokerId.value = header.sub_broker_id || "";
+    subBrokerName.value = header.sub_broker_name || "";
+    remarks.value = header.remarks || "";
+    loadingRequired.checked = String(header.loading_required || "N").toUpperCase() === "Y";
+
+    clearRows();
+    if (items.length) {
+        items.forEach(function (item) { addItemRow(item); });
+    } else {
+        addItemRow();
+    }
+    calculateTotals();
+    renderRecent();
+}
+
+async function resetForm() {
+    isLoadedEntry = false;
+    modeChip.textContent = "Display Mode";
+    activeVoucherNo = null;
+    entryDate.value = new Date().toISOString().split("T")[0];
+    bookCode.value = "SUD";
+    entryChr.value = "A";
+    buyerId.value = "";
+    buyerName.value = "";
+    sellerId.value = "";
+    sellerName.value = "";
+    subBrokerId.value = "";
+    subBrokerName.value = "";
+    remarks.value = "";
+    loadingRequired.checked = false;
+    clearRows();
+    addItemRow();
+    await loadNextVoucher();
+    renderRecent();
+}
+
+function focusActiveRow() {
+    const row = itemTable.rows[activeRowIndex] || itemTable.rows[0];
+    if (row) {
+        row.querySelector(".product").focus();
+    }
+}
+
+document.addEventListener("click", function (event) {
+    if (!event.target.closest(".party-wrap")) {
+        document.querySelectorAll(".party-menu").forEach(function (menu) { menu.style.display = "none"; });
+    }
+});
+
+document.getElementById("addBtn").addEventListener("click", function () { resetForm(); });
+document.getElementById("modifyBtn").addEventListener("click", focusActiveRow);
+document.getElementById("saveBtn").addEventListener("click", saveEntry);
+document.getElementById("printBtn").addEventListener("click", function () { alert("Print will be added after bill/report wiring."); });
+document.getElementById("exitBtn").addEventListener("click", function () { location.href = appRoot + "index.html"; });
+document.getElementById("topBtn").addEventListener("click", function () { activateRow(0); });
+document.getElementById("bottomBtn").addEventListener("click", function () { if (itemTable.rows.length) activateRow(itemTable.rows.length - 1); });
+document.getElementById("findBtn").addEventListener("click", function () {
+    if (!activeVoucherNo) {
+        alert("Select an entry from the right-side list");
+        return;
+    }
+    const row = recentRows.find(function (item) { return Number(item.vouc_code) === Number(activeVoucherNo); });
+    if (row) loadEntry(row.vouc_code, row.entry_date, row.c_j_s_p, row.vouc_chr);
+});
+
+entryDate.addEventListener("change", async function () {
+    if (!isLoadedEntry) {
+        await loadNextVoucher();
+        await loadRecent();
+    }
+});
+bookCode.addEventListener("change", async function () {
+    if (!isLoadedEntry) {
+        await loadNextVoucher();
+        await loadRecent();
+    }
+});
+entryChr.addEventListener("change", async function () {
+    if (!isLoadedEntry) await loadNextVoucher();
+});
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "F2") { event.preventDefault(); resetForm(); }
+    else if (event.key === "F3") { event.preventDefault(); focusActiveRow(); }
+    else if (event.key === "F6") { event.preventDefault(); saveEntry(); }
+    else if (event.key === "F4") { event.preventDefault(); activateRow(0); }
+    else if (event.key === "F8") { event.preventDefault(); if (itemTable.rows.length) activateRow(itemTable.rows.length - 1); }
+    else if (event.key === "Escape") { location.href = appRoot + "index.html"; }
+});
+
+(async function init() {
+    divisionName.value = selectedDivisionName();
+    entryDate.value = new Date().toISOString().split("T")[0];
+    await Promise.all([loadParties(), loadProducts()]);
+    bindPartyField(buyerName, buyerId, document.getElementById("buyerMenu"));
+    bindPartyField(sellerName, sellerId, document.getElementById("sellerMenu"));
+    bindPartyField(subBrokerName, subBrokerId, document.getElementById("subBrokerMenu"));
+    addItemRow();
+    await loadNextVoucher();
+    await loadRecent();
+})();
+</script>
+</body>
+</html>
+

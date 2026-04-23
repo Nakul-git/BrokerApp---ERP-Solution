@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loading Register | SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="transactions/transaction-workspace.css?v=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+(async function () {
+    const res = await fetch("./api/check_auth.php", { cache: "no-store" });
+    const data = await res.json();
+    if (!data.logged_in) window.location.replace("login.html");
+})();
+</script>
+<script src="global-nav.js" defer></script>
+<script src="global-keyboard.js" defer data-global-keyboard="1"></script>
+</head>
+<body>
+<div class="content transaction-content">
+    <div class="feature-box transaction-feature">
+        <div class="transaction-shell">
+            <div class="transaction-header">
+                <h1 class="transaction-title">Loading Register</h1>
+                <div class="mode-chip">Register View</div>
+            </div>
+            <div class="transaction-grid register-layout">
+                <div class="register-side">
+                    <div class="filter-panel">
+                        <div class="filter-box">
+                            <h3 class="filter-box-title">Date Range</h3>
+                            <div class="stack-fields">
+                                <div><div class="field-label">From</div><input class="field-input" type="text" value="01/04/2026"></div>
+                                <div><div class="field-label">To</div><input class="field-input" type="text" value="09/04/2026"></div>
+                            </div>
+                        </div>
+                        <div class="filter-box">
+                            <h3 class="filter-box-title">Register Filters</h3>
+                            <div class="stack-fields">
+                                <div><div class="field-label">Buyer</div><input class="field-input" type="text"></div>
+                                <div><div class="field-label">Seller</div><input class="field-input" type="text"></div>
+                                <div><div class="field-label">Transport</div><input class="field-input" type="text"></div>
+                                <div><div class="field-label">Book</div><select class="field-select"><option>LD001</option></select></div>
+                            </div>
+                        </div>
+                        <div class="action-row erp-actions">
+                            <button class="erp-btn" type="button">Proceed</button>
+                            <button class="erp-btn" type="button">Print</button>
+                            <button class="erp-btn" type="button">Export</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="register-main">
+                    <div class="erp-table-wrap">
+                        <table class="erp-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:110px;">DATE</th>
+                                    <th style="width:90px;">BOOK</th>
+                                    <th style="width:65px;">NO</th>
+                                    <th style="width:140px;">BUYER</th>
+                                    <th style="width:140px;">SELLER</th>
+                                    <th style="width:120px;">VEHICLE</th>
+                                    <th style="width:100px;">QTY</th>
+                                    <th style="width:120px;">BROK.</th>
+                                    <th>NET AMOUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="active-row">
+                                    <td>01/04/2026</td>
+                                    <td>LD001</td>
+                                    <td>1</td>
+                                    <td>BUYER</td>
+                                    <td>SELLER</td>
+                                    <td>MP09XX1234</td>
+                                    <td>0.00</td>
+                                    <td>0.00</td>
+                                    <td>0.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="summary-strip" style="margin-top:14px;">
+                        <div class="summary-label">Rows</div>
+                        <div class="summary-box">1</div>
+                        <div class="summary-box">0.00</div>
+                        <div class="summary-total">Total</div>
+                        <div class="summary-box">0.00</div>
+                    </div>
+                    <p class="info-note">Source reference: `frmloadingregisterformat2`. Final version should add party and product summaries with original report options.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

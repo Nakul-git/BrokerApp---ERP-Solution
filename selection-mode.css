@@ -1,0 +1,46 @@
+/* Shared selection-mode visuals for misc masters */
+.left-panel.search-active .list-wrap{
+    background:#ffffff!important;
+    border-color:#d0d0d0!important;
+}
+.left-panel.search-active .list-wrap [data-id].active,
+.left-panel.search-active .list-wrap [data-id]:hover{
+    background:transparent!important;
+    color:#000!important;
+}
+
+.left-panel.search-active.keyboard-active .list-wrap{
+    background:#22e2e8!important;
+    border-color:#18c7cf!important;
+}
+.left-panel.search-active.keyboard-active .list-wrap [data-id].active,
+.left-panel.search-active.keyboard-active .list-wrap [data-id]:hover{
+    background:#0074d9!important;
+    color:#fff!important;
+}
+
+.left-panel.keyboard-active #filterInput{
+    background:#ffffff!important;
+    border-color:#969696!important;
+    color:#000!important;
+}
+
+.left-panel.add-inactive .list-wrap{
+    background:#ffffff!important;
+    border-color:#d0d0d0!important;
+    pointer-events:none;
+}
+.left-panel.add-inactive .list-wrap [data-id].active,
+.left-panel.add-inactive .list-wrap [data-id]:hover{
+    background:transparent!important;
+    color:#000!important;
+}
+.left-panel.add-inactive .list-head{
+    background:#fff;
+}
+.left-panel.add-inactive #filterInput{
+    background:#ffffff!important;
+    border-color:#969696!important;
+    color:#000!important;
+    pointer-events:none!important;
+}

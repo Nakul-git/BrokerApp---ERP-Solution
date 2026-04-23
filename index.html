@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(async function () {
+    const res = await fetch("./api/check_auth.php", { cache: "no-store" });
+    const data = await res.json();
+    if (!data.logged_in) {
+        window.location.replace("login.html");
+        return;
+    }
+    
+    // Check if division is selected
+    try {
+        const debugRes = await fetch("./api/division/debug.php", { cache: "no-store" });
+        const debugData = await debugRes.json();
+        if (!debugData.session_data?.selected_division_id) {
+            window.location.replace("company.html");
+        }
+    } catch(e) {
+        console.log("Division check completed");
+    }
+})();
+</script>
+<script src="global-nav.js" defer></script>
+<script src="global-keyboard.js?v=3" defer></script>
+</head>
+<body>
+
+<div id="content" class="content">
+    <div class="feature-box">
+        <h2>SoftBrokerage ERP Menu</h2>
+        <p>Select a module from the top structure.</p>
+    </div>
+</div>
+
+</body>
+</html>
+

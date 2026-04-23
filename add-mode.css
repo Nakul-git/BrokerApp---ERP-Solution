@@ -1,0 +1,29 @@
+.field-error {
+    border-color: #e60000 !important;
+    background: #ffecec !important
+}
+
+.error-text {
+    color: #e60000;
+    font-size: 14px;
+    font-family: "Times New Roman", serif;
+    font-weight: 700;
+    margin-left: 8px
+}
+
+.label-with-error {
+    display: flex;
+    align-items: center;
+    gap: 8px
+}
+
+.right-panel.add-mode input:focus,
+.right-panel.add-mode select:focus,
+.right-panel.add-mode textarea:focus,
+.right-panel.modify-mode input:focus,
+.right-panel.modify-mode select:focus,
+.right-panel.modify-mode textarea:focus {
+    outline: none;
+    background: #1fdde0;
+    border-color: #00cfd6
+}

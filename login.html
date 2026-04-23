@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | SoftBrokerage</title>
+<link rel="stylesheet" href="style.css?v=8">
+<style>
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.auth-card {
+  width: 100%; max-width: 420px; background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+  padding: 28px;
+}
+.auth-brand { font-size: 26px; font-weight: 800; letter-spacing: .02em; margin: 0 0 2px; }
+.auth-sub { margin: 0 0 20px; opacity: .7; font-size: 14px; }
+.auth-form { display: grid; gap: 12px; }
+.auth-form input {
+  width: 100%; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.12); background: #fff; font-size: 14px;
+}
+.auth-actions { display: grid; gap: 10px; margin-top: 4px; }
+.auth-btn {
+  width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #111;
+  background: #111; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.auth-link { margin-top: 12px; font-size: 14px; opacity: .9; }
+.auth-link a { color: #111; font-weight: 700; text-decoration: none; }
+.auth-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1 class="auth-brand">SoftBrokerage</h1>
+    <p class="auth-sub">Sign in to continue</p>
+
+   <form id="loginForm" class="auth-form" autocomplete="off">
+  <input type="text" name="username" placeholder="Username" required>
+  <input type="password" name="password" placeholder="Password" required>
+  <div class="auth-actions">
+    <button class="auth-btn" type="submit">Login</button>
+  </div>
+</form>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const loginForm = document.getElementById("loginForm");
+  loginForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    fetch("auth/login.php", { method: "POST", body: new FormData(loginForm) })
+      .then(res => res.json())
+      .then(data => {
+        if (!data || data.status !== "success") { alert((data && data.message) || "Request failed"); }
+        if (data.status === "success") window.location.href = "company.html";
+      })
+      .catch(function () { alert("Request failed"); });
+  });
+});
+</script>
+</body>
+</html>
